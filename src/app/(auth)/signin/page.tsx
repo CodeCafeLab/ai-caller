@@ -136,7 +136,7 @@ export default function SignInPage() {
   return (
     <Card className="w-full max-w-md shadow-xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-3xl font-headline text-center">Sign In (Test Mode)</CardTitle>
+        <CardTitle className="text-3xl font-headline text-center">Sign In</CardTitle>
         <CardDescription className="text-center">
           Enter any non-empty User ID (in Email field) and Password. Use "clientadmin" in User ID for client panel.
         </CardDescription>
@@ -171,7 +171,7 @@ export default function SignInPage() {
               )}
             />
             <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? "Signing In..." : "Sign In (Bypass)"}
+              {isPending ? "Signing In..." : "Sign In"}
             </Button>
           </form>
         </Form>
