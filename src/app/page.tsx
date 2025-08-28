@@ -5,8 +5,8 @@ import { Logo } from '@/components/logo'; // Assuming logo component will be cre
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'AI Caller - Omni-Channel Communication Management',
-  description: 'Welcome to AI Caller, the next generation platform for seamless voice integration and omni-channel communication management.',
+  title: 'Avyukta AI Caller - Omni-Channel Communication Management',
+  description: 'Welcome to Avyukta AI Caller, the next generation platform for seamless voice integration and omni-channel communication management.',
   keywords: ['voice integration', 'omni-channel', 'communication', 'ai calling', 'platform'],
 };
 
