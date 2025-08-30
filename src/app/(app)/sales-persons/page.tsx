@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -296,7 +297,15 @@ export default function SalesPersonsPage() {
             <TableBody>
               {salesPersons.map((salesPerson) => (
                 <TableRow key={salesPerson.id}>
-                  <TableCell className="font-medium">{salesPerson.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {salesPerson.referral_code ? (
+                      <a href={`/track-referrals?referralCode=${encodeURIComponent(salesPerson.referral_code)}`} className="underline-offset-2 hover:underline">
+                        {salesPerson.name}
+                      </a>
+                    ) : (
+                      salesPerson.name
+                    )}
+                  </TableCell>
                   <TableCell>{salesPerson.email}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

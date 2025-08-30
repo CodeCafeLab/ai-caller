@@ -1,82 +1,95 @@
 //server.js
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
-const bcrypt = require('bcrypt');
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
-const jwt = require('jsonwebtoken');
-const bcryptjs = require('bcryptjs');
-const cookieParser = require('cookie-parser');
-const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
-const axios = require('axios');
-const { execFile } = require('child_process');
+const bcrypt = require("bcrypt");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
+const jwt = require("jsonwebtoken");
+const bcryptjs = require("bcryptjs");
+const cookieParser = require("cookie-parser");
+const fetch = (...args) =>
+  import("node-fetch").then((mod) => mod.default(...args));
+const axios = require("axios");
+const { execFile } = require("child_process");
 
 console.log("🟡 Starting backend server...");
 
 const app = express();
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-    'http://localhost:3000',
-    'https://aicaller.codecafelab.in',
-      'https://2nq68jpg-3000.inc1.devtunnels.ms'
-    ];
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Check if origin matches ngrok patterns
-    if (origin.match(/^https:\/\/.*\.ngrok-free\.app$/) ||
+// Trust first proxy so secure cookies work correctly behind tunnels/proxies
+app.set("trust proxy", 1);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://aicaller.codecafelab.in",
+        "https://2nq68jpg-3000.inc1.devtunnels.ms",
+      ];
+
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Check if origin matches ngrok patterns
+      if (
+        origin.match(/^https:\/\/.*\.ngrok-free\.app$/) ||
         origin.match(/^https:\/\/.*\.ngrok\.io$/) ||
         origin.match(/^https:\/\/.*\.ngrok\.app$/) ||
         origin.match(/^https:\/\/.*\.devtunnels\.ms$/) ||
-        origin.match(/^https:\/\/.*\.tunnel\.app$/)) {
-      return callback(null, true);
-    }
-    
-    console.log('CORS blocked origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Set-Cookie']
-}));
+        origin.match(/^https:\/\/.*\.tunnel\.app$/)
+      ) {
+        return callback(null, true);
+      }
+
+      console.log("CORS blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
+    exposedHeaders: ["Set-Cookie"],
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
-
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-very-secret-key'; // Use env variable in production!
+const JWT_SECRET = process.env.JWT_SECRET || "your-very-secret-key"; // Use env variable in production!
 
 // DB config
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root"||"aiuser",
-  password: process.env.DB_PASSWORD || ""||"Antu@2252",
+  // Use a single, sane fallback instead of chained ORs
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "Antu@2252",
   database: process.env.DB_NAME || "ai-caller",
-  multipleStatements: true // Allow multiple statements
+  multipleStatements: true, // Allow multiple statements
 });
 
 // Connect to DB
-db.connect(err => {
+db.connect((err) => {
   if (err) {
     console.error("❌ Database connection failed:", err.stack);
     // Try to create database and table if they don't exist
     const tempDb = mysql.createConnection({
       host: process.env.DB_HOST || "localhost",
       user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || ""
+      password: process.env.DB_PASSWORD || "Antu@2252",
     });
 
-    tempDb.connect(err => {
+    tempDb.connect((err) => {
       if (err) {
         console.error("Failed to create temporary connection:", err);
         return;
@@ -123,9 +136,9 @@ db.connect(err => {
           }
           console.log("✅ Database and table created successfully");
           tempDb.end();
-          
+
           // Reconnect to the main database
-          db.connect(err => {
+          db.connect((err) => {
             if (err) {
               console.error("Still failed to connect to database:", err);
               return;
@@ -134,7 +147,7 @@ db.connect(err => {
 
             // Ensure core referral-related tables always exist (idempotent)
             // Note: We no longer create sales_persons table, using admin_users + sales_admin_referral_codes instead
-            
+
             const ensureReferrals = `
               CREATE TABLE IF NOT EXISTS referrals (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -149,7 +162,8 @@ db.connect(err => {
               );
             `;
             db.query(ensureReferrals, (rfErr) => {
-              if (rfErr) console.error("Failed to ensure referrals table:", rfErr);
+              if (rfErr)
+                console.error("Failed to ensure referrals table:", rfErr);
             });
 
             const ensureSalesAdminCodes = `
@@ -164,7 +178,11 @@ db.connect(err => {
               );
             `;
             db.query(ensureSalesAdminCodes, (rcErr) => {
-              if (rcErr) console.error("Failed to ensure sales_admin_referral_codes table:", rcErr);
+              if (rcErr)
+                console.error(
+                  "Failed to ensure sales_admin_referral_codes table:",
+                  rcErr
+                );
             });
 
             // Ensure extended referral tracking columns exist (idempotent)
@@ -173,29 +191,59 @@ db.connect(err => {
               db.query(sql, (colErr) => {
                 if (colErr) {
                   // Fallback for older MySQL without IF NOT EXISTS
-                  if (colErr.code === 'ER_PARSE_ERROR' || colErr.code === 'ER_BAD_FIELD_ERROR') {
+                  if (
+                    colErr.code === "ER_PARSE_ERROR" ||
+                    colErr.code === "ER_BAD_FIELD_ERROR"
+                  ) {
                     const checkInfoSchema = `SELECT COUNT(*) as cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`;
-                    db.query(checkInfoSchema, [table, column], (chkErr, rows) => {
-                      if (!chkErr && rows && rows[0] && rows[0].cnt === 0) {
-                        const alter = `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`;
-                        db.query(alter, (altErr) => {
-                          if (altErr) console.error(`Failed adding ${table}.${column}:`, altErr);
-                        });
+                    db.query(
+                      checkInfoSchema,
+                      [table, column],
+                      (chkErr, rows) => {
+                        if (!chkErr && rows && rows[0] && rows[0].cnt === 0) {
+                          const alter = `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`;
+                          db.query(alter, (altErr) => {
+                            if (altErr)
+                              console.error(
+                                `Failed adding ${table}.${column}:`,
+                                altErr
+                              );
+                          });
+                        }
                       }
-                    });
+                    );
                   } else {
-                    console.error(`Failed ensuring column ${table}.${column}:`, colErr);
+                    console.error(
+                      `Failed ensuring column ${table}.${column}:`,
+                      colErr
+                    );
                   }
                 }
               });
             };
 
-            ensureColumn('referrals', 'plan_subscribed', "VARCHAR(64) NULL");
-            ensureColumn('referrals', 'is_trial', "TINYINT(1) NOT NULL DEFAULT 1");
-            ensureColumn('referrals', 'conversion_date', "DATETIME NULL");
-            ensureColumn('referrals', 'revenue_generated', "DECIMAL(12,2) NOT NULL DEFAULT 0.00");
-            ensureColumn('referrals', 'commission_amount', "DECIMAL(12,2) NULL");
-            ensureColumn('referrals', 'commission_status', "ENUM('pending','approved','paid') NOT NULL DEFAULT 'pending'");
+            ensureColumn("referrals", "plan_subscribed", "VARCHAR(64) NULL");
+            ensureColumn(
+              "referrals",
+              "is_trial",
+              "TINYINT(1) NOT NULL DEFAULT 1"
+            );
+            ensureColumn("referrals", "conversion_date", "DATETIME NULL");
+            ensureColumn(
+              "referrals",
+              "revenue_generated",
+              "DECIMAL(12,2) NOT NULL DEFAULT 0.00"
+            );
+            ensureColumn(
+              "referrals",
+              "commission_amount",
+              "DECIMAL(12,2) NULL"
+            );
+            ensureColumn(
+              "referrals",
+              "commission_status",
+              "ENUM('pending','approved','paid') NOT NULL DEFAULT 'pending'"
+            );
           });
         });
 
@@ -246,7 +294,11 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD COLUMN referralCode VARCHAR(64) NULL AFTER domainSubdomain",
                   (e1a) => {
-                    if (e1a) console.error("Failed to add clients.referralCode column:", e1a);
+                    if (e1a)
+                      console.error(
+                        "Failed to add clients.referralCode column:",
+                        e1a
+                      );
                     else console.log("✅ Added clients.referralCode column");
                   }
                 );
@@ -262,7 +314,11 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD COLUMN trialEndsAt DATETIME NULL AFTER trialCallLimit",
                   (e2a) => {
-                    if (e2a) console.error("Failed to add clients.trialEndsAt column:", e2a);
+                    if (e2a)
+                      console.error(
+                        "Failed to add clients.trialEndsAt column:",
+                        e2a
+                      );
                     else console.log("✅ Added clients.trialEndsAt column");
                   }
                 );
@@ -278,8 +334,15 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD UNIQUE KEY unique_companyEmail (companyEmail)",
                   (e3a) => {
-                    if (e3a) console.error("Failed to add unique index on clients.companyEmail:", e3a);
-                    else console.log("✅ Added unique index clients.unique_companyEmail");
+                    if (e3a)
+                      console.error(
+                        "Failed to add unique index on clients.companyEmail:",
+                        e3a
+                      );
+                    else
+                      console.log(
+                        "✅ Added unique index clients.unique_companyEmail"
+                      );
                   }
                 );
               }
@@ -294,7 +357,11 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD COLUMN totalCallsMade INT NOT NULL DEFAULT 0 AFTER trialEndsAt",
                   (e4a) => {
-                    if (e4a) console.error("Failed to add clients.totalCallsMade column:", e4a);
+                    if (e4a)
+                      console.error(
+                        "Failed to add clients.totalCallsMade column:",
+                        e4a
+                      );
                     else console.log("✅ Added clients.totalCallsMade column");
                   }
                 );
@@ -310,8 +377,13 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD COLUMN monthlyCallsMade INT NOT NULL DEFAULT 0 AFTER totalCallsMade",
                   (e5a) => {
-                    if (e5a) console.error("Failed to add clients.monthlyCallsMade column:", e5a);
-                    else console.log("✅ Added clients.monthlyCallsMade column");
+                    if (e5a)
+                      console.error(
+                        "Failed to add clients.monthlyCallsMade column:",
+                        e5a
+                      );
+                    else
+                      console.log("✅ Added clients.monthlyCallsMade column");
                   }
                 );
               }
@@ -325,8 +397,13 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD COLUMN monthlyCallLimit INT AFTER monthlyCallsMade",
                   (e6a) => {
-                    if (e6a) console.error("Failed to add clients.monthlyCallLimit column:", e6a);
-                    else console.log("✅ Added clients.monthlyCallLimit column");
+                    if (e6a)
+                      console.error(
+                        "Failed to add clients.monthlyCallLimit column:",
+                        e6a
+                      );
+                    else
+                      console.log("✅ Added clients.monthlyCallLimit column");
                   }
                 );
               }
@@ -340,8 +417,13 @@ db.connect(err => {
                 tempDb.query(
                   "ALTER TABLE clients ADD COLUMN lastMonthlyReset DATE DEFAULT (CURDATE()) AFTER monthlyCallLimit",
                   (e7a) => {
-                    if (e7a) console.error("Failed to add clients.lastMonthlyReset column:", e7a);
-                    else console.log("✅ Added clients.lastMonthlyReset column");
+                    if (e7a)
+                      console.error(
+                        "Failed to add clients.lastMonthlyReset column:",
+                        e7a
+                      );
+                    else
+                      console.log("✅ Added clients.lastMonthlyReset column");
                   }
                 );
               }
@@ -361,7 +443,11 @@ db.connect(err => {
             );
           `;
           tempDb.query(createSalesAdminReferralCodes, (err) => {
-            if (err) console.error("Failed to create sales_admin_referral_codes table:", err);
+            if (err)
+              console.error(
+                "Failed to create sales_admin_referral_codes table:",
+                err
+              );
             else console.log("✅ sales_admin_referral_codes table ensured");
           });
 
@@ -444,34 +530,43 @@ db.connect(err => {
             INDEX idx_agent_id (agent_id)
           ) ENGINE=InnoDB;
         `;
-        
+
         // Drop and recreate to ensure clean schema
         tempDb.query(dropAgentKnowledgeBaseTable, (dropErr) => {
           if (dropErr) {
-            console.error("Failed to drop agent knowledge base table:", dropErr);
+            console.error(
+              "Failed to drop agent knowledge base table:",
+              dropErr
+            );
           } else {
             console.log("✅ Dropped existing agent knowledge base table");
           }
-          
+
           // Also try to drop any foreign key constraints that might exist
-          tempDb.query('SET FOREIGN_KEY_CHECKS = 0', (fkErr) => {
+          tempDb.query("SET FOREIGN_KEY_CHECKS = 0", (fkErr) => {
             if (fkErr) {
               console.error("Failed to disable foreign key checks:", fkErr);
             } else {
               console.log("✅ Disabled foreign key checks");
             }
-            
+
             tempDb.query(createAgentKnowledgeBaseTable, (createErr) => {
               if (createErr) {
-                console.error("Failed to create agent knowledge base table:", createErr);
+                console.error(
+                  "Failed to create agent knowledge base table:",
+                  createErr
+                );
               } else {
                 console.log("✅ Agent knowledge base table ready");
               }
-              
+
               // Re-enable foreign key checks
-              tempDb.query('SET FOREIGN_KEY_CHECKS = 1', (fkErr2) => {
+              tempDb.query("SET FOREIGN_KEY_CHECKS = 1", (fkErr2) => {
                 if (fkErr2) {
-                  console.error("Failed to re-enable foreign key checks:", fkErr2);
+                  console.error(
+                    "Failed to re-enable foreign key checks:",
+                    fkErr2
+                  );
                 } else {
                   console.log("✅ Re-enabled foreign key checks");
                 }
@@ -489,9 +584,9 @@ db.connect(err => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
-      db.query(createCriteriaTable);
+        db.query(createCriteriaTable);
 
-      const createDataCollectionTable = `
+        const createDataCollectionTable = `
         CREATE TABLE IF NOT EXISTS agent_analysis_data_collection (
           id INT AUTO_INCREMENT PRIMARY KEY,
           agent_id VARCHAR(64) NOT NULL,
@@ -501,10 +596,10 @@ db.connect(err => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
-      db.query(createDataCollectionTable);
+        db.query(createDataCollectionTable);
 
-      // Create widget settings table
-      const createWidgetSettingsTable = `
+        // Create widget settings table
+        const createWidgetSettingsTable = `
         CREATE TABLE IF NOT EXISTS agent_widget_settings (
           id INT AUTO_INCREMENT PRIMARY KEY,
           agent_id VARCHAR(64) NOT NULL UNIQUE,
@@ -515,27 +610,45 @@ db.connect(err => {
           INDEX idx_agent_id (agent_id)
         );
       `;
-      db.query(createWidgetSettingsTable, (err) => {
-        if (err) {
-          console.error('Failed to create widget settings table:', err);
-        } else {
-          console.log('✅ Widget settings table ready');
-        }
-      });
+        db.query(createWidgetSettingsTable, (err) => {
+          if (err) {
+            console.error("Failed to create widget settings table:", err);
+          } else {
+            console.log("✅ Widget settings table ready");
+          }
+        });
 
         // --- AGENTS TABLE MIGRATION: Add language_code and additional_languages columns if not exist ---
-        db.query(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS language_code VARCHAR(20)`, () => {});
-        db.query(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS additional_languages TEXT`, () => {});
-        db.query(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Published' AFTER updated_at`, () => {});
-        db.query(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS created_by INT`, () => {});
-        db.query(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS created_by_name VARCHAR(255)`, () => {});
-        db.query(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS created_by_type VARCHAR(20)`, () => {});
+        db.query(
+          `ALTER TABLE agents ADD COLUMN IF NOT EXISTS language_code VARCHAR(20)`,
+          () => {}
+        );
+        db.query(
+          `ALTER TABLE agents ADD COLUMN IF NOT EXISTS additional_languages TEXT`,
+          () => {}
+        );
+        db.query(
+          `ALTER TABLE agents ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Published' AFTER updated_at`,
+          () => {}
+        );
+        db.query(
+          `ALTER TABLE agents ADD COLUMN IF NOT EXISTS created_by INT`,
+          () => {}
+        );
+        db.query(
+          `ALTER TABLE agents ADD COLUMN IF NOT EXISTS created_by_name VARCHAR(255)`,
+          () => {}
+        );
+        db.query(
+          `ALTER TABLE agents ADD COLUMN IF NOT EXISTS created_by_type VARCHAR(20)`,
+          () => {}
+        );
       });
     });
     return;
   }
   console.log("✅ MySQL Connected");
-  
+
   // Create workspace secrets table
   const createWorkspaceSecretsTable = `
     CREATE TABLE IF NOT EXISTS workspace_secrets (
@@ -550,13 +663,13 @@ db.connect(err => {
       INDEX idx_name (name)
     );
   `;
-  
+
   db.query(createWorkspaceSecretsTable, (err) => {
     if (err) {
       console.error("Failed to create workspace secrets table:", err);
     } else {
       console.log("✅ Workspace secrets table ready");
-      
+
       // Removed sample workspace secrets auto-insert
     }
   });
@@ -580,9 +693,9 @@ db.connect(err => {
   `;
   db.query(createMcpServersTable, (err) => {
     if (err) {
-      console.error('Failed to create mcp_servers table:', err);
+      console.error("Failed to create mcp_servers table:", err);
     } else {
-      console.log('✅ MCP servers table ready');
+      console.log("✅ MCP servers table ready");
     }
   });
 
@@ -595,7 +708,11 @@ db.connect(err => {
           db.query(
             "ALTER TABLE assigned_plans ADD COLUMN is_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER auto_send_notifications",
             (altErr) => {
-              if (altErr) console.error("Failed to add assigned_plans.is_enabled column:", altErr);
+              if (altErr)
+                console.error(
+                  "Failed to add assigned_plans.is_enabled column:",
+                  altErr
+                );
               else console.log("✅ Added assigned_plans.is_enabled column");
             }
           );
@@ -603,16 +720,16 @@ db.connect(err => {
       }
     );
   } catch (e) {
-    console.warn('Warning checking assigned_plans.is_enabled:', e);
+    console.warn("Warning checking assigned_plans.is_enabled:", e);
   }
 });
 
 // Add error handler for lost connections
-db.on('error', function(err) {
-  console.error('Database error:', err);
-  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.log('Attempting to reconnect to database...');
-    db.connect(err => {
+db.on("error", function (err) {
+  console.error("Database error:", err);
+  if (err.code === "PROTOCOL_CONNECTION_LOST") {
+    console.log("Attempting to reconnect to database...");
+    db.connect((err) => {
       if (err) {
         console.error("Failed to reconnect:", err);
         return;
@@ -630,58 +747,73 @@ app.get("/", (req, res) => {
 });
 
 // ElevenLabs Voices Proxy Endpoint
-app.get('/api/voices', async (req, res) => {
+app.get("/api/voices", async (req, res) => {
   try {
-    console.log('ELEVENLABS_API_KEY:', process.env.ELEVENLABS_API_KEY);
-    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+    console.log("ELEVENLABS_API_KEY:", process.env.ELEVENLABS_API_KEY);
+    const response = await fetch("https://api.elevenlabs.io/v1/voices", {
       headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
+        "xi-api-key": process.env.ELEVENLABS_API_KEY,
+        "Content-Type": "application/json",
       },
     });
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs API error:', response.status, errorText);
-      return res.status(response.status).json({ error: 'Failed to fetch voices from ElevenLabs', details: errorText });
+      console.error("ElevenLabs API error:", response.status, errorText);
+      return res
+        .status(response.status)
+        .json({
+          error: "Failed to fetch voices from ElevenLabs",
+          details: errorText,
+        });
     }
     const data = await response.json();
     res.json(data);
   } catch (err) {
-    console.error('Error fetching voices:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching voices:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // POST /api/elevenlabs/create-agent
-app.post('/api/elevenlabs/create-agent', authenticateJWT, async (req, res) => {
+app.post("/api/elevenlabs/create-agent", authenticateJWT, async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
     const payload = req.body;
 
     // 1. Create agent in ElevenLabs
-    const response = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      "https://api.elevenlabs.io/v1/convai/agents/create",
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to create agent', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to create agent", details: data });
     }
 
     // 2. Fetch full agent details from ElevenLabs
     const agentId = data.agent_id;
-    const agentDetailsRes = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
-      method: 'GET',
-      headers,
-    });
+    const agentDetailsRes = await fetch(
+      `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
     const agent = await agentDetailsRes.json();
     if (!agentDetailsRes.ok) {
-      return res.status(agentDetailsRes.status).json({ error: 'Failed to fetch agent details', details: agent });
+      return res
+        .status(agentDetailsRes.status)
+        .json({ error: "Failed to fetch agent details", details: agent });
     }
 
     // Ensure client_id from frontend is set on the agent object for local DB
@@ -689,61 +821,72 @@ app.post('/api/elevenlabs/create-agent', authenticateJWT, async (req, res) => {
 
     // 2.1 Map language code to local language_id
     let languageId = null;
-    const languageCode = agent.language || 'en';
-    db.query('SELECT id FROM languages WHERE code = ? LIMIT 1', [languageCode], (err, rows) => {
-      if (err) {
-        console.error('Failed to lookup language_id:', err);
-        languageId = null;
-      } else if (rows.length > 0) {
-        languageId = rows[0].id;
-      } else {
-        // fallback: use first language in table
-        db.query('SELECT id FROM languages LIMIT 1', [], (err2, rows2) => {
-          if (err2 || rows2.length === 0) {
-            languageId = null;
-          } else {
-            languageId = rows2[0].id;
-          }
-          insertAgent(payload.client_id || null);
-        });
-        return;
+    const languageCode = agent.language || "en";
+    db.query(
+      "SELECT id FROM languages WHERE code = ? LIMIT 1",
+      [languageCode],
+      (err, rows) => {
+        if (err) {
+          console.error("Failed to lookup language_id:", err);
+          languageId = null;
+        } else if (rows.length > 0) {
+          languageId = rows[0].id;
+        } else {
+          // fallback: use first language in table
+          db.query("SELECT id FROM languages LIMIT 1", [], (err2, rows2) => {
+            if (err2 || rows2.length === 0) {
+              languageId = null;
+            } else {
+              languageId = rows2[0].id;
+            }
+            insertAgent(payload.client_id || null);
+          });
+          return;
+        }
+        insertAgent(payload.client_id || null);
       }
-      insertAgent(payload.client_id || null);
-    });
+    );
 
     function insertAgent(clientId) {
-      console.log('Payload received:', payload);
+      console.log("Payload received:", payload);
       // Ensure clientId is an integer or null
-      let safeClientId = clientId !== undefined && clientId !== null && clientId !== '' ? parseInt(clientId, 10) : null;
+      let safeClientId =
+        clientId !== undefined && clientId !== null && clientId !== ""
+          ? parseInt(clientId, 10)
+          : null;
       if (isNaN(safeClientId)) safeClientId = null;
-      console.log('client_id to insert:', safeClientId, typeof safeClientId);
+      console.log("client_id to insert:", safeClientId, typeof safeClientId);
       const insertValues = [
         agent.agent_id,
         safeClientId,
-        agent.name || '',
-        agent.description || '',
-        agent.first_message || '',
-        agent.system_prompt || '',
+        agent.name || "",
+        agent.description || "",
+        agent.first_message || "",
+        agent.system_prompt || "",
         languageId,
         agent.voice_id || null,
-        agent.model || '',
+        agent.model || "",
         JSON.stringify(agent.tags || []),
         JSON.stringify(agent.platform_settings || {}),
-        agent.language_code || '',
+        agent.language_code || "",
         JSON.stringify(agent.additional_languages || []),
-        agent.custom_llm_url || '',
-        agent.custom_llm_model_id || '',
-        agent.custom_llm_api_key || '',
+        agent.custom_llm_url || "",
+        agent.custom_llm_model_id || "",
+        agent.custom_llm_api_key || "",
         JSON.stringify(agent.custom_llm_headers || []),
-        agent.llm || '',
+        agent.llm || "",
         agent.temperature || null,
         // single selection: pick primary MCP server id from ElevenLabs payload if present
-        JSON.stringify(Array.isArray(agent.prompt?.mcp_server_ids) ? agent.prompt.mcp_server_ids : (agent.mcp_server_ids || [])),
+        JSON.stringify(
+          Array.isArray(agent.prompt?.mcp_server_ids)
+            ? agent.prompt.mcp_server_ids
+            : agent.mcp_server_ids || []
+        ),
         req.user.id,
-        (req.user.name || req.user.companyName || req.user.email || 'Unknown'),
-        (req.user.type === 'client' ? 'client' : 'admin')
+        req.user.name || req.user.companyName || req.user.email || "Unknown",
+        req.user.type === "client" ? "client" : "admin",
       ];
-      console.log('Insert values:', insertValues);
+      console.log("Insert values:", insertValues);
       const insertSql = `
         INSERT INTO agents (
           agent_id, client_id, name, description, first_message, system_prompt, language_id, voice_id, model, tags, platform_settings, created_at, updated_at, language_code, additional_languages, custom_llm_url, custom_llm_model_id, custom_llm_api_key, custom_llm_headers, llm, temperature, mcp_server_ids, created_by, created_by_name, created_by_type
@@ -757,25 +900,23 @@ app.post('/api/elevenlabs/create-agent', authenticateJWT, async (req, res) => {
           custom_llm_api_key=VALUES(custom_llm_api_key), custom_llm_headers=VALUES(custom_llm_headers),
           llm=VALUES(llm), temperature=VALUES(temperature), mcp_server_ids=VALUES(mcp_server_ids), created_by=VALUES(created_by), created_by_name=VALUES(created_by_name), created_by_type=VALUES(created_by_type)
       `;
-      db.query(
-        insertSql,
-        insertValues,
-        (err) => {
-          if (err) {
-            console.error('Failed to insert agent into local DB:', err);
-            // Still return success for ElevenLabs, but log error
-          }
-          res.status(200).json({ agent_id: agentId });
+      db.query(insertSql, insertValues, (err) => {
+        if (err) {
+          console.error("Failed to insert agent into local DB:", err);
+          // Still return success for ElevenLabs, but log error
         }
-      );
+        res.status(200).json({ agent_id: agentId });
+      });
     }
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", details: err.message });
   }
 });
 
 // GET /api/agents - return all agents from local DB with language name/code
-app.get('/api/agents', authenticateJWT, (req, res) => {
+app.get("/api/agents", authenticateJWT, (req, res) => {
   const sql = `
     SELECT
       a.*,
@@ -787,81 +928,117 @@ app.get('/api/agents', authenticateJWT, (req, res) => {
     LEFT JOIN admin_users au ON a.created_by = au.id
     LEFT JOIN clients cu ON a.created_by = cu.id
   `;
-  console.log('[API] /api/agents SQL:', sql);
-  const fallbackName = (req.user?.name || req.user?.companyName || req.user?.email || 'Unknown');
+  console.log("[API] /api/agents SQL:", sql);
+  const fallbackName =
+    req.user?.name || req.user?.companyName || req.user?.email || "Unknown";
   db.query(sql, [fallbackName], (err, results) => {
     if (err) {
-      console.error('[API] /api/agents ERROR:', err);
-      return res.status(500).json({ success: false, message: 'Failed to fetch agents', error: err });
+      console.error("[API] /api/agents ERROR:", err);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch agents",
+          error: err,
+        });
     }
     console.log(`[API] /api/agents returned ${results.length} agents`);
     if (results.length > 0) {
-      console.log('[API] /api/agents first agent:', results[0]);
+      console.log("[API] /api/agents first agent:", results[0]);
     }
     res.json({ success: true, data: results });
   });
 });
 
 // GET /api/agents/:id/details - Get agent details from both local DB and ElevenLabs
-app.get('/api/agents/:id/details', async (req, res) => {
+app.get("/api/agents/:id/details", async (req, res) => {
   const agentId = req.params.id;
-  db.query('SELECT * FROM agents WHERE agent_id = ?', [agentId], async (err, results) => {
-    if (err) return res.status(500).json({ error: 'DB error', details: err });
-    const localAgent = results[0] || {};
-    // Parse additional_languages if present
-    if (localAgent.additional_languages) {
-      try {
-        localAgent.additional_languages = JSON.parse(localAgent.additional_languages);
-      } catch {
-        localAgent.additional_languages = [];
+  db.query(
+    "SELECT * FROM agents WHERE agent_id = ?",
+    [agentId],
+    async (err, results) => {
+      if (err) return res.status(500).json({ error: "DB error", details: err });
+      const localAgent = results[0] || {};
+      // Parse additional_languages if present
+      if (localAgent.additional_languages) {
+        try {
+          localAgent.additional_languages = JSON.parse(
+            localAgent.additional_languages
+          );
+        } catch {
+          localAgent.additional_languages = [];
+        }
       }
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      const headers = {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+      };
+      let elevenLabsAgent = {};
+      try {
+        const elevenLabsRes = await fetch(
+          `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
+          { headers }
+        );
+        elevenLabsAgent = await elevenLabsRes.json();
+      } catch (e) {
+        elevenLabsAgent = {};
+      }
+      // Normalize MCP server info from ElevenLabs and set into localAgent for UI binding
+      try {
+        const mcpIds =
+          elevenLabsAgent?.conversation_config?.agent?.prompt?.mcp_server_ids ||
+          [];
+        localAgent.mcp_server_ids = Array.isArray(mcpIds) ? mcpIds : [];
+      } catch {}
+      res.json({ local: localAgent, elevenlabs: elevenLabsAgent });
     }
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    const headers = { 'xi-api-key': apiKey, 'Content-Type': 'application/json' };
-    let elevenLabsAgent = {};
-    try {
-      const elevenLabsRes = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, { headers });
-      elevenLabsAgent = await elevenLabsRes.json();
-    } catch (e) {
-      elevenLabsAgent = {};
-    }
-    // Normalize MCP server info from ElevenLabs and set into localAgent for UI binding
-    try {
-      const mcpIds = elevenLabsAgent?.conversation_config?.agent?.prompt?.mcp_server_ids || [];
-      localAgent.mcp_server_ids = Array.isArray(mcpIds) ? mcpIds : [];
-    } catch {}
-    res.json({ local: localAgent, elevenlabs: elevenLabsAgent });
-  });
+  );
 });
 
 // PATCH /api/agents/:id/details - Update agent details in both local DB and ElevenLabs
-app.patch('/api/agents/:id/details', async (req, res) => {
+app.patch("/api/agents/:id/details", async (req, res) => {
   const agentId = req.params.id;
   const { local, elevenlabs } = req.body;
-  console.log('[PATCH /api/agents/:id/details] Incoming payload:', JSON.stringify(req.body, null, 2));
+  console.log(
+    "[PATCH /api/agents/:id/details] Incoming payload:",
+    JSON.stringify(req.body, null, 2)
+  );
   try {
     // 1. Update local DB
-    if (local || (elevenlabs && elevenlabs.conversation_config && elevenlabs.conversation_config.agent)) {
+    if (
+      local ||
+      (elevenlabs &&
+        elevenlabs.conversation_config &&
+        elevenlabs.conversation_config.agent)
+    ) {
       const updateFields = [];
       const updateValues = [];
       if (local) {
-        Object.keys(local).filter(k => k !== 'agent_id').forEach(k => {
-          // Special handling for MCP arrays (normalize to mcp_server_ids JSON column)
-          if (k === 'mcp_server_ids' || k === 'mcp_server_id') {
-            const arr = Array.isArray(local.mcp_server_ids)
-              ? local.mcp_server_ids
-              : (local.mcp_server_id ? [local.mcp_server_id] : []);
-            updateFields.push(`mcp_server_ids = ?`);
-            updateValues.push(JSON.stringify(arr));
-            return;
-          }
-          let value = local[k];
-          if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
-            value = JSON.stringify(value);
-          }
-          updateFields.push(`${k} = ?`);
-          updateValues.push(value);
-        });
+        Object.keys(local)
+          .filter((k) => k !== "agent_id")
+          .forEach((k) => {
+            // Special handling for MCP arrays (normalize to mcp_server_ids JSON column)
+            if (k === "mcp_server_ids" || k === "mcp_server_id") {
+              const arr = Array.isArray(local.mcp_server_ids)
+                ? local.mcp_server_ids
+                : local.mcp_server_id
+                ? [local.mcp_server_id]
+                : [];
+              updateFields.push(`mcp_server_ids = ?`);
+              updateValues.push(JSON.stringify(arr));
+              return;
+            }
+            let value = local[k];
+            if (
+              Array.isArray(value) ||
+              (typeof value === "object" && value !== null)
+            ) {
+              value = JSON.stringify(value);
+            }
+            updateFields.push(`${k} = ?`);
+            updateValues.push(value);
+          });
       }
       // Persist language_code and additional_languages from ElevenLabs agent config if present
       if (elevenlabs && elevenlabs.conversation_config) {
@@ -872,27 +1049,35 @@ app.patch('/api/agents/:id/details', async (req, res) => {
         }
         // Extract additional languages from language_presets
         if (elevenlabs.conversation_config.language_presets) {
-          const additional_languages = Object.keys(elevenlabs.conversation_config.language_presets);
+          const additional_languages = Object.keys(
+            elevenlabs.conversation_config.language_presets
+          );
           if (additional_languages.length > 0) {
             updateFields.push(`additional_languages = ?`);
             updateValues.push(JSON.stringify(additional_languages));
           }
         }
         // Persist MCP server IDs as array if present in ElevenLabs response
-        const mcpIdsFromEl = elevenlabs.conversation_config?.agent?.prompt?.mcp_server_ids;
+        const mcpIdsFromEl =
+          elevenlabs.conversation_config?.agent?.prompt?.mcp_server_ids;
         if (Array.isArray(mcpIdsFromEl)) {
           updateFields.push(`mcp_server_ids = ?`);
           updateValues.push(JSON.stringify(mcpIdsFromEl));
         }
       }
       if (updateFields.length > 0) {
-        const sql = `UPDATE agents SET ${updateFields.join(', ')} WHERE agent_id = ?`;
-        console.log('[PATCH /api/agents/:id/details] SQL:', sql);
-        console.log('[PATCH /api/agents/:id/details] SQL values:', [...updateValues, agentId]);
+        const sql = `UPDATE agents SET ${updateFields.join(
+          ", "
+        )} WHERE agent_id = ?`;
+        console.log("[PATCH /api/agents/:id/details] SQL:", sql);
+        console.log("[PATCH /api/agents/:id/details] SQL values:", [
+          ...updateValues,
+          agentId,
+        ]);
         await new Promise((resolve, reject) => {
           db.query(sql, [...updateValues, agentId], (err, result) => {
             if (err) {
-              console.error('[PATCH /api/agents/:id/details] DB error:', err);
+              console.error("[PATCH /api/agents/:id/details] DB error:", err);
               return reject(err);
             }
             resolve(result);
@@ -903,257 +1088,361 @@ app.patch('/api/agents/:id/details', async (req, res) => {
     // 2. Update ElevenLabs
     if (elevenlabs) {
       const apiKey = process.env.ELEVENLABS_API_KEY;
-      const headers = { 'xi-api-key': apiKey, 'Content-Type': 'application/json' };
+      const headers = {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+      };
       const url = `https://api.elevenlabs.io/v1/convai/agents/${agentId}`;
-      console.log('[PATCH /api/agents/:id/details] PATCH to ElevenLabs:', url);
+      console.log("[PATCH /api/agents/:id/details] PATCH to ElevenLabs:", url);
       const resp = await fetch(url, {
-        method: 'PATCH',
+        method: "PATCH",
         headers,
         body: JSON.stringify(elevenlabs),
       });
       const respData = await resp.json();
-      console.log('[PATCH /api/agents/:id/details] ElevenLabs response:', resp.status, respData);
+      console.log(
+        "[PATCH /api/agents/:id/details] ElevenLabs response:",
+        resp.status,
+        respData
+      );
       if (!resp.ok) {
-        throw new Error(`Failed to update ElevenLabs: ${JSON.stringify(respData)}`);
+        throw new Error(
+          `Failed to update ElevenLabs: ${JSON.stringify(respData)}`
+        );
       }
 
-        // After ElevenLabs update, persist mcp_server_ids locally (array)
-        try {
-          const mcpIds = respData?.conversation_config?.agent?.prompt?.mcp_server_ids || elevenlabs?.conversation_config?.agent?.prompt?.mcp_server_ids || [];
-          if (Array.isArray(mcpIds)) {
-            await new Promise((resolve, reject) => {
-              db.query('UPDATE agents SET mcp_server_ids = ? WHERE agent_id = ?', [JSON.stringify(mcpIds), agentId], (err) => {
+      // After ElevenLabs update, persist mcp_server_ids locally (array)
+      try {
+        const mcpIds =
+          respData?.conversation_config?.agent?.prompt?.mcp_server_ids ||
+          elevenlabs?.conversation_config?.agent?.prompt?.mcp_server_ids ||
+          [];
+        if (Array.isArray(mcpIds)) {
+          await new Promise((resolve, reject) => {
+            db.query(
+              "UPDATE agents SET mcp_server_ids = ? WHERE agent_id = ?",
+              [JSON.stringify(mcpIds), agentId],
+              (err) => {
                 if (err) return reject(err);
                 resolve(null);
-              });
-            });
-          }
-        } catch (e) {
-          console.warn('[PATCH /api/agents/:id/details] Warning persisting mcp_server_ids:', e);
+              }
+            );
+          });
+        }
+      } catch (e) {
+        console.warn(
+          "[PATCH /api/agents/:id/details] Warning persisting mcp_server_ids:",
+          e
+        );
       }
     }
     res.json({ success: true });
   } catch (err) {
-    console.error('[PATCH /api/agents/:id/details] ERROR:', err);
-    res.status(500).json({ error: err.message || 'Failed to update agent details.' });
+    console.error("[PATCH /api/agents/:id/details] ERROR:", err);
+    res
+      .status(500)
+      .json({ error: err.message || "Failed to update agent details." });
   }
 });
 
 // PATCH /api/agents/:id/status - Update agent status
-app.patch('/api/agents/:id/status', (req, res) => {
+app.patch("/api/agents/:id/status", (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  db.query('UPDATE agents SET status = ? WHERE agent_id = ?', [status, id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-    res.json({ success: true });
-  });
+  db.query(
+    "UPDATE agents SET status = ? WHERE agent_id = ?",
+    [status, id],
+    (err, result) => {
+      if (err) return res.status(500).json({ success: false, error: err });
+      res.json({ success: true });
+    }
+  );
 });
 
 // ElevenLabs Get Agent Details Endpoint
-app.get('/api/elevenlabs/agent/:id', async (req, res) => {
+app.get("/api/elevenlabs/agent/:id", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
-    const response = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${req.params.id}`, {
-      method: 'GET',
-      headers,
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/agents/${req.params.id}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch agent', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to fetch agent", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // ElevenLabs Update Agent Details Endpoint
-app.patch('/api/elevenlabs/agent/:id', async (req, res) => {
+app.patch("/api/elevenlabs/agent/:id", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
-    const response = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${req.params.id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(req.body),
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/agents/${req.params.id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(req.body),
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to update agent', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to update agent", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // --- ElevenLabs Agent Tab Endpoints ---
 
 // Settings (Agent tab)
-app.get('/api/elevenlabs/agent/:id/settings', async (req, res) => {
+app.get("/api/elevenlabs/agent/:id/settings", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
-    const response = await fetch(`https://api.elevenlabs.io/v1/agents/${req.params.id}/settings`, {
-      method: 'GET',
-      headers,
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/agents/${req.params.id}/settings`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch agent settings', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to fetch agent settings", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
-app.patch('/api/elevenlabs/agent/:id/settings', async (req, res) => {
+app.patch("/api/elevenlabs/agent/:id/settings", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
-    const response = await fetch(`https://api.elevenlabs.io/v1/agents/${req.params.id}/widget-config`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(req.body),
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/agents/${req.params.id}/widget-config`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(req.body),
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to update widget config', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to update widget config", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Widget Config
-app.get('/api/elevenlabs/agent/:id/widget-config', async (req, res) => {
+app.get("/api/elevenlabs/agent/:id/widget-config", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
-    const response = await fetch(`https://api.elevenlabs.io/v1/agents/${req.params.id}/widget-config`, {
-      method: 'GET',
-      headers,
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/agents/${req.params.id}/widget-config`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch widget config', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to fetch widget config", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
-app.patch('/api/elevenlabs/agent/:id/widget-config', async (req, res) => {
+app.patch("/api/elevenlabs/agent/:id/widget-config", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
-    const response = await fetch(`https://api.elevenlabs.io/v1/agents/${req.params.id}/widget-config`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(req.body),
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/agents/${req.params.id}/widget-config`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(req.body),
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to update widget config', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to update widget config", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Voice Config (stub, as ElevenLabs may not support this directly)
-app.get('/api/elevenlabs/agent/:id/voice', (req, res) => {
-  res.status(200).json({ stub: true, message: 'Voice config endpoint not implemented in ElevenLabs API yet.' });
+app.get("/api/elevenlabs/agent/:id/voice", (req, res) => {
+  res
+    .status(200)
+    .json({
+      stub: true,
+      message: "Voice config endpoint not implemented in ElevenLabs API yet.",
+    });
 });
-app.patch('/api/elevenlabs/agent/:id/voice', (req, res) => {
-  res.status(501).json({ error: 'Voice config update not implemented in ElevenLabs API yet.' });
+app.patch("/api/elevenlabs/agent/:id/voice", (req, res) => {
+  res
+    .status(501)
+    .json({
+      error: "Voice config update not implemented in ElevenLabs API yet.",
+    });
 });
 
 // Security Config (stub)
-app.get('/api/elevenlabs/agent/:id/security', (req, res) => {
-  res.status(200).json({ stub: true, message: 'Security config endpoint not implemented in ElevenLabs API yet.' });
+app.get("/api/elevenlabs/agent/:id/security", (req, res) => {
+  res
+    .status(200)
+    .json({
+      stub: true,
+      message:
+        "Security config endpoint not implemented in ElevenLabs API yet.",
+    });
 });
-app.patch('/api/elevenlabs/agent/:id/security', (req, res) => {
-  res.status(501).json({ error: 'Security config update not implemented in ElevenLabs API yet.' });
+app.patch("/api/elevenlabs/agent/:id/security", (req, res) => {
+  res
+    .status(501)
+    .json({
+      error: "Security config update not implemented in ElevenLabs API yet.",
+    });
 });
 
 // Advanced Config (stub)
-app.get('/api/elevenlabs/agent/:id/advanced', (req, res) => {
-  res.status(200).json({ stub: true, message: 'Advanced config endpoint not implemented in ElevenLabs API yet.' });
+app.get("/api/elevenlabs/agent/:id/advanced", (req, res) => {
+  res
+    .status(200)
+    .json({
+      stub: true,
+      message:
+        "Advanced config endpoint not implemented in ElevenLabs API yet.",
+    });
 });
-app.patch('/api/elevenlabs/agent/:id/advanced', (req, res) => {
-  res.status(501).json({ error: 'Advanced config update not implemented in ElevenLabs API yet.' });
+app.patch("/api/elevenlabs/agent/:id/advanced", (req, res) => {
+  res
+    .status(501)
+    .json({
+      error: "Advanced config update not implemented in ElevenLabs API yet.",
+    });
 });
 
 // Analysis Config (stub)
-app.get('/api/elevenlabs/agent/:id/analysis', (req, res) => {
-  res.status(200).json({ stub: true, message: 'Analysis config endpoint not implemented in ElevenLabs API yet.' });
+app.get("/api/elevenlabs/agent/:id/analysis", (req, res) => {
+  res
+    .status(200)
+    .json({
+      stub: true,
+      message:
+        "Analysis config endpoint not implemented in ElevenLabs API yet.",
+    });
 });
-app.patch('/api/elevenlabs/agent/:id/analysis', (req, res) => {
-  res.status(501).json({ error: 'Analysis config update not implemented in ElevenLabs API yet.' });
+app.patch("/api/elevenlabs/agent/:id/analysis", (req, res) => {
+  res
+    .status(501)
+    .json({
+      error: "Analysis config update not implemented in ElevenLabs API yet.",
+    });
 });
 
 // ElevenLabs Get All Agents Endpoint
-app.get('/api/elevenlabs/agents', async (req, res) => {
+app.get("/api/elevenlabs/agents", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const headers = {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     };
     // You can pass query params for pagination/filtering if needed
-    const query = req.query ? '?' + new URLSearchParams(req.query).toString() : '';
-    const response = await fetch(`https://api.elevenlabs.io/v1/agents${query}`, {
-      method: 'GET',
-      headers,
-    });
+    const query = req.query
+      ? "?" + new URLSearchParams(req.query).toString()
+      : "";
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/agents${query}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch agents', details: data });
+      return res
+        .status(response.status)
+        .json({ error: "Failed to fetch agents", details: data });
     }
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 //GET /api/agents/:id/analysis - Get analysis criteria and data collection for an agent
-app.get('/api/agents/:id/analysis', async (req, res) => {
+app.get("/api/agents/:id/analysis", async (req, res) => {
   const agentId = req.params.id;
   db.query(
-    'SELECT name, prompt FROM agent_analysis_criteria WHERE agent_id = ?',
+    "SELECT name, prompt FROM agent_analysis_criteria WHERE agent_id = ?",
     [agentId],
     (err, criteriaRows) => {
-      if (err) return res.status(500).json({ error: 'DB error (criteria)' });
+      if (err) return res.status(500).json({ error: "DB error (criteria)" });
       db.query(
-        'SELECT data_type, identifier, description FROM agent_analysis_data_collection WHERE agent_id = ?',
+        "SELECT data_type, identifier, description FROM agent_analysis_data_collection WHERE agent_id = ?",
         [agentId],
         (err2, dataRows) => {
-          if (err2) return res.status(500).json({ error: 'DB error (data_collection)' });
+          if (err2)
+            return res
+              .status(500)
+              .json({ error: "DB error (data_collection)" });
           res.json({
             criteria: criteriaRows,
-            data_collection: dataRows
+            data_collection: dataRows,
           });
         }
       );
@@ -1162,7 +1451,7 @@ app.get('/api/agents/:id/analysis', async (req, res) => {
 });
 
 //POST /api/agents/:id/analysis - Save analysis criteria and data collection for an agent
-app.post('/api/agents/:id/analysis', async (req, res) => {
+app.post("/api/agents/:id/analysis", async (req, res) => {
   const agentId = req.params.id;
   const { criteria, data_collection } = req.body;
 
@@ -1178,7 +1467,11 @@ app.post('/api/agents/:id/analysis', async (req, res) => {
         [agentId, c.name, c.prompt],
         (err, result) => {
           if (err) {
-            console.error('[POST /api/agents/:id/analysis] Error inserting criteria:', err, c);
+            console.error(
+              "[POST /api/agents/:id/analysis] Error inserting criteria:",
+              err,
+              c
+            );
           }
         }
       );
@@ -1196,7 +1489,11 @@ app.post('/api/agents/:id/analysis', async (req, res) => {
         [agentId, d.identifier, d.type || d.data_type, d.description],
         (err, result) => {
           if (err) {
-            console.error('[POST /api/agents/:id/analysis] Error inserting data_collection:', err, d);
+            console.error(
+              "[POST /api/agents/:id/analysis] Error inserting data_collection:",
+              err,
+              d
+            );
           }
         }
       );
@@ -1211,7 +1508,9 @@ app.post('/api/agents/:id/analysis', async (req, res) => {
 app.get("/api/plans", (req, res) => {
   db.query("SELECT * FROM plans", (err, results) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch plans", error: err });
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch plans", error: err });
     }
     res.json({ success: true, data: results });
   });
@@ -1219,15 +1518,27 @@ app.get("/api/plans", (req, res) => {
 
 // Get a single plan by id
 app.get("/api/plans/:id", (req, res) => {
-  db.query("SELECT * FROM plans WHERE id = ?", [req.params.id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch plan", error: err });
+  db.query(
+    "SELECT * FROM plans WHERE id = ?",
+    [req.params.id],
+    (err, results) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to fetch plan",
+            error: err,
+          });
+      }
+      if (results.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Plan not found" });
+      }
+      res.json({ success: true, data: results[0] });
     }
-    if (results.length === 0) {
-      return res.status(404).json({ success: false, message: "Plan not found" });
-    }
-    res.json({ success: true, data: results[0] });
-  });
+  );
 });
 
 // Create a new plan
@@ -1237,15 +1548,29 @@ app.post("/api/plans", (req, res) => {
   delete plan.id;
   db.query("INSERT INTO plans SET ?", plan, (err, result) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to create plan", error: err });
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to create plan", error: err });
     }
     // Fetch and return the created plan
-    db.query("SELECT * FROM plans WHERE id = ?", [result.insertId], (err, results) => {
-      if (err) {
-        return res.status(500).json({ success: false, message: "Plan created but failed to fetch", error: err });
+    db.query(
+      "SELECT * FROM plans WHERE id = ?",
+      [result.insertId],
+      (err, results) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Plan created but failed to fetch",
+              error: err,
+            });
+        }
+        res
+          .status(201)
+          .json({ success: true, message: "Plan created", data: results[0] });
       }
-      res.status(201).json({ success: true, message: "Plan created", data: results[0] });
-    });
+    );
   });
 });
 
@@ -1258,34 +1583,97 @@ app.put("/api/plans/:id", (req, res) => {
   // First, fetch the current plan data
   db.query("SELECT * FROM plans WHERE id = ?", [planId], (err, results) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch current plan data", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch current plan data",
+          error: err,
+        });
     }
     if (results.length === 0) {
-      return res.status(404).json({ success: false, message: "Plan not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Plan not found" });
     }
 
     // Merge current data with updated fields
     const currentPlan = results[0];
     const updateFields = {
-      name: updatedPlan.name !== undefined ? updatedPlan.name : currentPlan.name,
-      description: updatedPlan.description !== undefined ? updatedPlan.description : currentPlan.description,
-      priceMonthly: updatedPlan.priceMonthly !== undefined ? updatedPlan.priceMonthly : currentPlan.priceMonthly,
-      priceAnnual: updatedPlan.priceAnnual !== undefined ? updatedPlan.priceAnnual : currentPlan.priceAnnual,
-      currency: updatedPlan.currency !== undefined ? updatedPlan.currency : currentPlan.currency,
-      durationDays: updatedPlan.durationDays !== undefined ? updatedPlan.durationDays : currentPlan.durationDays,
-      totalCallsAllowedPerMonth: updatedPlan.totalCallsAllowedPerMonth !== undefined ? updatedPlan.totalCallsAllowedPerMonth : currentPlan.totalCallsAllowedPerMonth,
-      callDurationPerCallMaxMinutes: updatedPlan.callDurationPerCallMaxMinutes !== undefined ? updatedPlan.callDurationPerCallMaxMinutes : currentPlan.callDurationPerCallMaxMinutes,
-      numberOfAgents: updatedPlan.numberOfAgents !== undefined ? updatedPlan.numberOfAgents : currentPlan.numberOfAgents,
-      agentsAllowed: updatedPlan.agentsAllowed !== undefined ? updatedPlan.agentsAllowed : currentPlan.agentsAllowed,
-      voicebotUsageCap: updatedPlan.voicebotUsageCap !== undefined ? updatedPlan.voicebotUsageCap : currentPlan.voicebotUsageCap,
-      apiAccess: updatedPlan.apiAccess !== undefined ? updatedPlan.apiAccess : currentPlan.apiAccess,
-      customAgents: updatedPlan.customAgents !== undefined ? updatedPlan.customAgents : currentPlan.customAgents,
-      reportingAnalytics: updatedPlan.reportingAnalytics !== undefined ? updatedPlan.reportingAnalytics : currentPlan.reportingAnalytics,
-      liveCallMonitor: updatedPlan.liveCallMonitor !== undefined ? updatedPlan.liveCallMonitor : currentPlan.liveCallMonitor,
-      overagesAllowed: updatedPlan.overagesAllowed !== undefined ? updatedPlan.overagesAllowed : currentPlan.overagesAllowed,
-      overageChargesPer100Calls: updatedPlan.overageChargesPer100Calls !== undefined ? updatedPlan.overageChargesPer100Calls : currentPlan.overageChargesPer100Calls,
-      trialEligible: updatedPlan.trialEligible !== undefined ? updatedPlan.trialEligible : currentPlan.trialEligible,
-      status: updatedPlan.status !== undefined ? updatedPlan.status : currentPlan.status,
+      name:
+        updatedPlan.name !== undefined ? updatedPlan.name : currentPlan.name,
+      description:
+        updatedPlan.description !== undefined
+          ? updatedPlan.description
+          : currentPlan.description,
+      priceMonthly:
+        updatedPlan.priceMonthly !== undefined
+          ? updatedPlan.priceMonthly
+          : currentPlan.priceMonthly,
+      priceAnnual:
+        updatedPlan.priceAnnual !== undefined
+          ? updatedPlan.priceAnnual
+          : currentPlan.priceAnnual,
+      currency:
+        updatedPlan.currency !== undefined
+          ? updatedPlan.currency
+          : currentPlan.currency,
+      durationDays:
+        updatedPlan.durationDays !== undefined
+          ? updatedPlan.durationDays
+          : currentPlan.durationDays,
+      totalCallsAllowedPerMonth:
+        updatedPlan.totalCallsAllowedPerMonth !== undefined
+          ? updatedPlan.totalCallsAllowedPerMonth
+          : currentPlan.totalCallsAllowedPerMonth,
+      callDurationPerCallMaxMinutes:
+        updatedPlan.callDurationPerCallMaxMinutes !== undefined
+          ? updatedPlan.callDurationPerCallMaxMinutes
+          : currentPlan.callDurationPerCallMaxMinutes,
+      numberOfAgents:
+        updatedPlan.numberOfAgents !== undefined
+          ? updatedPlan.numberOfAgents
+          : currentPlan.numberOfAgents,
+      agentsAllowed:
+        updatedPlan.agentsAllowed !== undefined
+          ? updatedPlan.agentsAllowed
+          : currentPlan.agentsAllowed,
+      voicebotUsageCap:
+        updatedPlan.voicebotUsageCap !== undefined
+          ? updatedPlan.voicebotUsageCap
+          : currentPlan.voicebotUsageCap,
+      apiAccess:
+        updatedPlan.apiAccess !== undefined
+          ? updatedPlan.apiAccess
+          : currentPlan.apiAccess,
+      customAgents:
+        updatedPlan.customAgents !== undefined
+          ? updatedPlan.customAgents
+          : currentPlan.customAgents,
+      reportingAnalytics:
+        updatedPlan.reportingAnalytics !== undefined
+          ? updatedPlan.reportingAnalytics
+          : currentPlan.reportingAnalytics,
+      liveCallMonitor:
+        updatedPlan.liveCallMonitor !== undefined
+          ? updatedPlan.liveCallMonitor
+          : currentPlan.liveCallMonitor,
+      overagesAllowed:
+        updatedPlan.overagesAllowed !== undefined
+          ? updatedPlan.overagesAllowed
+          : currentPlan.overagesAllowed,
+      overageChargesPer100Calls:
+        updatedPlan.overageChargesPer100Calls !== undefined
+          ? updatedPlan.overageChargesPer100Calls
+          : currentPlan.overageChargesPer100Calls,
+      trialEligible:
+        updatedPlan.trialEligible !== undefined
+          ? updatedPlan.trialEligible
+          : currentPlan.trialEligible,
+      status:
+        updatedPlan.status !== undefined
+          ? updatedPlan.status
+          : currentPlan.status,
     };
 
     // Update the plan in the database
@@ -1335,10 +1723,14 @@ app.put("/api/plans/:id", (req, res) => {
 app.delete("/api/plans/:id", (req, res) => {
   db.query("DELETE FROM plans WHERE id = ?", [req.params.id], (err, result) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to delete plan", error: err });
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to delete plan", error: err });
     }
     if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: "Plan not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Plan not found" });
     }
     res.json({ success: true, message: "Plan deleted" });
   });
@@ -1362,12 +1754,20 @@ app.get("/api/clients", (req, res) => {
   `;
   db.query(sql, (err, results) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch clients", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch clients",
+          error: err,
+        });
     }
 
-    const processedResults = results.map(client => ({
+    const processedResults = results.map((client) => ({
       ...client,
-      monthlyCallLimit: client.totalMonthlyLimit ? parseInt(client.totalMonthlyLimit) : 0,
+      monthlyCallLimit: client.totalMonthlyLimit
+        ? parseInt(client.totalMonthlyLimit)
+        : 0,
     }));
 
     res.json({ success: true, data: processedResults });
@@ -1391,14 +1791,24 @@ app.get("/api/clients/:id", (req, res) => {
     GROUP BY c.id
   `;
   db.query(sql, [req.params.id], (err, results) => {
-      if (err) {
-        return res.status(500).json({ success: false, message: "Failed to fetch client", error: err });
-      }
-      if (results.length === 0) {
-        return res.status(404).json({ success: false, message: "Client not found" });
-      }
+    if (err) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch client",
+          error: err,
+        });
+    }
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Client not found" });
+    }
     const row = results[0];
-    row.monthlyCallLimit = row.totalMonthlyLimit ? parseInt(row.totalMonthlyLimit) : 0;
+    row.monthlyCallLimit = row.totalMonthlyLimit
+      ? parseInt(row.totalMonthlyLimit)
+      : 0;
     res.json({ success: true, data: row });
   });
 });
@@ -1417,7 +1827,9 @@ app.post("/api/clients", async (req, res) => {
 
     // If trialMode with duration is provided and no trialEndsAt, set it now
     if (client.trialMode && client.trialDuration && !client.trialEndsAt) {
-      const ends = new Date(Date.now() + Number(client.trialDuration) * 24 * 60 * 60 * 1000);
+      const ends = new Date(
+        Date.now() + Number(client.trialDuration) * 24 * 60 * 60 * 1000
+      );
       client.trialEndsAt = ends;
     }
 
@@ -1425,16 +1837,28 @@ app.post("/api/clients", async (req, res) => {
     db.beginTransaction(async (err) => {
       if (err) {
         console.error("Error starting transaction:", err);
-        return res.status(500).json({ success: false, message: "Database error", error: err.message });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: err.message,
+          });
       }
 
       try {
         // Create the client
-    db.query("INSERT INTO clients SET ?", client, (err, result) => {
-      if (err) {
-        console.error("Failed to create client:", err);
+        db.query("INSERT INTO clients SET ?", client, (err, result) => {
+          if (err) {
+            console.error("Failed to create client:", err);
             return db.rollback(() => {
-              res.status(500).json({ success: false, message: "Failed to create client", error: err });
+              res
+                .status(500)
+                .json({
+                  success: false,
+                  message: "Failed to create client",
+                  error: err,
+                });
             });
           }
 
@@ -1443,24 +1867,36 @@ app.post("/api/clients", async (req, res) => {
           // Handle referral code if provided
           if (client.referralCode) {
             // Find sales admin by referral code from sales_admin_referral_codes table
-            db.query(`
+            db.query(
+              `
               SELECT au.id, au.name, sarc.referral_code 
               FROM admin_users au 
               JOIN sales_admin_referral_codes sarc ON au.id = sarc.admin_user_id 
               WHERE sarc.referral_code = ? AND au.status = "Active"
-            `, [client.referralCode], (err, salesResults) => {
-              if (err) {
-                console.error("Error finding sales admin by referral code:", err);
-                return db.rollback(() => {
-                  res.status(500).json({ success: false, message: "Database error", error: err.message });
-                });
-              }
+            `,
+              [client.referralCode],
+              (err, salesResults) => {
+                if (err) {
+                  console.error(
+                    "Error finding sales admin by referral code:",
+                    err
+                  );
+                  return db.rollback(() => {
+                    res
+                      .status(500)
+                      .json({
+                        success: false,
+                        message: "Database error",
+                        error: err.message,
+                      });
+                  });
+                }
 
-              if (salesResults.length > 0) {
-                const salesAdmin = salesResults[0];
-                
-                // Create referral record with all necessary fields
-                const insertReferralQuery = `
+                if (salesResults.length > 0) {
+                  const salesAdmin = salesResults[0];
+
+                  // Create referral record with all necessary fields
+                  const insertReferralQuery = `
                   INSERT INTO referrals (
                     admin_user_id, 
                     client_id, 
@@ -1472,122 +1908,205 @@ app.post("/api/clients", async (req, res) => {
                     commission_status
                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 `;
-                const referralValues = [
-                  salesAdmin.id, 
-                  clientId, 
-                  client.referralCode,
-                  'pending', // Default status
-                  client.plan_id ? 'Trial' : 'Basic', // Default plan (you can adjust this logic)
-                  1, // Default to trial (is_trial = 1)
-                  0.00, // Default revenue
-                  'pending' // Default commission status
-                ];
-                db.query(insertReferralQuery, referralValues, (err, referralResult) => {
-                  if (err) {
-                    console.error("Error creating referral:", err);
-                    return db.rollback(() => {
-                      res.status(500).json({ success: false, message: "Database error", error: err.message });
-                    });
-                  }
+                  const referralValues = [
+                    salesAdmin.id,
+                    clientId,
+                    client.referralCode,
+                    "pending", // Default status
+                    client.plan_id ? "Trial" : "Basic", // Default plan (you can adjust this logic)
+                    1, // Default to trial (is_trial = 1)
+                    0.0, // Default revenue
+                    "pending", // Default commission status
+                  ];
+                  db.query(
+                    insertReferralQuery,
+                    referralValues,
+                    (err, referralResult) => {
+                      if (err) {
+                        console.error("Error creating referral:", err);
+                        return db.rollback(() => {
+                          res
+                            .status(500)
+                            .json({
+                              success: false,
+                              message: "Database error",
+                              error: err.message,
+                            });
+                        });
+                      }
 
-                  // Note: We don't update referral counts here since we're not using sales_persons table
-                  // The counts will be calculated dynamically from the referrals table
+                      // Note: We don't update referral counts here since we're not using sales_persons table
+                      // The counts will be calculated dynamically from the referrals table
 
-                  // Commit transaction and return success
+                      // Commit transaction and return success
+                      db.commit((err) => {
+                        if (err) {
+                          console.error("Error committing transaction:", err);
+                          return db.rollback(() => {
+                            res
+                              .status(500)
+                              .json({
+                                success: false,
+                                message: "Database error",
+                                error: err.message,
+                              });
+                          });
+                        }
+
+                        // Fetch the created client
+                        db.query(
+                          "SELECT * FROM clients WHERE id = ?",
+                          [clientId],
+                          (err, results) => {
+                            if (err) {
+                              return res
+                                .status(500)
+                                .json({
+                                  success: false,
+                                  message: "Client created but failed to fetch",
+                                  error: err,
+                                });
+                            }
+                            res.status(201).json({
+                              success: true,
+                              message: "Client created with referral",
+                              data: results[0],
+                              referral: {
+                                salesAdminId: salesAdmin.id,
+                                salesAdminName: salesAdmin.name,
+                                referralCode: client.referralCode,
+                              },
+                            });
+                          }
+                        );
+                      });
+                    }
+                  );
+                } else {
+                  // No valid sales admin found, but still create client
                   db.commit((err) => {
                     if (err) {
                       console.error("Error committing transaction:", err);
                       return db.rollback(() => {
-                        res.status(500).json({ success: false, message: "Database error", error: err.message });
+                        res
+                          .status(500)
+                          .json({
+                            success: false,
+                            message: "Database error",
+                            error: err.message,
+                          });
                       });
                     }
 
                     // Fetch the created client
-                    db.query("SELECT * FROM clients WHERE id = ?", [clientId], (err, results) => {
-                      if (err) {
-                        return res.status(500).json({ success: false, message: "Client created but failed to fetch", error: err });
-                      }
-                      res.status(201).json({ 
-                        success: true, 
-                        message: "Client created with referral", 
-                        data: results[0],
-                        referral: {
-                          salesAdminId: salesAdmin.id,
-                          salesAdminName: salesAdmin.name,
-                          referralCode: client.referralCode
+                    db.query(
+                      "SELECT * FROM clients WHERE id = ?",
+                      [clientId],
+                      (err, results) => {
+                        if (err) {
+                          return res
+                            .status(500)
+                            .json({
+                              success: false,
+                              message: "Client created but failed to fetch",
+                              error: err,
+                            });
                         }
-                      });
-                    });
+                        res.status(201).json({
+                          success: true,
+                          message: "Client created (invalid referral code)",
+                          data: results[0],
+                        });
+                      }
+                    );
                   });
-                });
-              } else {
-                // No valid sales admin found, but still create client
-                db.commit((err) => {
-                  if (err) {
-                    console.error("Error committing transaction:", err);
-                    return db.rollback(() => {
-                      res.status(500).json({ success: false, message: "Database error", error: err.message });
-                    });
-                  }
-
-                  // Fetch the created client
-                  db.query("SELECT * FROM clients WHERE id = ?", [clientId], (err, results) => {
-                    if (err) {
-                      return res.status(500).json({ success: false, message: "Client created but failed to fetch", error: err });
-                    }
-                    res.status(201).json({ 
-                      success: true, 
-                      message: "Client created (invalid referral code)", 
-                      data: results[0] 
-                    });
-                  });
-                });
+                }
               }
-            });
+            );
           } else {
             // No referral code provided, just commit the transaction
             db.commit((err) => {
               if (err) {
                 console.error("Error committing transaction:", err);
                 return db.rollback(() => {
-                  res.status(500).json({ success: false, message: "Database error", error: err.message });
+                  res
+                    .status(500)
+                    .json({
+                      success: false,
+                      message: "Database error",
+                      error: err.message,
+                    });
                 });
               }
 
               // Fetch the created client
-              db.query("SELECT * FROM clients WHERE id = ?", [clientId], (err, results) => {
-        if (err) {
-          return res.status(500).json({ success: false, message: "Client created but failed to fetch", error: err });
-        }
-        res.status(201).json({ success: true, message: "Client created", data: results[0] });
-      });
+              db.query(
+                "SELECT * FROM clients WHERE id = ?",
+                [clientId],
+                (err, results) => {
+                  if (err) {
+                    return res
+                      .status(500)
+                      .json({
+                        success: false,
+                        message: "Client created but failed to fetch",
+                        error: err,
+                      });
+                  }
+                  res
+                    .status(201)
+                    .json({
+                      success: true,
+                      message: "Client created",
+                      data: results[0],
+                    });
+                }
+              );
             });
           }
         });
       } catch (error) {
         console.error("Error in client creation transaction:", error);
         return db.rollback(() => {
-          res.status(500).json({ success: false, message: "Database error", error: error.message });
+          res
+            .status(500)
+            .json({
+              success: false,
+              message: "Database error",
+              error: error.message,
+            });
         });
       }
     });
   } catch (err) {
     console.error("Error hashing password or creating client:", err);
-    res.status(500).json({ success: false, message: "Failed to create client", error: err.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to create client",
+        error: err.message,
+      });
   }
 });
 
 // Update a client
 app.put("/api/clients/:id", (req, res) => {
   const clientIncoming = req.body || {};
-  let clientId = Number.parseInt(String(req.params.id ?? ''), 10);
+  let clientId = Number.parseInt(String(req.params.id ?? ""), 10);
   if (Number.isNaN(clientId)) {
-    const fallbackId = Number.parseInt(String(clientIncoming.id ?? ''), 10);
+    const fallbackId = Number.parseInt(String(clientIncoming.id ?? ""), 10);
     if (!Number.isNaN(fallbackId)) clientId = fallbackId;
   }
   if (Number.isNaN(clientId)) {
-    console.error('[PUT /api/clients/:id] Invalid client id in params/body:', req.params.id, clientIncoming.id);
-    return res.status(400).json({ success: false, message: 'Invalid client id' });
+    console.error(
+      "[PUT /api/clients/:id] Invalid client id in params/body:",
+      req.params.id,
+      clientIncoming.id
+    );
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid client id" });
   }
 
   // Log the incoming request body for debugging
@@ -1605,17 +2124,19 @@ app.put("/api/clients/:id", (req, res) => {
 
   // If frontend updates trialMode/trialDuration without explicit trialEndsAt, recompute
   if (client.trialMode && client.trialDuration && !client.trialEndsAt) {
-    const ends = new Date(Date.now() + Number(client.trialDuration) * 24 * 60 * 60 * 1000);
+    const ends = new Date(
+      Date.now() + Number(client.trialDuration) * 24 * 60 * 60 * 1000
+    );
     client.trialEndsAt = ends;
   }
 
   // Strip computed/aggregated fields that are not columns in clients
   const blacklist = new Set([
-    'totalMonthlyLimit',
-    'planNames',
-    'monthlyCallLimit',
-    'monthlyCallsMade',
-    'totalCallsMade'
+    "totalMonthlyLimit",
+    "planNames",
+    "monthlyCallLimit",
+    "monthlyCallsMade",
+    "totalCallsMade",
   ]);
   Object.keys(client).forEach((k) => {
     if (blacklist.has(k)) delete client[k];
@@ -1624,79 +2145,140 @@ app.put("/api/clients/:id", (req, res) => {
   // Whitelist by actual table columns to avoid sending unknown keys
   db.query("SHOW COLUMNS FROM clients", (colsErr, colsRows) => {
     if (colsErr) {
-      console.error('[PUT /api/clients/:id] Failed to introspect columns:', colsErr);
-      return res.status(500).json({ success: false, message: 'Failed to update client (introspection)', error: colsErr });
+      console.error(
+        "[PUT /api/clients/:id] Failed to introspect columns:",
+        colsErr
+      );
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to update client (introspection)",
+          error: colsErr,
+        });
     }
     const allowed = new Set((colsRows || []).map((r) => r.Field));
     const filtered = {};
     Object.keys(client).forEach((k) => {
       if (allowed.has(k)) filtered[k] = client[k];
     });
-  db.query(
-    "UPDATE clients SET ? WHERE id = ?",
+    db.query(
+      "UPDATE clients SET ? WHERE id = ?",
       [filtered, clientId],
-    (err, result) => {
-      if (err) {
-        console.error("[PUT /api/clients/:id] MySQL error:", err);
-        return res.status(500).json({ success: false, message: "Failed to update client", error: err });
-      }
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: "Client not found" });
-      }
-        db.query("SELECT * FROM clients WHERE id = ?", [clientId], (err2, results) => {
-          if (err2) {
-            console.error("[PUT /api/clients/:id] MySQL error (fetch after update):", err2);
-            return res.status(500).json({ success: false, message: "Client updated but failed to fetch", error: err2 });
+      (err, result) => {
+        if (err) {
+          console.error("[PUT /api/clients/:id] MySQL error:", err);
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Failed to update client",
+              error: err,
+            });
         }
-        res.json({ success: true, message: "Client updated successfully", data: results[0] });
-      });
-    }
-  );
+        if (result.affectedRows === 0) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Client not found" });
+        }
+        db.query(
+          "SELECT * FROM clients WHERE id = ?",
+          [clientId],
+          (err2, results) => {
+            if (err2) {
+              console.error(
+                "[PUT /api/clients/:id] MySQL error (fetch after update):",
+                err2
+              );
+              return res
+                .status(500)
+                .json({
+                  success: false,
+                  message: "Client updated but failed to fetch",
+                  error: err2,
+                });
+            }
+            res.json({
+              success: true,
+              message: "Client updated successfully",
+              data: results[0],
+            });
+          }
+        );
+      }
+    );
   });
 });
 
 // Delete a client
 app.delete("/api/clients/:id", (req, res) => {
-  db.query("DELETE FROM clients WHERE id = ?", [req.params.id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: "Failed to delete client", error: err });
+  db.query(
+    "DELETE FROM clients WHERE id = ?",
+    [req.params.id],
+    (err, result) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to delete client",
+            error: err,
+          });
+      }
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Client not found" });
+      }
+      res.json({ success: true, message: "Client deleted" });
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: "Client not found" });
-    }
-    res.json({ success: true, message: "Client deleted" });
-  });
+  );
 });
 
 // --- Client Agents Analytics (calls, success rate) ---
-app.get('/api/clients/:id/agents-analytics', async (req, res) => {
+app.get("/api/clients/:id/agents-analytics", async (req, res) => {
   try {
     const clientId = req.params.id;
-    const daysParam = Number.parseInt(String(req.query.days ?? ''), 10);
-    const lastDays = Number.isNaN(daysParam) ? 30 : Math.max(1, Math.min(daysParam, 180));
+    const daysParam = Number.parseInt(String(req.query.days ?? ""), 10);
+    const lastDays = Number.isNaN(daysParam)
+      ? 30
+      : Math.max(1, Math.min(daysParam, 180));
 
-    const xiKey = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY || sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317;
+    const xiKey =
+      process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY ||
+      process.env.ELEVENLABS_API_KEY ||
+      sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317;
     if (!xiKey) {
-      return res.status(400).json({ success: false, message: 'ElevenLabs API key missing' });
+      return res
+        .status(400)
+        .json({ success: false, message: "ElevenLabs API key missing" });
     }
-    const headers = { 'xi-api-key': xiKey };
+    const headers = { "xi-api-key": xiKey };
 
     // Get agents for client
     const agents = await new Promise((resolve, reject) => {
-      db.query('SELECT agent_id, name FROM agents WHERE client_id = ? OR (created_by_type = "client" AND created_by = ?)', [clientId, clientId], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
+      db.query(
+        'SELECT agent_id, name FROM agents WHERE client_id = ? OR (created_by_type = "client" AND created_by = ?)',
+        [clientId, clientId],
+        (err, rows) => {
+          if (err) return reject(err);
+          resolve(rows || []);
+        }
+      );
     });
     let agentList = Array.isArray(agents) ? agents : [];
 
     // Fallback: include agent IDs stored on client record (elevenlabs_agent_ids)
     try {
       const clientRows = await new Promise((resolve, reject) => {
-        db.query('SELECT elevenlabs_agent_ids FROM clients WHERE id = ? LIMIT 1', [clientId], (e, r) => {
-          if (e) return reject(e);
-          resolve(r || []);
-        });
+        db.query(
+          "SELECT elevenlabs_agent_ids FROM clients WHERE id = ? LIMIT 1",
+          [clientId],
+          (e, r) => {
+            if (e) return reject(e);
+            resolve(r || []);
+          }
+        );
       });
       if (Array.isArray(clientRows) && clientRows.length > 0) {
         const raw = clientRows[0].elevenlabs_agent_ids;
@@ -1704,7 +2286,10 @@ app.get('/api/clients/:id/agents-analytics', async (req, res) => {
           try {
             const arr = JSON.parse(raw);
             if (Array.isArray(arr)) {
-              const extra = arr.map((id) => ({ agent_id: String(id), name: String(id) }));
+              const extra = arr.map((id) => ({
+                agent_id: String(id),
+                name: String(id),
+              }));
               agentList = [...agentList, ...extra];
             }
           } catch {}
@@ -1721,7 +2306,19 @@ app.get('/api/clients/:id/agents-analytics', async (req, res) => {
       return !!key;
     });
 
-    if (agentList.length === 0) return res.json({ success: true, data: { agents: [], totals: { totalCalls: 0, successCount: 0, successRate: 0, totalDurationSecs: 0 } } });
+    if (agentList.length === 0)
+      return res.json({
+        success: true,
+        data: {
+          agents: [],
+          totals: {
+            totalCalls: 0,
+            successCount: 0,
+            successRate: 0,
+            totalDurationSecs: 0,
+          },
+        },
+      });
 
     // For parity with the client Reports page, fetch ALL conversations (no date filter)
     const now = new Date();
@@ -1741,23 +2338,35 @@ app.get('/api/clients/:id/agents-analytics', async (req, res) => {
         let fetched = 0;
         let safety = 0;
         do {
-          const u = new URL('https://api.elevenlabs.io/v1/convai/conversations');
-          u.searchParams.set('agent_id', String(agentId));
-          u.searchParams.set('page_size', '100');
-          u.searchParams.set('summary_mode', 'true');
-          if (cursor) u.searchParams.set('cursor', String(cursor));
+          const u = new URL(
+            "https://api.elevenlabs.io/v1/convai/conversations"
+          );
+          u.searchParams.set("agent_id", String(agentId));
+          u.searchParams.set("page_size", "100");
+          u.searchParams.set("summary_mode", "true");
+          if (cursor) u.searchParams.set("cursor", String(cursor));
           const resp = await fetch(u.toString(), { headers });
           if (!resp.ok) break;
           const json = await resp.json();
-          const conversations = Array.isArray(json.conversations) ? json.conversations : [];
+          const conversations = Array.isArray(json.conversations)
+            ? json.conversations
+            : [];
           fetched += conversations.length;
           successCount += conversations.filter((c) => {
             const v = c.call_successful;
             const s = c.status || c.call_status;
-            const ended = c.call_ended_reason || '';
-            return v === 'success' || v === true || s === 'Completed' || /completed/i.test(String(ended));
+            const ended = c.call_ended_reason || "";
+            return (
+              v === "success" ||
+              v === true ||
+              s === "Completed" ||
+              /completed/i.test(String(ended))
+            );
           }).length;
-          totalDurationSecs += conversations.reduce((sum, c) => sum + (c.call_duration_secs || 0), 0);
+          totalDurationSecs += conversations.reduce(
+            (sum, c) => sum + (c.call_duration_secs || 0),
+            0
+          );
           cursor = json.next_cursor || json.cursor || undefined;
           safety += 1;
         } while (cursor && safety < 50);
@@ -1765,19 +2374,33 @@ app.get('/api/clients/:id/agents-analytics', async (req, res) => {
         // Fallback: try alternate endpoint if we still have zero
         if (fetched === 0) {
           try {
-            const alt = await fetch(`https://api.elevenlabs.io/v1/agents/${encodeURIComponent(agentId)}/conversations`, { headers });
+            const alt = await fetch(
+              `https://api.elevenlabs.io/v1/agents/${encodeURIComponent(
+                agentId
+              )}/conversations`,
+              { headers }
+            );
             if (alt.ok) {
               const j = await alt.json();
-              const conversations = Array.isArray(j.conversations) ? j.conversations : [];
+              const conversations = Array.isArray(j.conversations)
+                ? j.conversations
+                : [];
               fetched += conversations.length;
-              successCount += conversations.filter((c) => c.call_successful === 'success' || c.call_successful === true).length;
-              totalDurationSecs += conversations.reduce((sum, c) => sum + (c.call_duration_secs || 0), 0);
+              successCount += conversations.filter(
+                (c) =>
+                  c.call_successful === "success" || c.call_successful === true
+              ).length;
+              totalDurationSecs += conversations.reduce(
+                (sum, c) => sum + (c.call_duration_secs || 0),
+                0
+              );
             }
           } catch {}
         }
         totalCalls = fetched;
       } catch {}
-      const successRate = totalCalls > 0 ? Math.round((successCount / totalCalls) * 100) : 0;
+      const successRate =
+        totalCalls > 0 ? Math.round((successCount / totalCalls) * 100) : 0;
       perAgent.push({
         agentId,
         agentName: a.name || agentId,
@@ -1785,50 +2408,79 @@ app.get('/api/clients/:id/agents-analytics', async (req, res) => {
         successCount,
         successRate,
         totalDurationSecs,
-        avgDurationSecs: totalCalls > 0 ? Math.round(totalDurationSecs / totalCalls) : 0,
+        avgDurationSecs:
+          totalCalls > 0 ? Math.round(totalDurationSecs / totalCalls) : 0,
       });
     }
 
-    const totals = perAgent.reduce((acc, x) => {
-      acc.totalCalls += x.totalCalls;
-      acc.successCount += x.successCount;
-      acc.totalDurationSecs += x.totalDurationSecs;
-      return acc;
-    }, { totalCalls: 0, successCount: 0, totalDurationSecs: 0 });
-    totals.successRate = totals.totalCalls > 0 ? Math.round((totals.successCount / totals.totalCalls) * 100) : 0;
+    const totals = perAgent.reduce(
+      (acc, x) => {
+        acc.totalCalls += x.totalCalls;
+        acc.successCount += x.successCount;
+        acc.totalDurationSecs += x.totalDurationSecs;
+        return acc;
+      },
+      { totalCalls: 0, successCount: 0, totalDurationSecs: 0 }
+    );
+    totals.successRate =
+      totals.totalCalls > 0
+        ? Math.round((totals.successCount / totals.totalCalls) * 100)
+        : 0;
 
     res.json({ success: true, data: { agents: perAgent, totals } });
   } catch (e) {
-    res.status(500).json({ success: false, message: 'Failed to fetch agents analytics', error: String(e) });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to fetch agents analytics",
+        error: String(e),
+      });
   }
 });
 
 // Real-time usage for Manage Clients usage column
 // Returns { monthlyCalls, monthlyLimit, lifetimeCalls } filtered by client's agent IDs
-app.get('/api/clients/:id/elevenlabs-usage', async (req, res) => {
+app.get("/api/clients/:id/elevenlabs-usage", async (req, res) => {
   try {
     const clientId = req.params.id;
-    const daysParam = Number.parseInt(String(req.query.days ?? ''), 10);
-    const lastDays = Number.isNaN(daysParam) ? 30 : Math.max(1, Math.min(daysParam, 180));
+    const daysParam = Number.parseInt(String(req.query.days ?? ""), 10);
+    const lastDays = Number.isNaN(daysParam)
+      ? 30
+      : Math.max(1, Math.min(daysParam, 180));
 
-    const xiKey = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY || sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317;
-    if (!xiKey) return res.status(400).json({ success: false, message: 'ElevenLabs API key missing' });
-    const headers = { 'xi-api-key': xiKey };
+    const xiKey =
+      process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY ||
+      process.env.ELEVENLABS_API_KEY ||
+      sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317;
+    if (!xiKey)
+      return res
+        .status(400)
+        .json({ success: false, message: "ElevenLabs API key missing" });
+    const headers = { "xi-api-key": xiKey };
 
     // Resolve agents for this client (owned, created_by client, plus optional elevenlabs_agent_ids)
     const agents = await new Promise((resolve, reject) => {
-      db.query('SELECT agent_id, name FROM agents WHERE client_id = ? OR (created_by_type = "client" AND created_by = ?)', [clientId, clientId], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows || []);
-      });
+      db.query(
+        'SELECT agent_id, name FROM agents WHERE client_id = ? OR (created_by_type = "client" AND created_by = ?)',
+        [clientId, clientId],
+        (err, rows) => {
+          if (err) return reject(err);
+          resolve(rows || []);
+        }
+      );
     });
     let agentList = Array.isArray(agents) ? agents : [];
     try {
       const rows = await new Promise((resolve, reject) => {
-        db.query('SELECT elevenlabs_agent_ids FROM clients WHERE id = ? LIMIT 1', [clientId], (e, r) => {
-          if (e) return reject(e);
-          resolve(r || []);
-        });
+        db.query(
+          "SELECT elevenlabs_agent_ids FROM clients WHERE id = ? LIMIT 1",
+          [clientId],
+          (e, r) => {
+            if (e) return reject(e);
+            resolve(r || []);
+          }
+        );
       });
       if (Array.isArray(rows) && rows.length > 0) {
         const raw = rows[0].elevenlabs_agent_ids;
@@ -1838,9 +2490,15 @@ app.get('/api/clients/:id/elevenlabs-usage', async (req, res) => {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) ids = parsed.map((x) => String(x));
           } catch {
-            ids = String(raw).split(',').map((x) => x.trim()).filter(Boolean);
+            ids = String(raw)
+              .split(",")
+              .map((x) => x.trim())
+              .filter(Boolean);
           }
-          const extra = ids.map((id) => ({ agent_id: String(id), name: String(id) }));
+          const extra = ids.map((id) => ({
+            agent_id: String(id),
+            name: String(id),
+          }));
           agentList = [...agentList, ...extra];
         }
       }
@@ -1850,7 +2508,10 @@ app.get('/api/clients/:id/elevenlabs-usage', async (req, res) => {
     const agentIds = agentList
       .map((a) => String(a.agent_id))
       .filter((id) => {
-        if (!id) return false; if (seen.has(id)) return false; seen.add(id); return true;
+        if (!id) return false;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
       });
 
     const now = new Date();
@@ -1865,18 +2526,20 @@ app.get('/api/clients/:id/elevenlabs-usage', async (req, res) => {
       let cursor = undefined;
       let safety = 0;
       do {
-        const u = new URL('https://api.elevenlabs.io/v1/convai/conversations');
-        u.searchParams.set('page_size', '100');
-        u.searchParams.set('summary_mode', 'include');
-        u.searchParams.set('call_start_after_unix', String(startUnix));
-        u.searchParams.set('call_start_before_unix', String(endUnix));
-        if (cursor) u.searchParams.set('cursor', String(cursor));
+        const u = new URL("https://api.elevenlabs.io/v1/convai/conversations");
+        u.searchParams.set("page_size", "100");
+        u.searchParams.set("summary_mode", "include");
+        u.searchParams.set("call_start_after_unix", String(startUnix));
+        u.searchParams.set("call_start_before_unix", String(endUnix));
+        if (cursor) u.searchParams.set("cursor", String(cursor));
         const resp = await fetch(u.toString(), { headers });
         if (!resp.ok) break;
         const json = await resp.json();
-        const list = Array.isArray(json.conversations) ? json.conversations : [];
+        const list = Array.isArray(json.conversations)
+          ? json.conversations
+          : [];
         for (const c of list) {
-          const id = String(c.agent_id || c.agent?.id || c.agentId || '');
+          const id = String(c.agent_id || c.agent?.id || c.agentId || "");
           if (id && set.has(id)) monthlyCalls += 1;
         }
         cursor = json.next_cursor || json.cursor || undefined;
@@ -1888,18 +2551,21 @@ app.get('/api/clients/:id/elevenlabs-usage', async (req, res) => {
     let lifetimeCalls = 0;
     try {
       const set = new Set(agentIds.map(String));
-      let cursor = undefined; let safety = 0;
+      let cursor = undefined;
+      let safety = 0;
       do {
-        const u = new URL('https://api.elevenlabs.io/v1/convai/conversations');
-        u.searchParams.set('page_size', '100');
-        u.searchParams.set('summary_mode', 'include');
-        if (cursor) u.searchParams.set('cursor', String(cursor));
+        const u = new URL("https://api.elevenlabs.io/v1/convai/conversations");
+        u.searchParams.set("page_size", "100");
+        u.searchParams.set("summary_mode", "include");
+        if (cursor) u.searchParams.set("cursor", String(cursor));
         const resp = await fetch(u.toString(), { headers });
         if (!resp.ok) break;
         const json = await resp.json();
-        const list = Array.isArray(json.conversations) ? json.conversations : [];
+        const list = Array.isArray(json.conversations)
+          ? json.conversations
+          : [];
         for (const c of list) {
-          const id = String(c.agent_id || c.agent?.id || c.agentId || '');
+          const id = String(c.agent_id || c.agent?.id || c.agentId || "");
           if (id && set.has(id)) lifetimeCalls += 1;
         }
         cursor = json.next_cursor || json.cursor || undefined;
@@ -1920,75 +2586,112 @@ app.get('/api/clients/:id/elevenlabs-usage', async (req, res) => {
       `;
       db.query(sql, [clientId], (err, rows) => {
         if (err) return reject(err);
-        resolve(Array.isArray(rows) && rows.length > 0 ? rows[0] : { totalMonthlyLimit: 0 });
+        resolve(
+          Array.isArray(rows) && rows.length > 0
+            ? rows[0]
+            : { totalMonthlyLimit: 0 }
+        );
       });
     });
 
     const monthlyLimit = parseInt(limitRow.totalMonthlyLimit) || 0;
-    return res.json({ success: true, data: { monthlyCalls, monthlyLimit, lifetimeCalls } });
+    return res.json({
+      success: true,
+      data: { monthlyCalls, monthlyLimit, lifetimeCalls },
+    });
   } catch (e) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch ElevenLabs usage', error: String(e) });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to fetch ElevenLabs usage",
+        error: String(e),
+      });
   }
 });
 
 // Import email service
-const { sendEmail, testEmailConfig } = require('./emailService');
+const { sendEmail, testEmailConfig } = require("./emailService");
 
 // Send welcome email to client
 app.post("/api/clients/:id/send-welcome-email", async (req, res) => {
   try {
     const clientId = req.params.id;
-    
+
     // Get client details
-    db.query("SELECT * FROM clients WHERE id = ?", [clientId], async (err, results) => {
-      if (err) {
-        console.error("Failed to fetch client for welcome email:", err);
-        return res.status(500).json({ success: false, message: "Failed to fetch client details" });
+    db.query(
+      "SELECT * FROM clients WHERE id = ?",
+      [clientId],
+      async (err, results) => {
+        if (err) {
+          console.error("Failed to fetch client for welcome email:", err);
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Failed to fetch client details",
+            });
+        }
+
+        if (results.length === 0) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Client not found" });
+        }
+
+        const client = results[0];
+
+        try {
+          // Send actual welcome email
+          const emailResult = await sendEmail(
+            client.companyEmail,
+            "welcomeEmail",
+            client
+          );
+
+          console.log(
+            `📧 Welcome email sent successfully to: ${client.companyEmail}`
+          );
+          console.log(`📧 Company: ${client.companyName}`);
+          console.log(`📧 Contact Person: ${client.contactPersonName}`);
+          console.log(`📧 Email Message ID: ${emailResult.messageId}`);
+
+          res.json({
+            success: true,
+            message: "Welcome email sent successfully",
+            email: client.companyEmail,
+            companyName: client.companyName,
+            messageId: emailResult.messageId,
+          });
+        } catch (emailError) {
+          console.error("Failed to send welcome email:", emailError);
+
+          // Fallback: Log the email details for manual sending
+          console.log(`📧 Welcome email details (manual sending required):`);
+          console.log(`📧 To: ${client.companyEmail}`);
+          console.log(`📧 Company: ${client.companyName}`);
+          console.log(`📧 Contact Person: ${client.contactPersonName}`);
+
+          res.json({
+            success: false,
+            message:
+              "Welcome email failed to send, but client was created successfully",
+            email: client.companyEmail,
+            companyName: client.companyName,
+            error: emailError.message,
+          });
+        }
       }
-      
-      if (results.length === 0) {
-        return res.status(404).json({ success: false, message: "Client not found" });
-      }
-      
-      const client = results[0];
-      
-      try {
-        // Send actual welcome email
-        const emailResult = await sendEmail(client.companyEmail, 'welcomeEmail', client);
-        
-        console.log(`📧 Welcome email sent successfully to: ${client.companyEmail}`);
-        console.log(`📧 Company: ${client.companyName}`);
-        console.log(`📧 Contact Person: ${client.contactPersonName}`);
-        console.log(`📧 Email Message ID: ${emailResult.messageId}`);
-        
-        res.json({ 
-          success: true, 
-          message: "Welcome email sent successfully",
-          email: client.companyEmail,
-          companyName: client.companyName,
-          messageId: emailResult.messageId
-        });
-      } catch (emailError) {
-        console.error("Failed to send welcome email:", emailError);
-        
-        // Fallback: Log the email details for manual sending
-        console.log(`📧 Welcome email details (manual sending required):`);
-        console.log(`📧 To: ${client.companyEmail}`);
-        console.log(`📧 Company: ${client.companyName}`);
-        console.log(`📧 Contact Person: ${client.contactPersonName}`);
-        
-        res.json({ 
-          success: false, 
-          message: "Welcome email failed to send, but client was created successfully",
-          email: client.companyEmail,
-          companyName: client.companyName,
-          error: emailError.message
-        });
-      }
-    });
+    );
   } catch (error) {
     console.error("Error in welcome email endpoint:", error);
-    res.status(500).json({ success: false, message: "Failed to process welcome email request", error: error.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to process welcome email request",
+        error: error.message,
+      });
   }
 });
 
@@ -2012,18 +2715,27 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
   db.query(sql, [clientId], (err, results) => {
     if (err) {
       console.error("Failed to fetch client data:", err);
-      return res.status(500).json({ success: false, message: "Failed to fetch client data", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch client data",
+          error: err,
+        });
     }
     if (results.length === 0) {
-      return res.status(404).json({ success: false, message: "Client not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Client not found" });
     }
 
     const client = results[0];
     const currentDate = new Date();
     const lastReset = new Date(client.lastMonthlyReset);
 
-    const needsMonthlyReset = currentDate.getMonth() !== lastReset.getMonth() ||
-                              currentDate.getFullYear() !== lastReset.getFullYear();
+    const needsMonthlyReset =
+      currentDate.getMonth() !== lastReset.getMonth() ||
+      currentDate.getFullYear() !== lastReset.getFullYear();
 
     const monthlyLimit = parseInt(client.totalMonthlyLimit) || 0;
 
@@ -2052,10 +2764,18 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
     db.query(updateQuery, updateParams, (err2, result) => {
       if (err2) {
         console.error("Failed to increment call count:", err2);
-        return res.status(500).json({ success: false, message: "Failed to increment call count", error: err2 });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to increment call count",
+            error: err2,
+          });
       }
       if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: "Client not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Client not found" });
       }
       db.query(
         "SELECT totalCallsMade, monthlyCallsMade, monthlyCallLimit FROM clients WHERE id = ?",
@@ -2063,7 +2783,13 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
         (err3, results2) => {
           if (err3) {
             console.error("Failed to fetch updated call count:", err3);
-            return res.status(500).json({ success: false, message: "Call count incremented but failed to fetch updated count" });
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message:
+                  "Call count incremented but failed to fetch updated count",
+              });
           }
           const updatedData = results2[0];
           res.json({
@@ -2071,7 +2797,7 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
             message: "Call count incremented successfully",
             totalCallsMade: updatedData.totalCallsMade,
             monthlyCallsMade: updatedData.monthlyCallsMade,
-            monthlyCallLimit: updatedData.monthlyCallLimit
+            monthlyCallLimit: updatedData.monthlyCallLimit,
           });
         }
       );
@@ -2084,7 +2810,13 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
 app.get("/api/user-roles", (req, res) => {
   db.query("SELECT * FROM user_roles", (err, results) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch user roles", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch user roles",
+          error: err,
+        });
     }
     res.json({ success: true, data: results });
   });
@@ -2094,36 +2826,72 @@ app.get("/api/user-roles", (req, res) => {
 app.post("/api/user-roles", (req, res) => {
   const { role_name, description, permissions_summary, status } = req.body;
   if (!role_name || !description || !permissions_summary || !status) {
-    return res.status(400).json({ success: false, message: "All fields are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
   }
   db.query(
     "INSERT INTO user_roles (role_name, description, permissions_summary, status) VALUES (?, ?, ?, ?)",
     [role_name, description, permissions_summary, status],
     (err, result) => {
       if (err) {
-        return res.status(500).json({ success: false, message: "Failed to create user role", error: err });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to create user role",
+            error: err,
+          });
       }
-      db.query("SELECT * FROM user_roles WHERE id = ?", [result.insertId], (err, results) => {
-        if (err) {
-          return res.status(500).json({ success: false, message: "User role created but failed to fetch", error: err });
+      db.query(
+        "SELECT * FROM user_roles WHERE id = ?",
+        [result.insertId],
+        (err, results) => {
+          if (err) {
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message: "User role created but failed to fetch",
+                error: err,
+              });
+          }
+          res
+            .status(201)
+            .json({
+              success: true,
+              message: "User role created",
+              data: results[0],
+            });
         }
-        res.status(201).json({ success: true, message: "User role created", data: results[0] });
-      });
+      );
     }
   );
 });
 
 // Get a single user role by id
 app.get("/api/user-roles/:id", (req, res) => {
-  db.query("SELECT * FROM user_roles WHERE id = ?", [req.params.id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch user role", error: err });
+  db.query(
+    "SELECT * FROM user_roles WHERE id = ?",
+    [req.params.id],
+    (err, results) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to fetch user role",
+            error: err,
+          });
+      }
+      if (results.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User role not found" });
+      }
+      res.json({ success: true, data: results[0] });
     }
-    if (results.length === 0) {
-      return res.status(404).json({ success: false, message: "User role not found" });
-    }
-    res.json({ success: true, data: results[0] });
-  });
+  );
 });
 
 // Update a user role by id
@@ -2134,14 +2902,34 @@ app.put("/api/user-roles/:id", (req, res) => {
     [role_name, description, permissions_summary, status, req.params.id],
     (err) => {
       if (err) {
-        return res.status(500).json({ success: false, message: "Failed to update user role", error: err });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to update user role",
+            error: err,
+          });
       }
-      db.query("SELECT * FROM user_roles WHERE id = ?", [req.params.id], (err, results) => {
-        if (err) {
-          return res.status(500).json({ success: false, message: "User role updated but failed to fetch", error: err });
+      db.query(
+        "SELECT * FROM user_roles WHERE id = ?",
+        [req.params.id],
+        (err, results) => {
+          if (err) {
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message: "User role updated but failed to fetch",
+                error: err,
+              });
+          }
+          res.json({
+            success: true,
+            message: "User role updated",
+            data: results[0],
+          });
         }
-        res.json({ success: true, message: "User role updated", data: results[0] });
-      });
+      );
     }
   );
 });
@@ -2149,7 +2937,7 @@ app.put("/api/user-roles/:id", (req, res) => {
 // CRUD for client_users
 // Get all client users with role name
 app.get("/api/client-users", authenticateJWT, (req, res) => {
-  if (req.user.type === 'client') {
+  if (req.user.type === "client") {
     db.query(
       `SELECT cu.*, ur.role_name 
        FROM client_users cu 
@@ -2184,7 +2972,10 @@ app.get("/api/client-users/:id", (req, res) => {
     [req.params.id],
     (err, results) => {
       if (err) return res.status(500).json({ success: false, error: err });
-      if (results.length === 0) return res.status(404).json({ success: false, message: "User not found" });
+      if (results.length === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
       res.json({ success: true, data: results[0] });
     }
   );
@@ -2192,7 +2983,8 @@ app.get("/api/client-users/:id", (req, res) => {
 
 // Create a new client user
 app.post("/api/client-users", (req, res) => {
-  const { full_name, email, phone, role_id, status, last_login, client_id } = req.body;
+  const { full_name, email, phone, role_id, status, last_login, client_id } =
+    req.body;
   const payload = { ...req.body, client_id: Number(client_id) };
   db.query(
     "INSERT INTO client_users (full_name, email, phone, role_id, status, last_login, client_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -2216,10 +3008,20 @@ app.post("/api/client-users", (req, res) => {
 
 // Update a client user
 app.put("/api/client-users/:id", (req, res) => {
-  const { full_name, email, phone, role_id, status, last_login, client_id } = req.body;
+  const { full_name, email, phone, role_id, status, last_login, client_id } =
+    req.body;
   db.query(
     "UPDATE client_users SET full_name=?, email=?, phone=?, role_id=?, status=?, last_login=?, client_id=? WHERE id=?",
-    [full_name, email, phone, role_id, status, last_login, client_id, req.params.id],
+    [
+      full_name,
+      email,
+      phone,
+      role_id,
+      status,
+      last_login,
+      client_id,
+      req.params.id,
+    ],
     (err) => {
       if (err) return res.status(500).json({ success: false, error: err });
       db.query(
@@ -2239,11 +3041,18 @@ app.put("/api/client-users/:id", (req, res) => {
 
 // Delete a client user
 app.delete("/api/client-users/:id", (req, res) => {
-  db.query("DELETE FROM client_users WHERE id = ?", [req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "User not found" });
-    res.json({ success: true, message: "User deleted" });
-  });
+  db.query(
+    "DELETE FROM client_users WHERE id = ?",
+    [req.params.id],
+    (err, result) => {
+      if (err) return res.status(500).json({ success: false, error: err });
+      if (result.affectedRows === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      res.json({ success: true, message: "User deleted" });
+    }
+  );
 });
 
 // Reset a client user's password
@@ -2252,47 +3061,70 @@ app.post("/api/client-users/:id/reset-password", (req, res) => {
   const { oldPassword, password } = req.body;
 
   if (!password) {
-    return res.status(400).json({ success: false, message: 'New password is required' });
+    return res
+      .status(400)
+      .json({ success: false, message: "New password is required" });
   }
 
-  db.query('SELECT password FROM client_users WHERE id = ?', [userId], async (err, results) => {
-    if (err || results.length === 0) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    const hashedPassword = results[0].password;
-
-    // Only check oldPassword if both oldPassword and hashedPassword are present and non-empty
-    if (oldPassword && hashedPassword) {
-      const match = await bcrypt.compare(oldPassword, hashedPassword);
-      if (!match) {
-        return res.status(400).json({ success: false, message: 'Old password is incorrect' });
+  db.query(
+    "SELECT password FROM client_users WHERE id = ?",
+    [userId],
+    async (err, results) => {
+      if (err || results.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
       }
-    } else if (oldPassword && !hashedPassword) {
-      return res.status(400).json({ success: false, message: 'No password set for user' });
-    }
+      const hashedPassword = results[0].password;
 
-    const newHashedPassword = await bcrypt.hash(password, 10);
-    db.query('UPDATE client_users SET password = ? WHERE id = ?', [newHashedPassword, userId], (err2) => {
-      if (err2) {
-        return res.status(500).json({ success: false, message: 'Failed to update password' });
+      // Only check oldPassword if both oldPassword and hashedPassword are present and non-empty
+      if (oldPassword && hashedPassword) {
+        const match = await bcrypt.compare(oldPassword, hashedPassword);
+        if (!match) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Old password is incorrect" });
+        }
+      } else if (oldPassword && !hashedPassword) {
+        return res
+          .status(400)
+          .json({ success: false, message: "No password set for user" });
       }
-      res.json({ success: true, message: 'Password updated successfully' });
-    });
-  });
+
+      const newHashedPassword = await bcrypt.hash(password, 10);
+      db.query(
+        "UPDATE client_users SET password = ? WHERE id = ?",
+        [newHashedPassword, userId],
+        (err2) => {
+          if (err2) {
+            return res
+              .status(500)
+              .json({ success: false, message: "Failed to update password" });
+          }
+          res.json({ success: true, message: "Password updated successfully" });
+        }
+      );
+    }
+  );
 });
 
 // Activate or deactivate a client user (only updates status)
 app.put("/api/client-users/:id/status", (req, res) => {
   const { status } = req.body;
   if (!status || !["Active", "Suspended", "Pending"].includes(status)) {
-    return res.status(400).json({ success: false, message: "Invalid or missing status" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid or missing status" });
   }
   db.query(
     "UPDATE client_users SET status = ? WHERE id = ?",
     [status, req.params.id],
     (err, result) => {
       if (err) return res.status(500).json({ success: false, error: err });
-      if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "User not found" });
+      if (result.affectedRows === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
       res.json({ success: true, message: `User status updated to ${status}` });
     }
   );
@@ -2300,48 +3132,62 @@ app.put("/api/client-users/:id/status", (req, res) => {
 
 // --- Admin Roles API ---
 // GET all admin roles
-app.get('/api/admin_roles', (req, res) => {
-  db.query('SELECT * FROM admin_roles ORDER BY id DESC', (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
+app.get("/api/admin_roles", (req, res) => {
+  db.query("SELECT * FROM admin_roles ORDER BY id DESC", (err, results) => {
+    if (err)
+      return res.status(500).json({ success: false, message: err.message });
     res.json({ success: true, data: results });
   });
 });
 
 // POST new admin role
-app.post('/api/admin_roles', (req, res) => {
+app.post("/api/admin_roles", (req, res) => {
   const { name, description, permission_summary, status } = req.body;
   db.query(
-    'INSERT INTO admin_roles (name, description, permission_summary, status) VALUES (?, ?, ?, ?)',
+    "INSERT INTO admin_roles (name, description, permission_summary, status) VALUES (?, ?, ?, ?)",
     [name, description, permission_summary, status],
     (err, result) => {
-      if (err) return res.status(500).json({ success: false, message: err.message });
-      db.query('SELECT * FROM admin_roles WHERE id = ?', [result.insertId], (err2, rows) => {
-        if (err2) return res.status(500).json({ success: false, message: err2.message });
-        res.json({ success: true, data: rows[0] });
-      });
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      db.query(
+        "SELECT * FROM admin_roles WHERE id = ?",
+        [result.insertId],
+        (err2, rows) => {
+          if (err2)
+            return res
+              .status(500)
+              .json({ success: false, message: err2.message });
+          res.json({ success: true, data: rows[0] });
+        }
+      );
     }
   );
 });
 
 // PUT update an admin role
-app.put('/api/admin_roles/:id', (req, res) => {
+app.put("/api/admin_roles/:id", (req, res) => {
   const { id } = req.params;
   const { name, description, permission_summary, status } = req.body;
-  console.log('[PUT /api/admin_roles/:id] Incoming body:', req.body);
+  console.log("[PUT /api/admin_roles/:id] Incoming body:", req.body);
   db.query(
-    'UPDATE admin_roles SET name = ?, description = ?, permission_summary = ?, status = ? WHERE id = ?',
+    "UPDATE admin_roles SET name = ?, description = ?, permission_summary = ?, status = ? WHERE id = ?",
     [name, description, permission_summary, status, id],
     (err, result) => {
       if (err) {
-        console.error('[PUT /api/admin_roles/:id] MySQL error:', err);
+        console.error("[PUT /api/admin_roles/:id] MySQL error:", err);
         return res.status(500).json({ success: false, message: err.message });
       }
-      db.query('SELECT * FROM admin_roles WHERE id = ?', [id], (err2, rows) => {
+      db.query("SELECT * FROM admin_roles WHERE id = ?", [id], (err2, rows) => {
         if (err2) {
-          console.error('[PUT /api/admin_roles/:id] MySQL error (fetch after update):', err2);
-          return res.status(500).json({ success: false, message: err2.message });
+          console.error(
+            "[PUT /api/admin_roles/:id] MySQL error (fetch after update):",
+            err2
+          );
+          return res
+            .status(500)
+            .json({ success: false, message: err2.message });
         }
-        console.log('[PUT /api/admin_roles/:id] Updated role:', rows[0]);
+        console.log("[PUT /api/admin_roles/:id] Updated role:", rows[0]);
         res.json({ success: true, data: rows[0] });
       });
     }
@@ -2350,51 +3196,80 @@ app.put('/api/admin_roles/:id', (req, res) => {
 
 // Permissions: attach structured JSON to admin_roles.permission_summary and expose as array
 // GET permissions for a role
-app.get('/api/admin_roles/:id/permissions', (req, res) => {
-  db.query('SELECT permission_summary FROM admin_roles WHERE id = ?', [req.params.id], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    if (!rows || rows.length === 0) return res.status(404).json({ success: false, message: 'Role not found' });
-    const raw = rows[0].permission_summary || '';
-    let permissions = [];
-    try { permissions = JSON.parse(raw); if (!Array.isArray(permissions)) permissions = []; }
-    catch {
-      const trimmed = String(raw || '').trim();
-      if (trimmed && trimmed.toLowerCase().includes('all')) {
-        permissions = ['*'];
-      } else {
-        permissions = (trimmed || '').split(',').map(s => s.trim()).filter(Boolean);
+app.get("/api/admin_roles/:id/permissions", (req, res) => {
+  db.query(
+    "SELECT permission_summary FROM admin_roles WHERE id = ?",
+    [req.params.id],
+    (err, rows) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      if (!rows || rows.length === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "Role not found" });
+      const raw = rows[0].permission_summary || "";
+      let permissions = [];
+      try {
+        permissions = JSON.parse(raw);
+        if (!Array.isArray(permissions)) permissions = [];
+      } catch {
+        const trimmed = String(raw || "").trim();
+        if (trimmed && trimmed.toLowerCase().includes("all")) {
+          permissions = ["*"];
+        } else {
+          permissions = (trimmed || "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
       }
+      return res.json({ success: true, data: permissions });
     }
-    return res.json({ success: true, data: permissions });
-  });
+  );
 });
 
 // PUT permissions for a role
-app.put('/api/admin_roles/:id/permissions', (req, res) => {
-  const permissions = Array.isArray(req.body?.permissions) ? req.body.permissions : [];
+app.put("/api/admin_roles/:id/permissions", (req, res) => {
+  const permissions = Array.isArray(req.body?.permissions)
+    ? req.body.permissions
+    : [];
   const json = JSON.stringify(permissions);
-  db.query('UPDATE admin_roles SET permission_summary = ? WHERE id = ?', [json, req.params.id], (err) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    return res.json({ success: true, data: permissions });
-  });
+  db.query(
+    "UPDATE admin_roles SET permission_summary = ? WHERE id = ?",
+    [json, req.params.id],
+    (err) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      return res.json({ success: true, data: permissions });
+    }
+  );
 });
 
 // DELETE an admin role
-app.delete('/api/admin_roles/:id', (req, res) => {
+app.delete("/api/admin_roles/:id", (req, res) => {
   const { id } = req.params;
-  db.query('DELETE FROM admin_roles WHERE id = ?', [id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    res.json({ success: true, message: 'Role deleted successfully' });
+  db.query("DELETE FROM admin_roles WHERE id = ?", [id], (err, result) => {
+    if (err)
+      return res.status(500).json({ success: false, message: err.message });
+    res.json({ success: true, message: "Role deleted successfully" });
   });
 });
 
 // GET a single admin role by id
-app.get('/api/admin_roles/:id', (req, res) => {
-  db.query('SELECT * FROM admin_roles WHERE id = ?', [req.params.id], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    if (results.length === 0) return res.status(404).json({ success: false, message: "Role not found" });
-    res.json({ success: true, data: results[0] });
-  });
+app.get("/api/admin_roles/:id", (req, res) => {
+  db.query(
+    "SELECT * FROM admin_roles WHERE id = ?",
+    [req.params.id],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      if (results.length === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "Role not found" });
+      res.json({ success: true, data: results[0] });
+    }
+  );
 });
 
 // Assign a plan to a client (insert into assigned_plans). Supports multiple plans per client.
@@ -2409,7 +3284,7 @@ app.post("/api/assigned-plans", (req, res) => {
     discount_type,
     discount_value,
     notes,
-    auto_send_notifications
+    auto_send_notifications,
   } = req.body;
 
   const sql = `
@@ -2429,12 +3304,18 @@ app.post("/api/assigned-plans", (req, res) => {
       discount_type || null,
       discount_value || null,
       notes || null,
-      auto_send_notifications || false
+      auto_send_notifications || false,
     ],
     (err, result) => {
       if (err) {
         console.error("Failed to assign plan:", err);
-        return res.status(500).json({ success: false, message: "Failed to assign plan", error: err });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to assign plan",
+            error: err,
+          });
       }
 
       // Turn off trial mode when a plan is assigned
@@ -2445,7 +3326,9 @@ app.post("/api/assigned-plans", (req, res) => {
           if (err3) {
             console.error("Failed to turn off trial mode:", err3);
           } else {
-            console.log(`✅ Trial mode automatically turned off for client ${client_id} after plan assignment`);
+            console.log(
+              `✅ Trial mode automatically turned off for client ${client_id} after plan assignment`
+            );
           }
 
           if (auto_send_notifications) {
@@ -2455,7 +3338,7 @@ app.post("/api/assigned-plans", (req, res) => {
                FROM clients c
                JOIN plans p ON p.id = ?
                WHERE c.id = ?`,
-        [plan_id, client_id],
+              [plan_id, client_id],
               async (err4, results) => {
                 if (!err4 && results && results.length > 0) {
                   const rec = results[0];
@@ -2464,23 +3347,45 @@ app.post("/api/assigned-plans", (req, res) => {
                       companyName: rec.companyName,
                       contactPersonName: rec.contactPersonName,
                       companyEmail: rec.companyEmail,
-                      planName: rec.planName || 'Selected Plan',
-                      startDate: start_date ? new Date(start_date).toLocaleDateString() : new Date().toLocaleDateString(),
+                      planName: rec.planName || "Selected Plan",
+                      startDate: start_date
+                        ? new Date(start_date).toLocaleDateString()
+                        : new Date().toLocaleDateString(),
                       durationOverrideDays: duration_override_days,
                       discountType: discount_type,
-                      discountValue: discount_value
+                      discountValue: discount_value,
                     };
-                    await sendEmail(rec.companyEmail, 'planAssignmentEmail', planData);
-                    console.log(`📧 Plan assignment email sent to ${rec.companyEmail}`);
+                    await sendEmail(
+                      rec.companyEmail,
+                      "planAssignmentEmail",
+                      planData
+                    );
+                    console.log(
+                      `📧 Plan assignment email sent to ${rec.companyEmail}`
+                    );
                   } catch (emailError) {
-                    console.error("Failed to send plan assignment email:", emailError);
+                    console.error(
+                      "Failed to send plan assignment email:",
+                      emailError
+                    );
                   }
                 }
-                res.status(201).json({ success: true, message: "Plan assigned successfully and trial mode turned off" });
+                res
+                  .status(201)
+                  .json({
+                    success: true,
+                    message:
+                      "Plan assigned successfully and trial mode turned off",
+                  });
               }
             );
           } else {
-            res.status(201).json({ success: true, message: "Plan assigned successfully and trial mode turned off" });
+            res
+              .status(201)
+              .json({
+                success: true,
+                message: "Plan assigned successfully and trial mode turned off",
+              });
           }
         }
       );
@@ -2517,171 +3422,295 @@ app.get("/api/clients/:id/assigned-plans", (req, res) => {
   db.query(sql, [clientId], (err, results) => {
     if (err) {
       console.error("Failed to fetch assigned plans:", err);
-      return res.status(500).json({ success: false, message: "Failed to fetch assigned plans", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch assigned plans",
+          error: err,
+        });
     }
     res.json({ success: true, data: results });
   });
 });
 
 // Toggle enable/disable of a specific assigned plan for a client
-app.patch('/api/assigned-plans/:assignmentId/enable', (req, res) => {
+app.patch("/api/assigned-plans/:assignmentId/enable", (req, res) => {
   const assignmentId = req.params.assignmentId;
   const { is_enabled } = req.body;
-  const val = (is_enabled === 0 || is_enabled === false) ? 0 : 1;
-  db.query('UPDATE assigned_plans SET is_enabled = ? WHERE id = ?', [val, assignmentId], (err, result) => {
-    if (err) {
-      // If column missing, create it on the fly and retry once
-      if (String(err.code) === 'ER_BAD_FIELD_ERROR') {
-        db.query("ALTER TABLE assigned_plans ADD COLUMN IF NOT EXISTS is_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER auto_send_notifications", (altErr) => {
-          if (altErr) {
-            console.error('Failed to add assigned_plans.is_enabled column:', altErr);
-            return res.status(500).json({ success: false, message: 'Failed to add is_enabled column', error: altErr });
-          }
-          db.query('UPDATE assigned_plans SET is_enabled = ? WHERE id = ?', [val, assignmentId], (retryErr, retryResult) => {
-            if (retryErr) {
-              console.error('Retry failed updating is_enabled:', retryErr);
-              return res.status(500).json({ success: false, message: 'Failed to update plan state after migration', error: retryErr });
+  const val = is_enabled === 0 || is_enabled === false ? 0 : 1;
+  db.query(
+    "UPDATE assigned_plans SET is_enabled = ? WHERE id = ?",
+    [val, assignmentId],
+    (err, result) => {
+      if (err) {
+        // If column missing, create it on the fly and retry once
+        if (String(err.code) === "ER_BAD_FIELD_ERROR") {
+          db.query(
+            "ALTER TABLE assigned_plans ADD COLUMN IF NOT EXISTS is_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER auto_send_notifications",
+            (altErr) => {
+              if (altErr) {
+                console.error(
+                  "Failed to add assigned_plans.is_enabled column:",
+                  altErr
+                );
+                return res
+                  .status(500)
+                  .json({
+                    success: false,
+                    message: "Failed to add is_enabled column",
+                    error: altErr,
+                  });
+              }
+              db.query(
+                "UPDATE assigned_plans SET is_enabled = ? WHERE id = ?",
+                [val, assignmentId],
+                (retryErr, retryResult) => {
+                  if (retryErr) {
+                    console.error(
+                      "Retry failed updating is_enabled:",
+                      retryErr
+                    );
+                    return res
+                      .status(500)
+                      .json({
+                        success: false,
+                        message: "Failed to update plan state after migration",
+                        error: retryErr,
+                      });
+                  }
+                  if (retryResult.affectedRows === 0) {
+                    return res
+                      .status(404)
+                      .json({
+                        success: false,
+                        message: "Assigned plan not found",
+                      });
+                  }
+                  return res.json({ success: true });
+                }
+              );
             }
-            if (retryResult.affectedRows === 0) {
-              return res.status(404).json({ success: false, message: 'Assigned plan not found' });
-            }
-            return res.json({ success: true });
+          );
+          return;
+        }
+        console.error("Failed to update assigned plan enable state:", err);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to update plan state",
+            error: err,
           });
-        });
-        return;
       }
-      console.error('Failed to update assigned plan enable state:', err);
-      return res.status(500).json({ success: false, message: 'Failed to update plan state', error: err });
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Assigned plan not found" });
+      }
+      res.json({ success: true });
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Assigned plan not found' });
-    }
-    res.json({ success: true });
-  });
+  );
 });
 
 // Delete a specific assigned plan
 app.delete("/api/assigned-plans/:assignmentId", (req, res) => {
   const assignmentId = req.params.assignmentId;
-  db.query("DELETE FROM assigned_plans WHERE id = ?", [assignmentId], (err, result) => {
-    if (err) {
-      console.error("Failed to delete assigned plan:", err);
-      return res.status(500).json({ success: false, message: "Failed to delete assigned plan", error: err });
+  db.query(
+    "DELETE FROM assigned_plans WHERE id = ?",
+    [assignmentId],
+    (err, result) => {
+      if (err) {
+        console.error("Failed to delete assigned plan:", err);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to delete assigned plan",
+            error: err,
+          });
+      }
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Assigned plan not found" });
+      }
+      res.json({ success: true, message: "Assigned plan removed" });
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: "Assigned plan not found" });
-    }
-    res.json({ success: true, message: "Assigned plan removed" });
-  });
+  );
 });
 
 // --- Admin Users API ---
 // Get all admin users
-app.get('/api/admin_users', (req, res) => {
-  db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users ORDER BY id DESC', (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    res.json({ success: true, data: results });
-  });
+app.get("/api/admin_users", (req, res) => {
+  db.query(
+    "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users ORDER BY id DESC",
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      res.json({ success: true, data: results });
+    }
+  );
 });
 
 // Get current admin user's profile
-app.get('/api/admin_users/me', authenticateJWT, async (req, res) => {
-  console.log('Getting current user profile for:', req.user);
+app.get("/api/admin_users/me", authenticateJWT, async (req, res) => {
+  console.log("Getting current user profile for:", req.user);
 
   // If user is a client admin
-  if (req.user.type === 'client') {
-    db.query('SELECT * FROM clients WHERE id = ?', [req.user.id], (err, results) => {
-      if (err) {
-        console.error('Error fetching client profile:', err);
-        return res.status(500).json({ success: false, message: 'DB error', error: err });
-      }
-      if (!results.length) {
-        console.error('Client not found:', req.user.id);
-        return res.status(404).json({ success: false, message: 'Client not found' });
-      }
-      const client = results[0];
-      return res.json({ 
-        success: true, 
-        data: {
-          id: client.id,
-          email: client.companyEmail,
-          name: client.companyName,
-          role: 'client_admin',
-          type: 'client',
-          companyName: client.companyName,
-          avatar_url: client.avatar_url || '',
-          bio: client.bio || ''
+  if (req.user.type === "client") {
+    db.query(
+      "SELECT * FROM clients WHERE id = ?",
+      [req.user.id],
+      (err, results) => {
+        if (err) {
+          console.error("Error fetching client profile:", err);
+          return res
+            .status(500)
+            .json({ success: false, message: "DB error", error: err });
         }
-      });
-    });
+        if (!results.length) {
+          console.error("Client not found:", req.user.id);
+          return res
+            .status(404)
+            .json({ success: false, message: "Client not found" });
+        }
+        const client = results[0];
+        return res.json({
+          success: true,
+          data: {
+            id: client.id,
+            email: client.companyEmail,
+            name: client.companyName,
+            role: "client_admin",
+            type: "client",
+            companyName: client.companyName,
+            avatar_url: client.avatar_url || "",
+            bio: client.bio || "",
+          },
+        });
+      }
+    );
     return;
   }
 
   // If user is an admin
-  db.query('SELECT * FROM admin_users WHERE id = ?', [req.user.id], async (err, results) => {
-    if (err) {
-      console.error('Error fetching admin profile:', err);
-      return res.status(500).json({ success: false, message: 'DB error', error: err });
-    }
-    if (!results.length) {
-      console.error('Admin not found:', req.user.id);
-      return res.status(404).json({ success: false, message: 'Admin user not found' });
-    }
-    const admin = results[0];
-    let permissions = [];
-    try {
-      const roleRows = await new Promise((resolve, reject) => {
-        db.query('SELECT permission_summary FROM admin_roles WHERE name = ? LIMIT 1', [admin.roleName], (e, r) => {
-          if (e) return reject(e); resolve(r || []);
-        });
-      });
-      const raw = roleRows?.[0]?.permission_summary || '';
-      try { permissions = JSON.parse(raw); if (!Array.isArray(permissions)) permissions = []; }
-      catch {
-        const trimmed = String(raw || '').trim();
-        if (trimmed && trimmed.toLowerCase().includes('all')) {
-          permissions = ['*'];
-        } else {
-          permissions = (trimmed || '').split(',').map(s => s.trim()).filter(Boolean);
-        }
+  db.query(
+    "SELECT * FROM admin_users WHERE id = ?",
+    [req.user.id],
+    async (err, results) => {
+      if (err) {
+        console.error("Error fetching admin profile:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "DB error", error: err });
       }
-    } catch {}
-    res.json({ success: true, data: { ...admin, permissions } });
-  });
+      if (!results.length) {
+        console.error("Admin not found:", req.user.id);
+        return res
+          .status(404)
+          .json({ success: false, message: "Admin user not found" });
+      }
+      const admin = results[0];
+      let permissions = [];
+      try {
+        const roleRows = await new Promise((resolve, reject) => {
+          db.query(
+            "SELECT permission_summary FROM admin_roles WHERE name = ? LIMIT 1",
+            [admin.roleName],
+            (e, r) => {
+              if (e) return reject(e);
+              resolve(r || []);
+            }
+          );
+        });
+        const raw = roleRows?.[0]?.permission_summary || "";
+        try {
+          permissions = JSON.parse(raw);
+          if (!Array.isArray(permissions)) permissions = [];
+        } catch {
+          const trimmed = String(raw || "").trim();
+          if (trimmed && trimmed.toLowerCase().includes("all")) {
+            permissions = ["*"];
+          } else {
+            permissions = (trimmed || "")
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+          }
+        }
+      } catch {}
+      res.json({ success: true, data: { ...admin, permissions } });
+    }
+  );
 });
 
 // Get a single admin user by id
-app.get('/api/admin_users/:id', (req, res) => {
-  db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', [req.params.id], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    if (results.length === 0) return res.status(404).json({ success: false, message: 'Admin user not found' });
-    res.json({ success: true, data: results[0] });
-  });
+app.get("/api/admin_users/:id", (req, res) => {
+  db.query(
+    "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?",
+    [req.params.id],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      if (results.length === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "Admin user not found" });
+      res.json({ success: true, data: results[0] });
+    }
+  );
 });
 
 // Create a new admin user
-app.post('/api/admin_users', async (req, res) => {
+app.post("/api/admin_users", async (req, res) => {
   try {
-    const { name, email, roleName, password, lastLogin, status, referral_code } = req.body;
+    const {
+      name,
+      email,
+      roleName,
+      password,
+      lastLogin,
+      status,
+      referral_code,
+    } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     db.query(
-      'INSERT INTO admin_users (name, email, roleName, password, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?)',
+      "INSERT INTO admin_users (name, email, roleName, password, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?)",
       [name, email, roleName, hashedPassword, lastLogin, status],
       (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: err.message });
+        if (err)
+          return res.status(500).json({ success: false, message: err.message });
 
         const newUserId = result.insertId;
-        const normalizedRole = String(roleName || '').toLowerCase().replace(/_/g, ' ');
-        if (normalizedRole === 'sales admin') {
-          const code = referral_code && String(referral_code).trim().length > 0 ? referral_code.trim().toUpperCase() : null;
+        const normalizedRole = String(roleName || "")
+          .toLowerCase()
+          .replace(/_/g, " ");
+        if (normalizedRole === "sales admin") {
+          const code =
+            referral_code && String(referral_code).trim().length > 0
+              ? referral_code.trim().toUpperCase()
+              : null;
           const ensureCode = (finalCode) => {
-            const insertMap = 'INSERT INTO sales_admin_referral_codes (admin_user_id, referral_code) VALUES (?, ?) ON DUPLICATE KEY UPDATE referral_code = VALUES(referral_code)';
+            const insertMap =
+              "INSERT INTO sales_admin_referral_codes (admin_user_id, referral_code) VALUES (?, ?) ON DUPLICATE KEY UPDATE referral_code = VALUES(referral_code)";
             db.query(insertMap, [newUserId, finalCode], (mErr) => {
-              if (mErr) console.error('Failed to upsert sales admin referral code:', mErr);
-              db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', [newUserId], (err2, rows) => {
-                if (err2) return res.status(500).json({ success: false, message: err2.message });
-                res.status(201).json({ success: true, data: rows[0] });
-              });
+              if (mErr)
+                console.error(
+                  "Failed to upsert sales admin referral code:",
+                  mErr
+                );
+              db.query(
+                "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?",
+                [newUserId],
+                (err2, rows) => {
+                  if (err2)
+                    return res
+                      .status(500)
+                      .json({ success: false, message: err2.message });
+                  res.status(201).json({ success: true, data: rows[0] });
+                }
+              );
             });
           };
 
@@ -2689,26 +3718,45 @@ app.post('/api/admin_users', async (req, res) => {
             ensureCode(code);
           } else {
             // Auto-generate unique 8-char code
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            const gen = () => Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const gen = () =>
+              Array.from(
+                { length: 8 },
+                () => chars[Math.floor(Math.random() * chars.length)]
+              ).join("");
             const tryGen = (attempts = 0) => {
               const candidate = gen();
-              db.query('SELECT id FROM sales_admin_referral_codes WHERE referral_code = ?', [candidate], (chkErr, rows) => {
-                if (chkErr) {
-                  console.error('Failed checking referral code uniqueness:', chkErr);
-                  return ensureCode(candidate);
+              db.query(
+                "SELECT id FROM sales_admin_referral_codes WHERE referral_code = ?",
+                [candidate],
+                (chkErr, rows) => {
+                  if (chkErr) {
+                    console.error(
+                      "Failed checking referral code uniqueness:",
+                      chkErr
+                    );
+                    return ensureCode(candidate);
+                  }
+                  if (rows && rows.length > 0 && attempts < 10)
+                    return tryGen(attempts + 1);
+                  ensureCode(candidate);
                 }
-                if (rows && rows.length > 0 && attempts < 10) return tryGen(attempts + 1);
-                ensureCode(candidate);
-              });
+              );
             };
             tryGen();
           }
         } else {
-          db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', [newUserId], (err2, rows) => {
-            if (err2) return res.status(500).json({ success: false, message: err2.message });
-            res.status(201).json({ success: true, data: rows[0] });
-          });
+          db.query(
+            "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?",
+            [newUserId],
+            (err2, rows) => {
+              if (err2)
+                return res
+                  .status(500)
+                  .json({ success: false, message: err2.message });
+              res.status(201).json({ success: true, data: rows[0] });
+            }
+          );
         }
       }
     );
@@ -2718,45 +3766,105 @@ app.post('/api/admin_users', async (req, res) => {
 });
 
 // Update an admin user
-app.put('/api/admin_users/:id', async (req, res) => {
+app.put("/api/admin_users/:id", async (req, res) => {
   try {
-    const { name, email, roleName, password, lastLogin, status, referral_code } = req.body;
-    console.log('[PUT /api/admin_users/:id] Incoming body:', req.body);
-    let updateFields = [name, email, roleName, lastLogin, status, req.params.id];
-    let query = 'UPDATE admin_users SET name = ?, email = ?, roleName = ?, lastLogin = ?, status = ? WHERE id = ?';
+    const {
+      name,
+      email,
+      roleName,
+      password,
+      lastLogin,
+      status,
+      referral_code,
+    } = req.body;
+    console.log("[PUT /api/admin_users/:id] Incoming body:", req.body);
+    let updateFields = [
+      name,
+      email,
+      roleName,
+      lastLogin,
+      status,
+      req.params.id,
+    ];
+    let query =
+      "UPDATE admin_users SET name = ?, email = ?, roleName = ?, lastLogin = ?, status = ? WHERE id = ?";
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      query = 'UPDATE admin_users SET name = ?, email = ?, roleName = ?, password = ?, lastLogin = ?, status = ? WHERE id = ?';
-      updateFields = [name, email, roleName, hashedPassword, lastLogin, status, req.params.id];
+      query =
+        "UPDATE admin_users SET name = ?, email = ?, roleName = ?, password = ?, lastLogin = ?, status = ? WHERE id = ?";
+      updateFields = [
+        name,
+        email,
+        roleName,
+        hashedPassword,
+        lastLogin,
+        status,
+        req.params.id,
+      ];
     }
     db.query(query, updateFields, (err) => {
-      if (err) return res.status(500).json({ success: false, message: err.message });
-      const normalizedRole = String(roleName || '').toLowerCase().replace(/_/g, ' ');
-      if (normalizedRole === 'sales admin') {
-        const code = referral_code && String(referral_code).trim().length > 0 ? referral_code.trim().toUpperCase() : null;
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      const normalizedRole = String(roleName || "")
+        .toLowerCase()
+        .replace(/_/g, " ");
+      if (normalizedRole === "sales admin") {
+        const code =
+          referral_code && String(referral_code).trim().length > 0
+            ? referral_code.trim().toUpperCase()
+            : null;
         if (code) {
-          const upsert = 'INSERT INTO sales_admin_referral_codes (admin_user_id, referral_code) VALUES (?, ?) ON DUPLICATE KEY UPDATE referral_code = VALUES(referral_code)';
+          const upsert =
+            "INSERT INTO sales_admin_referral_codes (admin_user_id, referral_code) VALUES (?, ?) ON DUPLICATE KEY UPDATE referral_code = VALUES(referral_code)";
           db.query(upsert, [req.params.id, code], (mErr) => {
-            if (mErr) console.error('Failed to upsert sales admin referral code:', mErr);
-            db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', [req.params.id], (err2, rows) => {
-              if (err2) return res.status(500).json({ success: false, message: err2.message });
-              console.log('[PUT /api/admin_users/:id] Updated user:', rows[0]);
-              res.json({ success: true, data: rows[0] });
-            });
+            if (mErr)
+              console.error(
+                "Failed to upsert sales admin referral code:",
+                mErr
+              );
+            db.query(
+              "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?",
+              [req.params.id],
+              (err2, rows) => {
+                if (err2)
+                  return res
+                    .status(500)
+                    .json({ success: false, message: err2.message });
+                console.log(
+                  "[PUT /api/admin_users/:id] Updated user:",
+                  rows[0]
+                );
+                res.json({ success: true, data: rows[0] });
+              }
+            );
           });
         } else {
-          db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', [req.params.id], (err2, rows) => {
-            if (err2) return res.status(500).json({ success: false, message: err2.message });
-            console.log('[PUT /api/admin_users/:id] Updated user:', rows[0]);
-            res.json({ success: true, data: rows[0] });
-          });
+          db.query(
+            "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?",
+            [req.params.id],
+            (err2, rows) => {
+              if (err2)
+                return res
+                  .status(500)
+                  .json({ success: false, message: err2.message });
+              console.log("[PUT /api/admin_users/:id] Updated user:", rows[0]);
+              res.json({ success: true, data: rows[0] });
+            }
+          );
         }
       } else {
-        db.query('SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', [req.params.id], (err2, rows) => {
-          if (err2) return res.status(500).json({ success: false, message: err2.message });
-          console.log('[PUT /api/admin_users/:id] Updated user:', rows[0]);
-          res.json({ success: true, data: rows[0] });
-        });
+        db.query(
+          "SELECT id, name, email, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?",
+          [req.params.id],
+          (err2, rows) => {
+            if (err2)
+              return res
+                .status(500)
+                .json({ success: false, message: err2.message });
+            console.log("[PUT /api/admin_users/:id] Updated user:", rows[0]);
+            res.json({ success: true, data: rows[0] });
+          }
+        );
       }
     });
   } catch (err) {
@@ -2765,93 +3873,148 @@ app.put('/api/admin_users/:id', async (req, res) => {
 });
 
 // Delete an admin user
-app.delete('/api/admin_users/:id', (req, res) => {
-  db.query('DELETE FROM admin_users WHERE id = ?', [req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Admin user not found' });
-    res.json({ success: true, message: 'Admin user deleted successfully' });
-  });
+app.delete("/api/admin_users/:id", (req, res) => {
+  db.query(
+    "DELETE FROM admin_users WHERE id = ?",
+    [req.params.id],
+    (err, result) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      if (result.affectedRows === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "Admin user not found" });
+      res.json({ success: true, message: "Admin user deleted successfully" });
+    }
+  );
 });
 
 // Force logout an admin user
-app.post('/api/admin_users/:id/force-logout', (req, res) => {
+app.post("/api/admin_users/:id/force-logout", (req, res) => {
   // Implement session/token invalidation here if needed
-  res.json({ success: true, message: 'User has been forced to log out.' });
+  res.json({ success: true, message: "User has been forced to log out." });
 });
 
 // Reset an admin user's password
-app.post('/api/admin_users/:id/reset-password', (req, res) => {
+app.post("/api/admin_users/:id/reset-password", (req, res) => {
   const userId = req.params.id;
   const { oldPassword, password } = req.body;
 
   if (!password) {
-    return res.status(400).json({ success: false, message: 'New password is required' });
+    return res
+      .status(400)
+      .json({ success: false, message: "New password is required" });
   }
 
-  db.query('SELECT password FROM admin_users WHERE id = ?', [userId], async (err, results) => {
-    if (err || results.length === 0) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    const hashedPassword = results[0].password;
+  db.query(
+    "SELECT password FROM admin_users WHERE id = ?",
+    [userId],
+    async (err, results) => {
+      if (err || results.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+      const hashedPassword = results[0].password;
 
-    // Only check oldPassword if provided
-    if (oldPassword) {
-      if (!hashedPassword) {
-        return res.status(400).json({ success: false, message: 'No password set for user' });
+      // Only check oldPassword if provided
+      if (oldPassword) {
+        if (!hashedPassword) {
+          return res
+            .status(400)
+            .json({ success: false, message: "No password set for user" });
+        }
+        const match = await bcrypt.compare(oldPassword, hashedPassword);
+        if (!match) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Old password is incorrect" });
+        }
       }
-      const match = await bcrypt.compare(oldPassword, hashedPassword);
-      if (!match) {
-        return res.status(400).json({ success: false, message: 'Old password is incorrect' });
-      }
-    }
 
-    const newHashedPassword = await bcrypt.hash(password, 10);
-    db.query('UPDATE admin_users SET password = ? WHERE id = ?', [newHashedPassword, userId], (err2) => {
-      if (err2) {
-        return res.status(500).json({ success: false, message: 'Failed to update password' });
-      }
-      res.json({ success: true, message: 'Password updated successfully' });
-    });
-  });
+      const newHashedPassword = await bcrypt.hash(password, 10);
+      db.query(
+        "UPDATE admin_users SET password = ? WHERE id = ?",
+        [newHashedPassword, userId],
+        (err2) => {
+          if (err2) {
+            return res
+              .status(500)
+              .json({ success: false, message: "Failed to update password" });
+          }
+          res.json({ success: true, message: "Password updated successfully" });
+        }
+      );
+    }
+  );
 });
 
 // Update current admin user's profile
-app.patch('/api/admin_users/me', authenticateJWT, (req, res) => {
+app.patch("/api/admin_users/me", authenticateJWT, (req, res) => {
   const { name, avatar_url, bio } = req.body;
-  db.query('UPDATE admin_users SET name = ?, avatar_url = ?, bio = ? WHERE id = ?', [name, avatar_url, bio, req.user.id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: 'DB error', error: err });
-    res.json({ success: true });
-  });
+  db.query(
+    "UPDATE admin_users SET name = ?, avatar_url = ?, bio = ? WHERE id = ?",
+    [name, avatar_url, bio, req.user.id],
+    (err, result) => {
+      if (err)
+        return res
+          .status(500)
+          .json({ success: false, message: "DB error", error: err });
+      res.json({ success: true });
+    }
+  );
 });
 
 // Upload profile picture
-app.post('/api/admin_users/me/avatar_url', authenticateJWT, upload.single('profile_picture'), (req, res) => {
-  const userId = req.user.id;
-  if (!userId) return res.status(401).json({ success: false, message: 'Missing user ID' });
-  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
-  const filePath = `/uploads/${req.file.filename}`;
-  db.query('UPDATE admin_users SET avatar_url = ? WHERE id = ?', [filePath, userId], (err) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    res.json({ success: true, avatar_url: filePath });
-  });
-});
+app.post(
+  "/api/admin_users/me/avatar_url",
+  authenticateJWT,
+  upload.single("profile_picture"),
+  (req, res) => {
+    const userId = req.user.id;
+    if (!userId)
+      return res
+        .status(401)
+        .json({ success: false, message: "Missing user ID" });
+    if (!req.file)
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    const filePath = `/uploads/${req.file.filename}`;
+    db.query(
+      "UPDATE admin_users SET avatar_url = ? WHERE id = ?",
+      [filePath, userId],
+      (err) => {
+        if (err)
+          return res.status(500).json({ success: false, message: err.message });
+        res.json({ success: true, avatar_url: filePath });
+      }
+    );
+  }
+);
 
 // Delete profile picture
-app.delete('/api/admin_users/me/avatar_url', authenticateJWT, (req, res) => {
+app.delete("/api/admin_users/me/avatar_url", authenticateJWT, (req, res) => {
   const userId = req.user.id;
-  if (!userId) return res.status(401).json({ success: false, message: 'Missing user ID' });
-  db.query('UPDATE admin_users SET avatar_url = NULL WHERE id = ?', [userId], (err) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    res.json({ success: true });
-  });
+  if (!userId)
+    return res.status(401).json({ success: false, message: "Missing user ID" });
+  db.query(
+    "UPDATE admin_users SET avatar_url = NULL WHERE id = ?",
+    [userId],
+    (err) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      res.json({ success: true });
+    }
+  );
 });
 
 // ===== SALES PERSONS API ENDPOINTS =====
 
 // Get all sales persons (admin users with 'sales admin' role), joined with profiles and referral counts
-app.get('/api/sales-persons', authenticateJWT, (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+app.get("/api/sales-persons", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
 
   const query = `
@@ -2885,7 +4048,7 @@ app.get('/api/sales-persons', authenticateJWT, (req, res) => {
 
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Error fetching sales persons (primary query):', err);
+      console.error("Error fetching sales persons (primary query):", err);
       // Fallback if sales_persons or referrals table doesn't exist or schema differs
       const fallbackQuery = `
         SELECT 
@@ -2910,8 +4073,17 @@ app.get('/api/sales-persons', authenticateJWT, (req, res) => {
 
       return db.query(fallbackQuery, (fbErr, fbRows) => {
         if (fbErr) {
-          console.error('Error fetching sales persons (fallback query):', fbErr);
-          return res.status(500).json({ success: false, message: 'Database error', error: fbErr.sqlMessage || fbErr.message });
+          console.error(
+            "Error fetching sales persons (fallback query):",
+            fbErr
+          );
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Database error",
+              error: fbErr.sqlMessage || fbErr.message,
+            });
         }
         return res.json({ success: true, data: fbRows });
       });
@@ -2921,21 +4093,23 @@ app.get('/api/sales-persons', authenticateJWT, (req, res) => {
 });
 
 // Create a new sales admin referral code
-app.post('/api/sales-persons', authenticateJWT, async (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+app.post("/api/sales-persons", authenticateJWT, async (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
 
   const { name, email, phone } = req.body;
 
   if (!name || !email) {
-    return res.status(400).json({ success: false, message: 'Name and email are required' });
+    return res
+      .status(400)
+      .json({ success: false, message: "Name and email are required" });
   }
 
   // Generate unique referral code
   const generateReferralCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
     for (let i = 0; i < 8; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -2943,149 +4117,255 @@ app.post('/api/sales-persons', authenticateJWT, async (req, res) => {
   };
 
   // Check if email already exists in admin_users
-  db.query('SELECT id FROM admin_users WHERE email = ?', [email], (err, results) => {
-    if (err) {
-      console.error('Error checking email uniqueness:', err);
-      return res.status(500).json({ success: false, message: 'Database error' });
-    }
-    
-    if (results.length > 0) {
-      return res.status(400).json({ success: false, message: 'Email already exists' });
-    }
+  db.query(
+    "SELECT id FROM admin_users WHERE email = ?",
+    [email],
+    (err, results) => {
+      if (err) {
+        console.error("Error checking email uniqueness:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Database error" });
+      }
 
-    // Generate unique referral code
-    let referralCode = generateReferralCode();
-    let attempts = 0;
-    const maxAttempts = 10;
+      if (results.length > 0) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Email already exists" });
+      }
 
-    const checkAndCreate = () => {
-      db.query('SELECT id FROM sales_admin_referral_codes WHERE referral_code = ?', [referralCode], (err, results) => {
-        if (err) {
-          console.error('Error checking referral code uniqueness:', err);
-          return res.status(500).json({ success: false, message: 'Database error' });
-        }
-        
-        if (results.length > 0) {
-          attempts++;
-          if (attempts >= maxAttempts) {
-            return res.status(500).json({ success: false, message: 'Failed to generate unique referral code' });
-          }
-          referralCode = generateReferralCode();
-          checkAndCreate();
-        } else {
-          // First create the admin user
-          const createAdminQuery = 'INSERT INTO admin_users (name, email, phone, roleName, status, password) VALUES (?, ?, ?, ?, ?, ?)';
-          bcryptjs.hash('defaultpassword123', 10).then(hashedPassword => {
-            db.query(createAdminQuery, [name, email, phone, 'sales admin', 'Active', hashedPassword], (err, result) => {
-              if (err) {
-                console.error('Error creating admin user:', err);
-                return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+      // Generate unique referral code
+      let referralCode = generateReferralCode();
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const checkAndCreate = () => {
+        db.query(
+          "SELECT id FROM sales_admin_referral_codes WHERE referral_code = ?",
+          [referralCode],
+          (err, results) => {
+            if (err) {
+              console.error("Error checking referral code uniqueness:", err);
+              return res
+                .status(500)
+                .json({ success: false, message: "Database error" });
+            }
+
+            if (results.length > 0) {
+              attempts++;
+              if (attempts >= maxAttempts) {
+                return res
+                  .status(500)
+                  .json({
+                    success: false,
+                    message: "Failed to generate unique referral code",
+                  });
               }
+              referralCode = generateReferralCode();
+              checkAndCreate();
+            } else {
+              // First create the admin user
+              const createAdminQuery =
+                "INSERT INTO admin_users (name, email, phone, roleName, status, password) VALUES (?, ?, ?, ?, ?, ?)";
+              bcryptjs
+                .hash("defaultpassword123", 10)
+                .then((hashedPassword) => {
+                  db.query(
+                    createAdminQuery,
+                    [
+                      name,
+                      email,
+                      phone,
+                      "sales admin",
+                      "Active",
+                      hashedPassword,
+                    ],
+                    (err, result) => {
+                      if (err) {
+                        console.error("Error creating admin user:", err);
+                        return res
+                          .status(500)
+                          .json({
+                            success: false,
+                            message: "Database error",
+                            error: err.message,
+                          });
+                      }
 
-              const adminUserId = result.insertId;
+                      const adminUserId = result.insertId;
 
-              // Then create the referral code entry
-              const insertReferralQuery = 'INSERT INTO sales_admin_referral_codes (admin_user_id, referral_code) VALUES (?, ?)';
-              db.query(insertReferralQuery, [adminUserId, referralCode], (err, referralResult) => {
-                if (err) {
-                  console.error('Error creating sales admin referral code:', err);
-                  return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-                }
+                      // Then create the referral code entry
+                      const insertReferralQuery =
+                        "INSERT INTO sales_admin_referral_codes (admin_user_id, referral_code) VALUES (?, ?)";
+                      db.query(
+                        insertReferralQuery,
+                        [adminUserId, referralCode],
+                        (err, referralResult) => {
+                          if (err) {
+                            console.error(
+                              "Error creating sales admin referral code:",
+                              err
+                            );
+                            return res
+                              .status(500)
+                              .json({
+                                success: false,
+                                message: "Database error",
+                                error: err.message,
+                              });
+                          }
 
-                // Fetch the created sales admin with referral code
-                db.query(`
+                          // Fetch the created sales admin with referral code
+                          db.query(
+                            `
                   SELECT au.id, au.name, au.email, au.phone, sarc.referral_code, au.status, au.created_at
                   FROM admin_users au 
                   LEFT JOIN sales_admin_referral_codes sarc ON au.id = sarc.admin_user_id 
                   WHERE au.id = ?
-                `, [adminUserId], (err2, results) => {
-                  if (err2) {
-                    console.error('Error fetching created sales admin:', err2);
-                    return res.status(500).json({ success: false, message: 'Database error' });
-                  }
-                  res.json({ success: true, data: results[0] });
+                `,
+                            [adminUserId],
+                            (err2, results) => {
+                              if (err2) {
+                                console.error(
+                                  "Error fetching created sales admin:",
+                                  err2
+                                );
+                                return res
+                                  .status(500)
+                                  .json({
+                                    success: false,
+                                    message: "Database error",
+                                  });
+                              }
+                              res.json({ success: true, data: results[0] });
+                            }
+                          );
+                        }
+                      );
+                    }
+                  );
+                })
+                .catch((err) => {
+                  console.error("Error hashing password:", err);
+                  return res
+                    .status(500)
+                    .json({
+                      success: false,
+                      message: "Database error",
+                      error: err.message,
+                    });
                 });
-              });
-            });
-          }).catch(err => {
-            console.error('Error hashing password:', err);
-            return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-          });
-        }
-      });
-    };
+            }
+          }
+        );
+      };
 
-    checkAndCreate();
-  });
+      checkAndCreate();
+    }
+  );
 });
 
 // Update sales admin
-app.put('/api/sales-persons/:id', authenticateJWT, (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+app.put("/api/sales-persons/:id", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
 
   const { name, email, phone, status } = req.body;
   const adminUserId = req.params.id;
 
-  const updateQuery = 'UPDATE admin_users SET name = ?, email = ?, phone = ?, status = ? WHERE id = ?';
-  db.query(updateQuery, [name, email, phone, status, adminUserId], (err, result) => {
-    if (err) {
-      console.error('Error updating sales admin:', err);
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(400).json({ success: false, message: 'Email already exists' });
+  const updateQuery =
+    "UPDATE admin_users SET name = ?, email = ?, phone = ?, status = ? WHERE id = ?";
+  db.query(
+    updateQuery,
+    [name, email, phone, status, adminUserId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating sales admin:", err);
+        if (err.code === "ER_DUP_ENTRY") {
+          return res
+            .status(400)
+            .json({ success: false, message: "Email already exists" });
+        }
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: err.message,
+          });
       }
-      return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-    }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Sales admin not found' });
-    }
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Sales admin not found" });
+      }
 
-    // Fetch the updated sales admin with referral code
-    db.query(`
+      // Fetch the updated sales admin with referral code
+      db.query(
+        `
       SELECT au.id, au.name, au.email, au.phone, sarc.referral_code, au.status, au.created_at
       FROM admin_users au 
       LEFT JOIN sales_admin_referral_codes sarc ON au.id = sarc.admin_user_id 
       WHERE au.id = ?
-    `, [adminUserId], (err2, results) => {
-      if (err2) {
-        console.error('Error fetching updated sales admin:', err2);
-        return res.status(500).json({ success: false, message: 'Database error' });
-      }
-      res.json({ success: true, data: results[0] });
-    });
-  });
+    `,
+        [adminUserId],
+        (err2, results) => {
+          if (err2) {
+            console.error("Error fetching updated sales admin:", err2);
+            return res
+              .status(500)
+              .json({ success: false, message: "Database error" });
+          }
+          res.json({ success: true, data: results[0] });
+        }
+      );
+    }
+  );
 });
 
 // Delete sales admin referral code
-app.delete('/api/sales-persons/:id', authenticateJWT, (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+app.delete("/api/sales-persons/:id", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
 
   const adminUserId = req.params.id;
 
   // Delete the referral code entry first
-  db.query('DELETE FROM sales_admin_referral_codes WHERE admin_user_id = ?', [adminUserId], (err, result) => {
-    if (err) {
-      console.error('Error deleting sales admin referral code:', err);
-      return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-    }
+  db.query(
+    "DELETE FROM sales_admin_referral_codes WHERE admin_user_id = ?",
+    [adminUserId],
+    (err, result) => {
+      if (err) {
+        console.error("Error deleting sales admin referral code:", err);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: err.message,
+          });
+      }
 
-    // Note: We don't delete the admin user, just their referral code
-    // The admin user can still exist in the system
-    res.json({ success: true, message: 'Sales admin referral code deleted successfully' });
-  });
+      // Note: We don't delete the admin user, just their referral code
+      // The admin user can still exist in the system
+      res.json({
+        success: true,
+        message: "Sales admin referral code deleted successfully",
+      });
+    }
+  );
 });
 
 // Get referrals for a specific sales admin
-app.get('/api/sales-persons/:id/referrals', authenticateJWT, (req, res) => {
+app.get("/api/sales-persons/:id/referrals", authenticateJWT, (req, res) => {
   const adminUserId = req.params.id;
 
   // Check if user is admin or the sales admin themselves
-  if (req.user.type !== 'admin' && req.user.id !== parseInt(adminUserId)) {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+  if (req.user.type !== "admin" && req.user.id !== parseInt(adminUserId)) {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
 
   const query = `
@@ -3104,323 +4384,427 @@ app.get('/api/sales-persons/:id/referrals', authenticateJWT, (req, res) => {
 
   db.query(query, [adminUserId], (err, results) => {
     if (err) {
-      console.error('Error fetching referrals:', err);
-      return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+      console.error("Error fetching referrals:", err);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
     }
     res.json({ success: true, data: results });
   });
 });
 
 // Get sales admin by referral code (for client registration)
-app.get('/api/sales-persons/referral/:code', (req, res) => {
+app.get("/api/sales-persons/referral/:code", (req, res) => {
   const referralCode = req.params.code;
 
-  db.query(`
+  db.query(
+    `
     SELECT au.id, au.name, au.email, au.phone, sarc.referral_code, au.status, au.created_at
     FROM admin_users au 
     JOIN sales_admin_referral_codes sarc ON au.id = sarc.admin_user_id 
     WHERE sarc.referral_code = ? AND au.status = "Active"
-  `, [referralCode], (err, results) => {
-    if (err) {
-      console.error('Error fetching sales admin by referral code:', err);
-      return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-    }
+  `,
+    [referralCode],
+    (err, results) => {
+      if (err) {
+        console.error("Error fetching sales admin by referral code:", err);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: err.message,
+          });
+      }
 
-    if (results.length === 0) {
-      return res.status(404).json({ success: false, message: 'Invalid referral code' });
-    }
+      if (results.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Invalid referral code" });
+      }
 
-    res.json({ success: true, data: results[0] });
-  });
+      res.json({ success: true, data: results[0] });
+    }
+  );
 });
 
 // Create referral when client registers
-app.post('/api/referrals', async (req, res) => {
+app.post("/api/referrals", async (req, res) => {
   const { sales_person_id, client_id, referral_code } = req.body;
 
   if (!sales_person_id || !client_id || !referral_code) {
-    return res.status(400).json({ success: false, message: 'All fields are required' });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
   }
 
   // Start transaction
   db.beginTransaction(async (err) => {
     if (err) {
-      console.error('Error starting transaction:', err);
-      return res.status(500).json({ success: false, message: 'Database error' });
+      console.error("Error starting transaction:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Database error" });
     }
 
     try {
       // Create referral record linking to admin_user_id instead of sales_person_id
-      const insertReferralQuery = 'INSERT INTO referrals (admin_user_id, client_id, referral_code) VALUES (?, ?, ?)';
-      db.query(insertReferralQuery, [sales_person_id, client_id, referral_code], (err, result) => {
-        if (err) {
-          console.error('Error creating referral:', err);
-          return db.rollback(() => {
-            res.status(500).json({ success: false, message: 'Database error', error: err.message });
-          });
-        }
-
-        // Note: We don't update referral counts here since we're not using sales_persons table
-        // The counts will be calculated dynamically from the referrals table
-
-        // Commit transaction
-        db.commit((err3) => {
-          if (err3) {
-            console.error('Error committing transaction:', err3);
+      const insertReferralQuery =
+        "INSERT INTO referrals (admin_user_id, client_id, referral_code) VALUES (?, ?, ?)";
+      db.query(
+        insertReferralQuery,
+        [sales_person_id, client_id, referral_code],
+        (err, result) => {
+          if (err) {
+            console.error("Error creating referral:", err);
             return db.rollback(() => {
-              res.status(500).json({ success: false, message: 'Database error', error: err3.message });
+              res
+                .status(500)
+                .json({
+                  success: false,
+                  message: "Database error",
+                  error: err.message,
+                });
             });
           }
 
-          res.json({ success: true, message: 'Referral created successfully' });
-        });
-      });
+          // Note: We don't update referral counts here since we're not using sales_persons table
+          // The counts will be calculated dynamically from the referrals table
+
+          // Commit transaction
+          db.commit((err3) => {
+            if (err3) {
+              console.error("Error committing transaction:", err3);
+              return db.rollback(() => {
+                res
+                  .status(500)
+                  .json({
+                    success: false,
+                    message: "Database error",
+                    error: err3.message,
+                  });
+              });
+            }
+
+            res.json({
+              success: true,
+              message: "Referral created successfully",
+            });
+          });
+        }
+      );
     } catch (error) {
-      console.error('Error in referral creation:', error);
+      console.error("Error in referral creation:", error);
       return db.rollback(() => {
-        res.status(500).json({ success: false, message: 'Database error', error: error.message });
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: error.message,
+          });
       });
     }
   });
 });
 
 // Reset monthly referral counts (can be called by cron job)
-app.post('/api/sales-persons/reset-monthly-referrals', authenticateJWT, (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
-  }
+app.post(
+  "/api/sales-persons/reset-monthly-referrals",
+  authenticateJWT,
+  (req, res) => {
+    if (req.user.type !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
 
-  // Note: Since we're not using sales_persons table, this endpoint is now a no-op
-  // Monthly referral counts are calculated dynamically from the referrals table
-  res.json({ 
-    success: true, 
-    message: 'Monthly referral counts are now calculated dynamically from referrals table',
-    note: 'No manual reset needed'
-  });
-});
+    // Note: Since we're not using sales_persons table, this endpoint is now a no-op
+    // Monthly referral counts are calculated dynamically from the referrals table
+    res.json({
+      success: true,
+      message:
+        "Monthly referral counts are now calculated dynamically from referrals table",
+      note: "No manual reset needed",
+    });
+  }
+);
 
 // Combined Login endpoint for both admins and clients
-app.post('/api/login', async (req, res) => {
+app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log('Login attempt for:', email);
+  console.log("Login attempt for:", email);
 
   // First try admin login
-  db.query('SELECT * FROM admin_users WHERE email = ?', [email], async (err, adminResults) => {
-    if (err) {
-      console.error('Admin lookup error:', err);
-      return res.status(500).json({ success: false, message: 'DB error', error: err });
-    }
-
-    // If found in admin_users table
-    if (adminResults.length > 0) {
-      console.log('Found user in admin_users');
-      const user = adminResults[0];
-      try {
-        const valid = await bcryptjs.compare(password, user.password);
-        if (!valid) {
-          console.log('Admin password invalid');
-          return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-
-        // Update lastLogin to now
-        db.query('UPDATE admin_users SET lastLogin = NOW() WHERE id = ?', [user.id]);
-
-        const token = jwt.sign(
-          { id: user.id, name: user.name, email: user.email, role: user.roleName, type: 'admin' },
-          JWT_SECRET,
-          { expiresIn: '1d' }
-        );
-
-        // Set cookie for both same-origin and cross-origin scenarios
-        const isSecure = req.headers.origin && req.headers.origin.startsWith('https://');
-        const isLocalhost = req.headers.origin && req.headers.origin.includes('localhost');
-        
-        if (isLocalhost) {
-          // For localhost, use lax sameSite
-        res.cookie('token', token, {
-          httpOnly: true,
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 24*60*60*1000
-        });
-        } else {
-          // For cross-origin (ngrok, server), use none sameSite with secure
-          res.cookie('token', token, {
-            httpOnly: true,
-            sameSite: 'none',
-            secure: true,
-            path: '/',
-            maxAge: 24*60*60*1000
-          });
-        }
-
-        return res.json({ 
-          success: true, 
-          user: { 
-            id: user.id, 
-            name: user.name, 
-            email: user.email, 
-            role: user.roleName,
-            type: 'admin'
-          } 
-        });
-      } catch (err) {
-        console.error('Error in admin authentication:', err);
-        return res.status(500).json({ success: false, message: 'Authentication error' });
-      }
-    }
-
-    // If not found in admin_users, try client login
-    console.log('Not found in admin_users, trying clients table');
-    db.query('SELECT * FROM clients WHERE companyEmail = ?', [email], async (err, clientResults) => {
+  db.query(
+    "SELECT * FROM admin_users WHERE email = ?",
+    [email],
+    async (err, adminResults) => {
       if (err) {
-        console.error('Client lookup error:', err);
-        return res.status(500).json({ success: false, message: 'DB error', error: err });
-      }
-      if (!clientResults.length) {
-        console.log('Email not found in clients table');
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        console.error("Admin lookup error:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "DB error", error: err });
       }
 
-      const client = clientResults[0];
-      console.log('Found client:', { id: client.id, email: client.companyEmail });
-      
-      try {
-        let isValidPassword = false;
-
-        // First try bcrypt comparison (for hashed passwords)
+      // If found in admin_users table
+      if (adminResults.length > 0) {
+        console.log("Found user in admin_users");
+        const user = adminResults[0];
         try {
-          console.log('Trying bcrypt comparison');
-          // Check if the stored password looks like a bcrypt hash (starts with $2a$, $2b$, or $2y$)
-          if (client.adminPassword && client.adminPassword.startsWith('$2')) {
-            isValidPassword = await bcryptjs.compare(password, client.adminPassword);
-            console.log('Bcrypt comparison result:', isValidPassword);
-          } else {
-            // If not a bcrypt hash, do plain text comparison
-            console.log('Stored password is not a bcrypt hash, trying plain-text comparison');
-            isValidPassword = (password === client.adminPassword);
-            console.log('Plain-text comparison result:', isValidPassword);
-
-            // If plain-text password is correct, upgrade it to hashed
-            if (isValidPassword) {
-              console.log('Plain-text password matched. Upgrading to hashed password...');
-              const hashedPassword = await bcryptjs.hash(password, 10);
-              db.query(
-                'UPDATE clients SET adminPassword = ? WHERE id = ?',
-                [hashedPassword, client.id],
-                (updateErr) => {
-                  if (updateErr) {
-                    console.error('Failed to upgrade password to hash:', updateErr);
-                  } else {
-                    console.log('Successfully upgraded password to hash');
-                  }
-                }
-              );
-            }
+          const valid = await bcryptjs.compare(password, user.password);
+          if (!valid) {
+            console.log("Admin password invalid");
+            return res
+              .status(401)
+              .json({ success: false, message: "Invalid credentials" });
           }
-        } catch (hashError) {
-          console.error('Error during password comparison:', hashError);
-          // If any error occurs during bcrypt comparison, try plain text
-          console.log('Error in password comparison, falling back to plain-text');
-          isValidPassword = (password === client.adminPassword);
-          console.log('Plain-text comparison result:', isValidPassword);
 
-          // If plain-text password is correct, upgrade it to hashed
-          if (isValidPassword) {
-            console.log('Plain-text password matched. Upgrading to hashed password...');
-            const hashedPassword = await bcryptjs.hash(password, 10);
-            db.query(
-              'UPDATE clients SET adminPassword = ? WHERE id = ?',
-              [hashedPassword, client.id],
-              (updateErr) => {
-                if (updateErr) {
-                  console.error('Failed to upgrade password to hash:', updateErr);
-                } else {
-                  console.log('Successfully upgraded password to hash');
+          // Update lastLogin to now
+          db.query("UPDATE admin_users SET lastLogin = NOW() WHERE id = ?", [
+            user.id,
+          ]);
+
+          const token = jwt.sign(
+            {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.roleName,
+              type: "admin",
+            },
+            JWT_SECRET,
+            { expiresIn: "1d" }
+          );
+          const isDev = process.env.NODE_ENV !== "production";
+          const useLax = isDev; // Always lax/ insecure in development for localhost workflows
+          res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: useLax ? "lax" : "none",
+            secure: useLax ? false : true,
+            domain: useLax ? "localhost" : undefined,
+            path: "/",
+            maxAge: 24 * 60 * 60 * 1000,
+          });
+
+          return res.json({
+            success: true,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.roleName,
+              type: "admin",
+            },
+          });
+        } catch (err) {
+          console.error("Error in admin authentication:", err);
+          return res
+            .status(500)
+            .json({ success: false, message: "Authentication error" });
+        }
+      }
+
+      // If not found in admin_users, try client login
+      console.log("Not found in admin_users, trying clients table");
+      db.query(
+        "SELECT * FROM clients WHERE companyEmail = ?",
+        [email],
+        async (err, clientResults) => {
+          if (err) {
+            console.error("Client lookup error:", err);
+            return res
+              .status(500)
+              .json({ success: false, message: "DB error", error: err });
+          }
+          if (!clientResults.length) {
+            console.log("Email not found in clients table");
+            return res
+              .status(401)
+              .json({ success: false, message: "Invalid credentials" });
+          }
+
+          const client = clientResults[0];
+          console.log("Found client:", {
+            id: client.id,
+            email: client.companyEmail,
+          });
+
+          try {
+            let isValidPassword = false;
+
+            // First try bcrypt comparison (for hashed passwords)
+            try {
+              console.log("Trying bcrypt comparison");
+              // Check if the stored password looks like a bcrypt hash (starts with $2a$, $2b$, or $2y$)
+              if (
+                client.adminPassword &&
+                client.adminPassword.startsWith("$2")
+              ) {
+                isValidPassword = await bcryptjs.compare(
+                  password,
+                  client.adminPassword
+                );
+                console.log("Bcrypt comparison result:", isValidPassword);
+              } else {
+                // If not a bcrypt hash, do plain text comparison
+                console.log(
+                  "Stored password is not a bcrypt hash, trying plain-text comparison"
+                );
+                isValidPassword = password === client.adminPassword;
+                console.log("Plain-text comparison result:", isValidPassword);
+
+                // If plain-text password is correct, upgrade it to hashed
+                if (isValidPassword) {
+                  console.log(
+                    "Plain-text password matched. Upgrading to hashed password..."
+                  );
+                  const hashedPassword = await bcryptjs.hash(password, 10);
+                  db.query(
+                    "UPDATE clients SET adminPassword = ? WHERE id = ?",
+                    [hashedPassword, client.id],
+                    (updateErr) => {
+                      if (updateErr) {
+                        console.error(
+                          "Failed to upgrade password to hash:",
+                          updateErr
+                        );
+                      } else {
+                        console.log("Successfully upgraded password to hash");
+                      }
+                    }
+                  );
                 }
               }
+            } catch (hashError) {
+              console.error("Error during password comparison:", hashError);
+              // If any error occurs during bcrypt comparison, try plain text
+              console.log(
+                "Error in password comparison, falling back to plain-text"
+              );
+              isValidPassword = password === client.adminPassword;
+              console.log("Plain-text comparison result:", isValidPassword);
+
+              // If plain-text password is correct, upgrade it to hashed
+              if (isValidPassword) {
+                console.log(
+                  "Plain-text password matched. Upgrading to hashed password..."
+                );
+                const hashedPassword = await bcryptjs.hash(password, 10);
+                db.query(
+                  "UPDATE clients SET adminPassword = ? WHERE id = ?",
+                  [hashedPassword, client.id],
+                  (updateErr) => {
+                    if (updateErr) {
+                      console.error(
+                        "Failed to upgrade password to hash:",
+                        updateErr
+                      );
+                    } else {
+                      console.log("Successfully upgraded password to hash");
+                    }
+                  }
+                );
+              }
+            }
+
+            if (!isValidPassword) {
+              console.log("Client password invalid");
+              return res
+                .status(401)
+                .json({ success: false, message: "Invalid credentials" });
+            }
+
+            console.log("Client password valid, creating token");
+            const token = jwt.sign(
+              {
+                id: client.id,
+                email: client.companyEmail,
+                role: "client_admin",
+                type: "client",
+                companyName: client.companyName,
+              },
+              JWT_SECRET,
+              { expiresIn: "1d" }
             );
+
+            // Set cookie for both same-origin and cross-origin scenarios
+            const isLocalhost =
+              req.headers.origin && req.headers.origin.includes("localhost");
+
+            if (isLocalhost) {
+              // For localhost, use lax sameSite
+              res.cookie("token", token, {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                maxAge: 24 * 60 * 60 * 1000,
+              });
+            } else {
+              // For cross-origin (ngrok, server), use none sameSite with secure
+              res.cookie("token", token, {
+                httpOnly: true,
+                sameSite: "none",
+                secure: true,
+                path: "/",
+                maxAge: 24 * 60 * 60 * 1000,
+              });
+            }
+
+            return res.json({
+              success: true,
+              user: {
+                id: client.id,
+                email: client.companyEmail,
+                role: "client_admin",
+                type: "client",
+                companyName: client.companyName,
+              },
+            });
+          } catch (err) {
+            console.error("Error in client authentication:", err);
+            return res
+              .status(500)
+              .json({ success: false, message: "Authentication error" });
           }
         }
-
-        if (!isValidPassword) {
-          console.log('Client password invalid');
-          return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-
-        console.log('Client password valid, creating token');
-        const token = jwt.sign(
-          { 
-            id: client.id, 
-            email: client.companyEmail, 
-            role: 'client_admin',
-            type: 'client',
-            companyName: client.companyName 
-          },
-          JWT_SECRET,
-          { expiresIn: '1d' }
-        );
-
-        // Set cookie for both same-origin and cross-origin scenarios
-        const isLocalhost = req.headers.origin && req.headers.origin.includes('localhost');
-        
-        if (isLocalhost) {
-          // For localhost, use lax sameSite
-        res.cookie('token', token, {
-          httpOnly: true,
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 24*60*60*1000
-        });
-        } else {
-          // For cross-origin (ngrok, server), use none sameSite with secure
-          res.cookie('token', token, {
-            httpOnly: true,
-            sameSite: 'none',
-            secure: true,
-            path: '/',
-            maxAge: 24*60*60*1000
-          });
-        }
-
-        return res.json({ 
-          success: true, 
-          user: { 
-            id: client.id, 
-            email: client.companyEmail, 
-            role: 'client_admin',
-            type: 'client',
-            companyName: client.companyName 
-          } 
-        });
-      } catch (err) {
-        console.error('Error in client authentication:', err);
-        return res.status(500).json({ success: false, message: 'Authentication error' });
-      }
-    });
-  });
+      );
+    }
+  );
 });
 
 // JWT middleware
 function authenticateJWT(req, res, next) {
   const token = req.cookies.token;
-  if (!token) return res.status(401).json({ success: false, message: 'No token provided' });
+  if (!token)
+    return res
+      .status(401)
+      .json({ success: false, message: "No token provided" });
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ success: false, message: 'Invalid token' });
+    if (err)
+      return res.status(403).json({ success: false, message: "Invalid token" });
     req.user = user;
     next();
   });
 }
 
 // Serve uploads folder statically
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 
 // --- LANGUAGES API ---
 // Get all languages
 app.get("/api/languages", (req, res) => {
   db.query("SELECT * FROM languages ORDER BY name ASC", (err, results) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to fetch languages", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch languages",
+          error: err,
+        });
     }
     res.json({ success: true, data: results });
   });
@@ -3434,14 +4818,30 @@ app.post("/api/languages", (req, res) => {
     [name, code, country_code, calling_code, enabled],
     (err, result) => {
       if (err) {
-        return res.status(500).json({ success: false, message: "Failed to add language", error: err });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to add language",
+            error: err,
+          });
       }
-      db.query("SELECT * FROM languages WHERE id = ?", [result.insertId], (err, results) => {
-        if (err || results.length === 0) {
-          return res.status(500).json({ success: false, message: "Language added but failed to fetch", error: err });
+      db.query(
+        "SELECT * FROM languages WHERE id = ?",
+        [result.insertId],
+        (err, results) => {
+          if (err || results.length === 0) {
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message: "Language added but failed to fetch",
+                error: err,
+              });
+          }
+          res.status(201).json({ success: true, data: results[0] });
         }
-        res.status(201).json({ success: true, data: results[0] });
-      });
+      );
     }
   );
 });
@@ -3455,11 +4855,23 @@ app.patch("/api/languages/:id", (req, res) => {
     [enabled, id],
     (err) => {
       if (err) {
-        return res.status(500).json({ success: false, message: "Failed to update language", error: err });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to update language",
+            error: err,
+          });
       }
       db.query("SELECT * FROM languages WHERE id = ?", [id], (err, results) => {
         if (err || results.length === 0) {
-          return res.status(500).json({ success: false, message: "Language updated but failed to fetch", error: err });
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Language updated but failed to fetch",
+              error: err,
+            });
         }
         res.json({ success: true, data: results[0] });
       });
@@ -3472,135 +4884,193 @@ app.delete("/api/languages/:id", (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM languages WHERE id = ?", [id], (err) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Failed to delete language", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to delete language",
+          error: err,
+        });
     }
     res.json({ success: true });
   });
 });
 
 // POST /api/knowledge-base
-app.post('/api/knowledge-base', authenticateJWT, async (req, res) => {
-  const { client_id, type, name, url, file_path, text_content, size } = req.body;
+app.post("/api/knowledge-base", authenticateJWT, async (req, res) => {
+  const { client_id, type, name, url, file_path, text_content, size } =
+    req.body;
   let extractedText = text_content;
 
-  if (type === 'url' && url) {
+  if (type === "url" && url) {
     try {
-      const { extract } = await import('@extractus/article-extractor');
+      const { extract } = await import("@extractus/article-extractor");
       const article = await extract(url, {
-        fetch: (input, init) => fetch(input, {
-          ...init,
-          headers: {
-            ...(init?.headers || {}),
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
-        })
+        fetch: (input, init) =>
+          fetch(input, {
+            ...init,
+            headers: {
+              ...(init?.headers || {}),
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            },
+          }),
       });
-      extractedText = article?.content?.replace(/<[^>]+>/g, '') || '';
+      extractedText = article?.content?.replace(/<[^>]+>/g, "") || "";
       // Fallback: if still empty, try cheerio to get visible text from <body>
       if (!extractedText) {
-        const cheerio = (await import('cheerio')).default;
+        const cheerio = (await import("cheerio")).default;
         const response = await fetch(url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
         });
         const html = await response.text();
         const $ = cheerio.load(html);
-        extractedText = $('body').text().replace(/\s+/g, ' ').trim();
+        extractedText = $("body").text().replace(/\s+/g, " ").trim();
       }
       // Final fallback: Puppeteer for JS-rendered sites
       if (!extractedText) {
-        const puppeteer = await import('puppeteer');
-        const browser = await puppeteer.launch({ headless: 'new' });
+        const puppeteer = await import("puppeteer");
+        const browser = await puppeteer.launch({ headless: "new" });
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 });
-        extractedText = await page.evaluate(() => document.body.innerText.trim());
+        await page.setUserAgent(
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        );
+        await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
+        extractedText = await page.evaluate(() =>
+          document.body.innerText.trim()
+        );
         await browser.close();
       }
       // Remove extra spacing between paragraphs (replace multiple newlines or blank lines with a single space)
       if (extractedText) {
-        extractedText = extractedText.replace(/\n{2,}/g, ' ').replace(/\s{2,}/g, ' ').trim();
+        extractedText = extractedText
+          .replace(/\n{2,}/g, " ")
+          .replace(/\s{2,}/g, " ")
+          .trim();
       }
     } catch (e) {
       // Fallback: try cheerio if article-extractor fails
       try {
-        const cheerio = (await import('cheerio')).default;
+        const cheerio = (await import("cheerio")).default;
         const response = await fetch(url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
         });
         const html = await response.text();
         const $ = cheerio.load(html);
-        extractedText = $('body').text().replace(/\s+/g, ' ').trim();
+        extractedText = $("body").text().replace(/\s+/g, " ").trim();
         // Final fallback: Puppeteer for JS-rendered sites
         if (!extractedText) {
-          const puppeteer = await import('puppeteer');
-          const browser = await puppeteer.launch({ headless: 'new' });
+          const puppeteer = await import("puppeteer");
+          const browser = await puppeteer.launch({ headless: "new" });
           const page = await browser.newPage();
-          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-          await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 });
-          extractedText = await page.evaluate(() => document.body.innerText.trim());
+          await page.setUserAgent(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          );
+          await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
+          extractedText = await page.evaluate(() =>
+            document.body.innerText.trim()
+          );
           await browser.close();
         }
         // Remove extra spacing between paragraphs (replace multiple newlines or blank lines with a single space)
         if (extractedText) {
-          extractedText = extractedText.replace(/\n{2,}/g, ' ').replace(/\s{2,}/g, ' ').trim();
+          extractedText = extractedText
+            .replace(/\n{2,}/g, " ")
+            .replace(/\s{2,}/g, " ")
+            .trim();
         }
       } catch (err) {
-        extractedText = '';
+        extractedText = "";
       }
     }
   }
 
-  const created_by = req.user.name || req.user.email || 'Unknown';
+  const created_by = req.user.name || req.user.email || "Unknown";
   const created_at = new Date();
   const updated_at = new Date();
   const query = `INSERT INTO knowledge_base (client_id, type, name, url, file_path, text_content, size, created_by, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  db.query(query, [client_id, type, name, url, file_path, extractedText, size, created_by, created_at, updated_at], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    db.query('SELECT * FROM knowledge_base WHERE id = ?', [result.insertId], (err2, rows) => {
-      if (err2) return res.status(500).json({ success: false, message: err2.message });
-      res.status(201).json({ success: true, data: rows[0] });
-    });
-  });
+  db.query(
+    query,
+    [
+      client_id,
+      type,
+      name,
+      url,
+      file_path,
+      extractedText,
+      size,
+      created_by,
+      created_at,
+      updated_at,
+    ],
+    (err, result) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      db.query(
+        "SELECT * FROM knowledge_base WHERE id = ?",
+        [result.insertId],
+        (err2, rows) => {
+          if (err2)
+            return res
+              .status(500)
+              .json({ success: false, message: err2.message });
+          res.status(201).json({ success: true, data: rows[0] });
+        }
+      );
+    }
+  );
 });
 
 // DELETE /api/knowledge-base/:id
-app.delete('/api/knowledge-base/:id', authenticateJWT, (req, res) => {
-  db.query('DELETE FROM knowledge_base WHERE id = ?', [req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Not found' });
-    res.json({ success: true });
-  });
+app.delete("/api/knowledge-base/:id", authenticateJWT, (req, res) => {
+  db.query(
+    "DELETE FROM knowledge_base WHERE id = ?",
+    [req.params.id],
+    (err, result) => {
+      if (err)
+        return res.status(500).json({ success: false, message: err.message });
+      if (result.affectedRows === 0)
+        return res.status(404).json({ success: false, message: "Not found" });
+      res.json({ success: true });
+    }
+  );
 });
 
 // GET all knowledge base entries
-app.get('/api/knowledge-base', authenticateJWT, (req, res) => {
-  db.query('SELECT * FROM knowledge_base', (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
+app.get("/api/knowledge-base", authenticateJWT, (req, res) => {
+  db.query("SELECT * FROM knowledge_base", (err, results) => {
+    if (err)
+      return res.status(500).json({ success: false, message: err.message });
     res.json({ success: true, data: results });
   });
 });
 
 // File upload endpoint
-app.post('/api/upload', authenticateJWT, upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+app.post("/api/upload", authenticateJWT, upload.single("file"), (req, res) => {
+  if (!req.file)
+    return res
+      .status(400)
+      .json({ success: false, message: "No file uploaded" });
   res.json({ success: true, file_path: `/uploads/${req.file.filename}` });
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV || "development",
     cors: {
       origin: req.headers.origin,
-      allowed: true
-    }
+      allowed: true,
+    },
   });
 });
 
@@ -3611,220 +5081,271 @@ app.listen(5000, () => {
 });
 
 // Client Admin Login endpoint
-app.post('/api/client-admin/login', async (req, res) => {
+app.post("/api/client-admin/login", async (req, res) => {
   const { email, password } = req.body;
-  db.query('SELECT * FROM clients WHERE companyEmail = ?', [email], async (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'DB error', error: err });
-    if (!results.length) return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    
-    const client = results[0];
-    try {
-      let isValidPassword = false;
+  db.query(
+    "SELECT * FROM clients WHERE companyEmail = ?",
+    [email],
+    async (err, results) => {
+      if (err)
+        return res
+          .status(500)
+          .json({ success: false, message: "DB error", error: err });
+      if (!results.length)
+        return res
+          .status(401)
+          .json({ success: false, message: "Invalid credentials" });
 
-      // First try bcrypt comparison (for hashed passwords)
+      const client = results[0];
       try {
-        isValidPassword = await bcrypt.compare(password, client.adminPassword);
-      } catch (hashError) {
-        // If bcrypt.compare fails, it might be a plain-text password
-        console.log('Hash comparison failed, trying plain-text comparison');
-        isValidPassword = (password === client.adminPassword);
+        let isValidPassword = false;
 
-        // If plain-text password is correct, upgrade it to hashed
-        if (isValidPassword) {
-          console.log('Plain-text password matched. Upgrading to hashed password...');
-          const hashedPassword = await bcrypt.hash(password, 10);
-          db.query(
-            'UPDATE clients SET adminPassword = ? WHERE id = ?',
-            [hashedPassword, client.id],
-            (updateErr) => {
-              if (updateErr) {
-                console.error('Failed to upgrade password to hash:', updateErr);
-                // Continue anyway since login is successful
-              } else {
-                console.log('Successfully upgraded password to hash');
-              }
-            }
+        // First try bcrypt comparison (for hashed passwords)
+        try {
+          isValidPassword = await bcrypt.compare(
+            password,
+            client.adminPassword
           );
+        } catch (hashError) {
+          // If bcrypt.compare fails, it might be a plain-text password
+          console.log("Hash comparison failed, trying plain-text comparison");
+          isValidPassword = password === client.adminPassword;
+
+          // If plain-text password is correct, upgrade it to hashed
+          if (isValidPassword) {
+            console.log(
+              "Plain-text password matched. Upgrading to hashed password..."
+            );
+            const hashedPassword = await bcrypt.hash(password, 10);
+            db.query(
+              "UPDATE clients SET adminPassword = ? WHERE id = ?",
+              [hashedPassword, client.id],
+              (updateErr) => {
+                if (updateErr) {
+                  console.error(
+                    "Failed to upgrade password to hash:",
+                    updateErr
+                  );
+                  // Continue anyway since login is successful
+                } else {
+                  console.log("Successfully upgraded password to hash");
+                }
+              }
+            );
+          }
         }
-      }
 
-      if (!isValidPassword) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
-      }
+        if (!isValidPassword) {
+          return res
+            .status(401)
+            .json({ success: false, message: "Invalid credentials" });
+        }
 
-      // Create JWT token for client admin
-      const token = jwt.sign(
-        { 
-          id: client.id, 
-          email: client.companyEmail, 
-          role: 'client_admin',
-          companyName: client.companyName 
-        },
-        JWT_SECRET,
-        { expiresIn: '1d' }
-      );
+        // Create JWT token for client admin
+        const token = jwt.sign(
+          {
+            id: client.id,
+            email: client.companyEmail,
+            role: "client_admin",
+            companyName: client.companyName,
+          },
+          JWT_SECRET,
+          { expiresIn: "1d" }
+        );
 
-      // Set cookie for both same-origin and cross-origin scenarios
-      const isLocalhost = req.headers.origin && req.headers.origin.includes('localhost');
-      
-      if (isLocalhost) {
-        // For localhost, use lax sameSite
-      res.cookie('token', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 24*60*60*1000
-      });
-      } else {
-        // For cross-origin (ngrok, server), use none sameSite with secure
-        res.cookie('token', token, {
+        // Set cookie for both same-origin and cross-origin scenarios
+        const isDev = process.env.NODE_ENV !== "production";
+        const useLax = isDev; // Always lax/ insecure in development for localhost workflows
+        res.cookie("token", token, {
           httpOnly: true,
-          sameSite: 'none',
-          secure: true,
-          path: '/',
-          maxAge: 24*60*60*1000
+          sameSite: useLax ? "lax" : "none",
+          secure: useLax ? false : true,
+          domain: useLax ? "localhost" : undefined,
+          path: "/",
+          maxAge: 24 * 60 * 60 * 1000,
         });
-      }
 
-      res.json({ 
-        success: true, 
-        user: { 
-          id: client.id, 
-          email: client.companyEmail, 
-          role: 'client_admin',
-          companyName: client.companyName 
-        } 
-      });
-    } catch (err) {
-      console.error('Error in authentication:', err);
-      res.status(500).json({ success: false, message: 'Authentication error' });
+        res.json({
+          success: true,
+          user: {
+            id: client.id,
+            email: client.companyEmail,
+            role: "client_admin",
+            companyName: client.companyName,
+          },
+        });
+      } catch (err) {
+        console.error("Error in authentication:", err);
+        res
+          .status(500)
+          .json({ success: false, message: "Authentication error" });
+      }
     }
-  });
+  );
 });
 
 // Reset client admin password
-app.post('/api/clients/:id/reset-password', async (req, res) => {
+app.post("/api/clients/:id/reset-password", async (req, res) => {
   const clientId = req.params.id;
   const { oldPassword, newPassword } = req.body;
 
   if (!newPassword) {
-    return res.status(400).json({ success: false, message: 'New password is required' });
+    return res
+      .status(400)
+      .json({ success: false, message: "New password is required" });
   }
 
   try {
     // First get the current password hash
-    db.query('SELECT adminPassword FROM clients WHERE id = ?', [clientId], async (err, results) => {
-      if (err || results.length === 0) {
-        return res.status(404).json({ success: false, message: 'Client not found' });
-      }
-
-      const currentHashedPassword = results[0].adminPassword;
-
-      // If oldPassword is provided, verify it
-      if (oldPassword) {
-        try {
-          const isValid = await bcrypt.compare(oldPassword, currentHashedPassword);
-          if (!isValid) {
-            return res.status(400).json({ success: false, message: 'Current password is incorrect' });
-          }
-        } catch (err) {
-          console.error('Error comparing passwords:', err);
-          return res.status(500).json({ success: false, message: 'Error verifying current password' });
+    db.query(
+      "SELECT adminPassword FROM clients WHERE id = ?",
+      [clientId],
+      async (err, results) => {
+        if (err || results.length === 0) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Client not found" });
         }
-      }
 
-      // Hash the new password
-      const newHashedPassword = await bcrypt.hash(newPassword, 10);
+        const currentHashedPassword = results[0].adminPassword;
 
-      // Update the password in the database
-      db.query(
-        'UPDATE clients SET adminPassword = ? WHERE id = ?',
-        [newHashedPassword, clientId],
-        (updateErr) => {
-          if (updateErr) {
-            console.error('Error updating password:', updateErr);
-            return res.status(500).json({ success: false, message: 'Failed to update password' });
+        // If oldPassword is provided, verify it
+        if (oldPassword) {
+          try {
+            const isValid = await bcrypt.compare(
+              oldPassword,
+              currentHashedPassword
+            );
+            if (!isValid) {
+              return res
+                .status(400)
+                .json({
+                  success: false,
+                  message: "Current password is incorrect",
+                });
+            }
+          } catch (err) {
+            console.error("Error comparing passwords:", err);
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message: "Error verifying current password",
+              });
           }
-          res.json({ success: true, message: 'Password updated successfully' });
         }
-      );
-    });
+
+        // Hash the new password
+        const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update the password in the database
+        db.query(
+          "UPDATE clients SET adminPassword = ? WHERE id = ?",
+          [newHashedPassword, clientId],
+          (updateErr) => {
+            if (updateErr) {
+              console.error("Error updating password:", updateErr);
+              return res
+                .status(500)
+                .json({ success: false, message: "Failed to update password" });
+            }
+            res.json({
+              success: true,
+              message: "Password updated successfully",
+            });
+          }
+        );
+      }
+    );
   } catch (err) {
-    console.error('Error in password reset:', err);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("Error in password reset:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
 // Add new endpoints for client profile management after the existing client endpoints
 
 // Update client profile
-app.put('/api/clients/:id/profile', authenticateJWT, async (req, res) => {
+app.put("/api/clients/:id/profile", authenticateJWT, async (req, res) => {
   const { name, avatar_url, bio } = req.body;
   const clientId = req.params.id;
 
   // Verify the client belongs to the authenticated user
-  if (req.user.type !== 'client' || req.user.id !== parseInt(clientId)) {
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  if (req.user.type !== "client" || req.user.id !== parseInt(clientId)) {
+    return res.status(403).json({ success: false, message: "Unauthorized" });
   }
 
   db.query(
-    'UPDATE clients SET companyName = ?, avatar_url = ?, bio = ? WHERE id = ?',
+    "UPDATE clients SET companyName = ?, avatar_url = ?, bio = ? WHERE id = ?",
     [name, avatar_url, bio, clientId],
     (err) => {
       if (err) {
-        console.error('Error updating client profile:', err);
-        return res.status(500).json({ success: false, message: 'Failed to update profile' });
+        console.error("Error updating client profile:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Failed to update profile" });
       }
-      res.json({ success: true, message: 'Profile updated successfully' });
+      res.json({ success: true, message: "Profile updated successfully" });
     }
   );
 });
 
 // Upload client profile picture
-app.post('/api/clients/:id/avatar', authenticateJWT, upload.single('profile_picture'), (req, res) => {
-  const clientId = req.params.id;
+app.post(
+  "/api/clients/:id/avatar",
+  authenticateJWT,
+  upload.single("profile_picture"),
+  (req, res) => {
+    const clientId = req.params.id;
 
-  // Verify the client belongs to the authenticated user
-  if (req.user.type !== 'client' || req.user.id !== parseInt(clientId)) {
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
-  }
-
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' });
-  }
-
-  const filePath = `/uploads/${req.file.filename}`;
-  db.query(
-    'UPDATE clients SET avatar_url = ? WHERE id = ?',
-    [filePath, clientId],
-    (err) => {
-      if (err) {
-        console.error('Error updating client avatar:', err);
-        return res.status(500).json({ success: false, message: 'Failed to update avatar' });
-      }
-      res.json({ success: true, avatar_url: filePath });
+    // Verify the client belongs to the authenticated user
+    if (req.user.type !== "client" || req.user.id !== parseInt(clientId)) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
     }
-  );
-});
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    }
+
+    const filePath = `/uploads/${req.file.filename}`;
+    db.query(
+      "UPDATE clients SET avatar_url = ? WHERE id = ?",
+      [filePath, clientId],
+      (err) => {
+        if (err) {
+          console.error("Error updating client avatar:", err);
+          return res
+            .status(500)
+            .json({ success: false, message: "Failed to update avatar" });
+        }
+        res.json({ success: true, avatar_url: filePath });
+      }
+    );
+  }
+);
 
 // Delete client profile picture
-app.delete('/api/clients/:id/avatar', authenticateJWT, (req, res) => {
+app.delete("/api/clients/:id/avatar", authenticateJWT, (req, res) => {
   const clientId = req.params.id;
 
   // Verify the client belongs to the authenticated user
-  if (req.user.type !== 'client' || req.user.id !== parseInt(clientId)) {
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  if (req.user.type !== "client" || req.user.id !== parseInt(clientId)) {
+    return res.status(403).json({ success: false, message: "Unauthorized" });
   }
 
   db.query(
-    'UPDATE clients SET avatar_url = NULL WHERE id = ?',
+    "UPDATE clients SET avatar_url = NULL WHERE id = ?",
     [clientId],
     (err) => {
       if (err) {
-        console.error('Error deleting client avatar:', err);
-        return res.status(500).json({ success: false, message: 'Failed to delete avatar' });
+        console.error("Error deleting client avatar:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Failed to delete avatar" });
       }
-      res.json({ success: true, message: 'Avatar deleted successfully' });
+      res.json({ success: true, message: "Avatar deleted successfully" });
     }
   );
 });
@@ -3844,10 +5365,13 @@ app.delete('/api/clients/:id/avatar', authenticateJWT, (req, res) => {
 // );
 
 // 2. Add endpoints to save and fetch voice settings
-app.get('/api/agents/:agentId/voice-settings', async (req, res) => {
+app.get("/api/agents/:agentId/voice-settings", async (req, res) => {
   const { agentId } = req.params;
   try {
-    const [rows] = await db.query('SELECT * FROM agent_voice_settings WHERE agent_id = ?', [agentId]);
+    const [rows] = await db.query(
+      "SELECT * FROM agent_voice_settings WHERE agent_id = ?",
+      [agentId]
+    );
     if (rows.length > 0) {
       res.json({ success: true, data: rows[0] });
     } else {
@@ -3858,7 +5382,7 @@ app.get('/api/agents/:agentId/voice-settings', async (req, res) => {
   }
 });
 
-app.post('/api/agents/:agentId/voice-settings', async (req, res) => {
+app.post("/api/agents/:agentId/voice-settings", async (req, res) => {
   const { agentId } = req.params;
   const {
     model_id,
@@ -3869,7 +5393,7 @@ app.post('/api/agents/:agentId/voice-settings', async (req, res) => {
     speed,
     similarity_boost,
     pronunciation_dictionary_locators,
-    multi_voice_ids
+    multi_voice_ids,
   } = req.body;
   try {
     await db.query(
@@ -3896,7 +5420,7 @@ app.post('/api/agents/:agentId/voice-settings', async (req, res) => {
         speed,
         similarity_boost,
         JSON.stringify(pronunciation_dictionary_locators || []),
-        JSON.stringify(multi_voice_ids || [])
+        JSON.stringify(multi_voice_ids || []),
       ]
     );
     res.json({ success: true });
@@ -3906,10 +5430,13 @@ app.post('/api/agents/:agentId/voice-settings', async (req, res) => {
 });
 
 // --- WIDGET SETTINGS API ENDPOINTS ---
-app.get('/api/agents/:agentId/widget-settings', async (req, res) => {
+app.get("/api/agents/:agentId/widget-settings", async (req, res) => {
   const { agentId } = req.params;
   try {
-    const [rows] = await db.query('SELECT * FROM agent_widget_settings WHERE agent_id = ?', [agentId]);
+    const [rows] = await db.query(
+      "SELECT * FROM agent_widget_settings WHERE agent_id = ?",
+      [agentId]
+    );
     if (rows.length > 0) {
       res.json({ success: true, data: rows[0] });
     } else {
@@ -3920,7 +5447,7 @@ app.get('/api/agents/:agentId/widget-settings', async (req, res) => {
   }
 });
 
-app.post('/api/agents/:agentId/widget-settings', async (req, res) => {
+app.post("/api/agents/:agentId/widget-settings", async (req, res) => {
   const { agentId } = req.params;
   const { feedback_mode, embed_code } = req.body;
   try {
@@ -3940,7 +5467,7 @@ app.post('/api/agents/:agentId/widget-settings', async (req, res) => {
   }
 });
 
-app.patch('/api/agents/:agentId/widget-settings', async (req, res) => {
+app.patch("/api/agents/:agentId/widget-settings", async (req, res) => {
   const { agentId } = req.params;
   const { feedback_mode, embed_code } = req.body;
   try {
@@ -3957,63 +5484,90 @@ app.patch('/api/agents/:agentId/widget-settings', async (req, res) => {
   }
 });
 
-app.post('/api/elevenlabs/pronunciation-dictionary', upload.single('file'), (req, res) => {
-  const filePath = req.file.path;
-  const name = req.body.name || req.file.originalname;
-  execFile('python3', ['upload_dict.py', filePath, name], (err, stdout, stderr) => {
-    if (err) {
-      console.error('Python script error:', stderr);
-      return res.status(500).json({ error: stderr });
-    }
-    try {
-      const result = JSON.parse(stdout);
-      res.json(result); // { pronunciation_dictionary_id, version_id }
-    } catch (e) {
-      console.error('Failed to parse Python script output:', stdout);
-      res.status(500).json({ error: 'Failed to parse SDK output' });
-    }
-  });
-});
+app.post(
+  "/api/elevenlabs/pronunciation-dictionary",
+  upload.single("file"),
+  (req, res) => {
+    const filePath = req.file.path;
+    const name = req.body.name || req.file.originalname;
+    execFile(
+      "python3",
+      ["upload_dict.py", filePath, name],
+      (err, stdout, stderr) => {
+        if (err) {
+          console.error("Python script error:", stderr);
+          return res.status(500).json({ error: stderr });
+        }
+        try {
+          const result = JSON.parse(stdout);
+          res.json(result); // { pronunciation_dictionary_id, version_id }
+        } catch (e) {
+          console.error("Failed to parse Python script output:", stdout);
+          res.status(500).json({ error: "Failed to parse SDK output" });
+        }
+      }
+    );
+  }
+);
 
 // --- Analysis Criteria/Data Item DELETE Endpoints ---
-app.delete('/api/agents/:agentId/analysis/criteria', (req, res) => {
+app.delete("/api/agents/:agentId/analysis/criteria", (req, res) => {
   const { agentId } = req.params;
   const { name } = req.query;
-  if (!name) return res.status(400).json({ error: 'Missing criteria name' });
-  db.query('DELETE FROM agent_analysis_criteria WHERE agent_id = ? AND name = ?', [agentId, name], (err, result) => {
-    if (err) return res.status(500).json({ error: 'DB error', details: err });
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Criteria not found' });
-    res.json({ success: true });
-  });
+  if (!name) return res.status(400).json({ error: "Missing criteria name" });
+  db.query(
+    "DELETE FROM agent_analysis_criteria WHERE agent_id = ? AND name = ?",
+    [agentId, name],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error", details: err });
+      if (result.affectedRows === 0)
+        return res.status(404).json({ error: "Criteria not found" });
+      res.json({ success: true });
+    }
+  );
 });
 
-app.delete('/api/agents/:agentId/analysis/data-item', (req, res) => {
+app.delete("/api/agents/:agentId/analysis/data-item", (req, res) => {
   const { agentId } = req.params;
   const { identifier } = req.query;
-  if (!identifier) return res.status(400).json({ error: 'Missing data item identifier' });
-  db.query('DELETE FROM agent_analysis_data_collection WHERE agent_id = ? AND identifier = ?', [agentId, identifier], (err, result) => {
-    if (err) return res.status(500).json({ error: 'DB error', details: err });
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Data item not found' });
-    res.json({ success: true });
-  });
+  if (!identifier)
+    return res.status(400).json({ error: "Missing data item identifier" });
+  db.query(
+    "DELETE FROM agent_analysis_data_collection WHERE agent_id = ? AND identifier = ?",
+    [agentId, identifier],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error", details: err });
+      if (result.affectedRows === 0)
+        return res.status(404).json({ error: "Data item not found" });
+      res.json({ success: true });
+    }
+  );
 });
 
 // PATCH proxy for ElevenLabs API (if not already present)
-app.patch('/v1/convai/agents/:agentId', async (req, res) => {
+app.patch("/v1/convai/agents/:agentId", async (req, res) => {
   const { agentId } = req.params;
   try {
-    const response = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
-      method: 'PATCH',
-      headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(req.body)
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "xi-api-key": process.env.ELEVENLABS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.body),
+      }
+    );
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to proxy PATCH to ElevenLabs', details: err.message });
+    res
+      .status(500)
+      .json({
+        error: "Failed to proxy PATCH to ElevenLabs",
+        details: err.message,
+      });
   }
 });
 
@@ -4045,7 +5599,7 @@ db.query(createAgentAdvancedSettingsTable, (err) => {
 // ... existing code ...
 // --- AGENT ADVANCED SETTINGS ENDPOINTS ---
 // Save advanced settings (POST or PUT)
-app.post('/api/agents/:agentId/advanced-settings', async (req, res) => {
+app.post("/api/agents/:agentId/advanced-settings", async (req, res) => {
   const { agentId } = req.params;
   const {
     turn_timeout,
@@ -4058,7 +5612,7 @@ app.post('/api/agents/:agentId/advanced-settings', async (req, res) => {
     privacy_settings,
     conversations_retention_period,
     delete_transcript_and_derived_fields,
-    delete_audio
+    delete_audio,
   } = req.body;
   try {
     await db.query(
@@ -4083,14 +5637,14 @@ app.post('/api/agents/:agentId/advanced-settings', async (req, res) => {
         turn_timeout,
         silence_end_call_timeout,
         max_conversation_duration,
-        Array.isArray(keywords) ? keywords.join(',') : keywords,
+        Array.isArray(keywords) ? keywords.join(",") : keywords,
         text_only,
         user_input_audio_format,
-        Array.isArray(client_events) ? client_events.join(',') : client_events,
+        Array.isArray(client_events) ? client_events.join(",") : client_events,
         privacy_settings ? JSON.stringify(privacy_settings) : null,
         conversations_retention_period,
         delete_transcript_and_derived_fields,
-        delete_audio
+        delete_audio,
       ]
     );
     res.json({ success: true });
@@ -4101,128 +5655,203 @@ app.post('/api/agents/:agentId/advanced-settings', async (req, res) => {
 // ... existing code ...
 
 // Duplicate agent in local DB and ElevenLabs
-app.post('/api/agents/:agentId/duplicate', authenticateJWT, async (req, res) => {
-  const agentId = req.params.agentId;
-  const { client_id } = req.body || {}; // Get client_id from request body, default to empty object
-  
-  try {
-    if (process.env.ELEVENLABS_API_KEY) {
-      // Duplicate in ElevenLabs
-      const duplicateRes = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}/duplicate`, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': process.env.ELEVENLABS_API_KEY,
-          'Content-Type': 'application/json'
-        }
-      });
-      const duplicateData = await duplicateRes.json();
-      if (duplicateRes.ok && duplicateData.agent_id) {
-        // Fetch full agent details from ElevenLabs for the new agent
-        const detailsRes = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${duplicateData.agent_id}`, {
-          headers: {
-            'xi-api-key': process.env.ELEVENLABS_API_KEY,
-            'Content-Type': 'application/json'
+app.post(
+  "/api/agents/:agentId/duplicate",
+  authenticateJWT,
+  async (req, res) => {
+    const agentId = req.params.agentId;
+    const { client_id } = req.body || {}; // Get client_id from request body, default to empty object
+
+    try {
+      if (process.env.ELEVENLABS_API_KEY) {
+        // Duplicate in ElevenLabs
+        const duplicateRes = await fetch(
+          `https://api.elevenlabs.io/v1/convai/agents/${agentId}/duplicate`,
+          {
+            method: "POST",
+            headers: {
+              "xi-api-key": process.env.ELEVENLABS_API_KEY,
+              "Content-Type": "application/json",
+            },
           }
-        });
-        const details = await detailsRes.json();
-        // Look up language_id from languages table
-        const languageCode = details.conversation_config?.agent?.language || '';
-        db.query('SELECT id FROM languages WHERE code = ? LIMIT 1', [languageCode], (langErr, langRows) => {
-          let language_id = null;
-          if (!langErr && langRows && langRows.length > 0) {
-            language_id = langRows[0].id;
-          } else {
-            language_id = 1; // fallback to 1 (likely English)
-          }
-          const newAgent = {
-            agent_id: details.agent_id,
-            client_id: client_id || null, // Use provided client_id or null
-            name: (details.name || '') + ' (Copy)',
-            description: details.description || '',
-            first_message: details.conversation_config?.agent?.first_message || '',
-            system_prompt: details.conversation_config?.agent?.prompt?.prompt || '',
-            language_id,
-            voice_id: details.conversation_config?.tts?.voice_id || '',
-            model: details.model || '',
-            tags: JSON.stringify(details.tags || []),
-            platform_settings: JSON.stringify(details.platform_settings || {}),
-            language_code: languageCode,
-            additional_languages: JSON.stringify(details.conversation_config?.agent?.additional_languages || []),
-            custom_llm_url: details.conversation_config?.agent?.prompt?.custom_llm_url || '',
-            custom_llm_model_id: details.conversation_config?.agent?.prompt?.custom_llm_model_id || '',
-            custom_llm_api_key: details.conversation_config?.agent?.prompt?.custom_llm_api_key || '',
-            custom_llm_headers: JSON.stringify(details.conversation_config?.agent?.prompt?.custom_llm_headers || []),
-            llm: details.conversation_config?.agent?.prompt?.llm || '',
-            temperature: details.conversation_config?.agent?.prompt?.temperature || 0.5,
-            created_by: req.user.id,
-            created_by_name: (req.user.name || req.user.companyName || req.user.email || 'Unknown'),
-            created_by_type: (req.user.type === 'client' ? 'client' : 'admin')
-          };
-          db.query('INSERT INTO agents SET ?', newAgent, (err2, result) => {
-            if (err2) {
-              console.error('DB insert error:', err2, newAgent);
-              return res.status(500).json({ success: false, message: err2.message });
+        );
+        const duplicateData = await duplicateRes.json();
+        if (duplicateRes.ok && duplicateData.agent_id) {
+          // Fetch full agent details from ElevenLabs for the new agent
+          const detailsRes = await fetch(
+            `https://api.elevenlabs.io/v1/convai/agents/${duplicateData.agent_id}`,
+            {
+              headers: {
+                "xi-api-key": process.env.ELEVENLABS_API_KEY,
+                "Content-Type": "application/json",
+              },
             }
-            res.json({ success: true, data: { ...newAgent, id: result.insertId } });
-          });
-        });
-        return;
-      }
-    }
-    // If ElevenLabs duplication fails, fallback to local duplication (optional)
-    db.query('SELECT * FROM agents WHERE agent_id = ?', [agentId], (err, rows) => {
-      if (err || !rows.length) return res.status(404).json({ success: false, message: 'Agent not found' });
-      const agent = rows[0];
-      const newAgent = { ...agent };
-      newAgent.agent_id = `local_${Date.now()}`;
-      newAgent.name = agent.name + ' (Copy)';
-      newAgent.client_id = client_id || agent.client_id; // Use provided client_id or keep original
-      newAgent.created_by = req.user.id;
-      newAgent.created_by_name = (req.user.name || req.user.companyName || req.user.email || 'Unknown');
-      newAgent.created_by_type = (req.user.type === 'client' ? 'client' : 'admin');
-      delete newAgent.id;
-      db.query('INSERT INTO agents SET ?', newAgent, (err2, result) => {
-        if (err2) {
-          console.error('DB insert error:', err2, newAgent);
-          return res.status(500).json({ success: false, message: err2.message });
+          );
+          const details = await detailsRes.json();
+          // Look up language_id from languages table
+          const languageCode =
+            details.conversation_config?.agent?.language || "";
+          db.query(
+            "SELECT id FROM languages WHERE code = ? LIMIT 1",
+            [languageCode],
+            (langErr, langRows) => {
+              let language_id = null;
+              if (!langErr && langRows && langRows.length > 0) {
+                language_id = langRows[0].id;
+              } else {
+                language_id = 1; // fallback to 1 (likely English)
+              }
+              const newAgent = {
+                agent_id: details.agent_id,
+                client_id: client_id || null, // Use provided client_id or null
+                name: (details.name || "") + " (Copy)",
+                description: details.description || "",
+                first_message:
+                  details.conversation_config?.agent?.first_message || "",
+                system_prompt:
+                  details.conversation_config?.agent?.prompt?.prompt || "",
+                language_id,
+                voice_id: details.conversation_config?.tts?.voice_id || "",
+                model: details.model || "",
+                tags: JSON.stringify(details.tags || []),
+                platform_settings: JSON.stringify(
+                  details.platform_settings || {}
+                ),
+                language_code: languageCode,
+                additional_languages: JSON.stringify(
+                  details.conversation_config?.agent?.additional_languages || []
+                ),
+                custom_llm_url:
+                  details.conversation_config?.agent?.prompt?.custom_llm_url ||
+                  "",
+                custom_llm_model_id:
+                  details.conversation_config?.agent?.prompt
+                    ?.custom_llm_model_id || "",
+                custom_llm_api_key:
+                  details.conversation_config?.agent?.prompt
+                    ?.custom_llm_api_key || "",
+                custom_llm_headers: JSON.stringify(
+                  details.conversation_config?.agent?.prompt
+                    ?.custom_llm_headers || []
+                ),
+                llm: details.conversation_config?.agent?.prompt?.llm || "",
+                temperature:
+                  details.conversation_config?.agent?.prompt?.temperature ||
+                  0.5,
+                created_by: req.user.id,
+                created_by_name:
+                  req.user.name ||
+                  req.user.companyName ||
+                  req.user.email ||
+                  "Unknown",
+                created_by_type:
+                  req.user.type === "client" ? "client" : "admin",
+              };
+              db.query("INSERT INTO agents SET ?", newAgent, (err2, result) => {
+                if (err2) {
+                  console.error("DB insert error:", err2, newAgent);
+                  return res
+                    .status(500)
+                    .json({ success: false, message: err2.message });
+                }
+                res.json({
+                  success: true,
+                  data: { ...newAgent, id: result.insertId },
+                });
+              });
+            }
+          );
+          return;
         }
-        res.json({ success: true, data: { ...newAgent, id: result.insertId } });
-      });
-    });
-  } catch (err) {
-    console.error('Duplicate agent error:', err);
-    res.status(500).json({ success: false, message: err.message });
+      }
+      // If ElevenLabs duplication fails, fallback to local duplication (optional)
+      db.query(
+        "SELECT * FROM agents WHERE agent_id = ?",
+        [agentId],
+        (err, rows) => {
+          if (err || !rows.length)
+            return res
+              .status(404)
+              .json({ success: false, message: "Agent not found" });
+          const agent = rows[0];
+          const newAgent = { ...agent };
+          newAgent.agent_id = `local_${Date.now()}`;
+          newAgent.name = agent.name + " (Copy)";
+          newAgent.client_id = client_id || agent.client_id; // Use provided client_id or keep original
+          newAgent.created_by = req.user.id;
+          newAgent.created_by_name =
+            req.user.name ||
+            req.user.companyName ||
+            req.user.email ||
+            "Unknown";
+          newAgent.created_by_type =
+            req.user.type === "client" ? "client" : "admin";
+          delete newAgent.id;
+          db.query("INSERT INTO agents SET ?", newAgent, (err2, result) => {
+            if (err2) {
+              console.error("DB insert error:", err2, newAgent);
+              return res
+                .status(500)
+                .json({ success: false, message: err2.message });
+            }
+            res.json({
+              success: true,
+              data: { ...newAgent, id: result.insertId },
+            });
+          });
+        }
+      );
+    } catch (err) {
+      console.error("Duplicate agent error:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
-});
+);
 
 // Improved DELETE: always try both ElevenLabs and local DB, return success if either works
-app.delete('/api/agents/:agentId', authenticateJWT, async (req, res) => {
+app.delete("/api/agents/:agentId", authenticateJWT, async (req, res) => {
   const agentId = req.params.agentId;
   let deletedFromElevenLabs = false;
   let deletedFromLocal = false;
   try {
     // Try to delete from ElevenLabs
     if (process.env.ELEVENLABS_API_KEY) {
-      const elevenRes = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
-        method: 'DELETE',
-        headers: {
-          'xi-api-key': process.env.ELEVENLABS_API_KEY,
-          'Content-Type': 'application/json'
+      const elevenRes = await fetch(
+        `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "xi-api-key": process.env.ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
       if (elevenRes.ok) deletedFromElevenLabs = true;
     }
     // Try to delete from local DB
-    db.query('DELETE FROM agents WHERE agent_id = ?', [agentId], (err2, result) => {
-      if (!err2 && result.affectedRows > 0) deletedFromLocal = true;
-      if (deletedFromElevenLabs || deletedFromLocal) {
-        return res.json({ success: true, deletedFromElevenLabs, deletedFromLocal });
-      } else {
-        return res.status(404).json({ success: false, message: 'Agent not found in ElevenLabs or local DB' });
+    db.query(
+      "DELETE FROM agents WHERE agent_id = ?",
+      [agentId],
+      (err2, result) => {
+        if (!err2 && result.affectedRows > 0) deletedFromLocal = true;
+        if (deletedFromElevenLabs || deletedFromLocal) {
+          return res.json({
+            success: true,
+            deletedFromElevenLabs,
+            deletedFromLocal,
+          });
+        } else {
+          return res
+            .status(404)
+            .json({
+              success: false,
+              message: "Agent not found in ElevenLabs or local DB",
+            });
+        }
       }
-    });
+    );
   } catch (err) {
-    console.error('Delete agent error:', err);
+    console.error("Delete agent error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -4230,188 +5859,233 @@ app.delete('/api/agents/:agentId', authenticateJWT, async (req, res) => {
 // --- AGENT KNOWLEDGE BASE API ENDPOINTS ---
 
 // POST /api/agents/:agentId/knowledge-base-db - Save knowledge base mappings to database
-app.post('/api/agents/:agentId/knowledge-base-db', async (req, res) => {
+app.post("/api/agents/:agentId/knowledge-base-db", async (req, res) => {
   const agentId = req.params.agentId;
   const { knowledgeBaseItems } = req.body;
-  
-  console.log(`[API] Saving knowledge base to database for agent ID: ${agentId}`, {
-    agentId,
-    requestBody: req.body,
-    timestamp: new Date().toISOString()
-  });
+
+  console.log(
+    `[API] Saving knowledge base to database for agent ID: ${agentId}`,
+    {
+      agentId,
+      requestBody: req.body,
+      timestamp: new Date().toISOString(),
+    }
+  );
 
   try {
     if (!Array.isArray(knowledgeBaseItems)) {
       return res.status(400).json({
         success: false,
-        error: 'knowledgeBaseItems must be an array',
-        timestamp: new Date().toISOString()
+        error: "knowledgeBaseItems must be an array",
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Check if the agent exists in the agents table
     console.log(`[API] Checking if agent ${agentId} exists in agents table`);
-    db.query('SELECT agent_id FROM agents WHERE agent_id = ?', [agentId], (checkErr, checkRows) => {
-      if (checkErr) {
-        console.error(`[API] Error checking if agent exists:`, checkErr);
-        return res.status(500).json({
-          success: false,
-          agentId,
-          error: 'Failed to check if agent exists',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      if (checkRows.length === 0) {
-        console.error(`[API] Agent ${agentId} not found in agents table`);
-        return res.status(404).json({
-          success: false,
-          agentId,
-          error: `Agent ${agentId} not found in agents table`,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      console.log(`[API] Agent ${agentId} found in agents table, proceeding with knowledge base update`);
-      
-      // Prepare knowledge base items as JSON array
-      const knowledgeBaseItemsJson = knowledgeBaseItems.map(item => ({
-        id: String(item.id),
-        name: item.name,
-        type: item.type,
-        url: item.url,
-        usage_mode: item.usage_mode || 'auto',
-        rag_enabled: item.usage_mode === 'auto'
-      }));
-      
-      console.log(`[API] Preparing to save knowledge base items for agent ${agentId}:`, {
-        agentId,
-        itemCount: knowledgeBaseItemsJson.length,
-        items: knowledgeBaseItemsJson,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Insert or update the single row for this agent
-      const insertOrUpdateSQL = `
+    db.query(
+      "SELECT agent_id FROM agents WHERE agent_id = ?",
+      [agentId],
+      (checkErr, checkRows) => {
+        if (checkErr) {
+          console.error(`[API] Error checking if agent exists:`, checkErr);
+          return res.status(500).json({
+            success: false,
+            agentId,
+            error: "Failed to check if agent exists",
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        if (checkRows.length === 0) {
+          console.error(`[API] Agent ${agentId} not found in agents table`);
+          return res.status(404).json({
+            success: false,
+            agentId,
+            error: `Agent ${agentId} not found in agents table`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        console.log(
+          `[API] Agent ${agentId} found in agents table, proceeding with knowledge base update`
+        );
+
+        // Prepare knowledge base items as JSON array
+        const knowledgeBaseItemsJson = knowledgeBaseItems.map((item) => ({
+          id: String(item.id),
+          name: item.name,
+          type: item.type,
+          url: item.url,
+          usage_mode: item.usage_mode || "auto",
+          rag_enabled: item.usage_mode === "auto",
+        }));
+
+        console.log(
+          `[API] Preparing to save knowledge base items for agent ${agentId}:`,
+          {
+            agentId,
+            itemCount: knowledgeBaseItemsJson.length,
+            items: knowledgeBaseItemsJson,
+            timestamp: new Date().toISOString(),
+          }
+        );
+
+        // Insert or update the single row for this agent
+        const insertOrUpdateSQL = `
         INSERT INTO agent_knowledge_base (agent_id, knowledge_base_items) 
         VALUES (?, ?) 
         ON DUPLICATE KEY UPDATE 
           knowledge_base_items = VALUES(knowledge_base_items),
           updated_at = NOW()
       `;
-      
-      db.query(insertOrUpdateSQL, [agentId, JSON.stringify(knowledgeBaseItemsJson)], (insertErr) => {
-        if (insertErr) {
-          console.error(`[API] Error saving knowledge base items for agent ${agentId}:`, insertErr);
-          console.error(`[API] Insert values:`, [agentId, JSON.stringify(knowledgeBaseItemsJson)]);
-          return res.status(500).json({
-            success: false,
-            agentId,
-            error: insertErr.message || 'Failed to save knowledge base items',
-            timestamp: new Date().toISOString()
-          });
-        }
-        
-        console.log(`[API] Successfully saved knowledge base items for agent ${agentId}`, {
-          agentId,
-          itemCount: knowledgeBaseItemsJson.length,
-          items: knowledgeBaseItemsJson.map(item => ({
-            id: item.id,
-            name: item.name,
-            type: item.type,
-            usage_mode: item.usage_mode
-          })),
-          timestamp: new Date().toISOString()
-        });
 
-        res.json({
-          success: true,
-          agentId,
-          message: `Successfully saved ${knowledgeBaseItemsJson.length} knowledge base items`,
-          timestamp: new Date().toISOString()
-        });
-      });
-    });
+        db.query(
+          insertOrUpdateSQL,
+          [agentId, JSON.stringify(knowledgeBaseItemsJson)],
+          (insertErr) => {
+            if (insertErr) {
+              console.error(
+                `[API] Error saving knowledge base items for agent ${agentId}:`,
+                insertErr
+              );
+              console.error(`[API] Insert values:`, [
+                agentId,
+                JSON.stringify(knowledgeBaseItemsJson),
+              ]);
+              return res.status(500).json({
+                success: false,
+                agentId,
+                error:
+                  insertErr.message || "Failed to save knowledge base items",
+                timestamp: new Date().toISOString(),
+              });
+            }
+
+            console.log(
+              `[API] Successfully saved knowledge base items for agent ${agentId}`,
+              {
+                agentId,
+                itemCount: knowledgeBaseItemsJson.length,
+                items: knowledgeBaseItemsJson.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  type: item.type,
+                  usage_mode: item.usage_mode,
+                })),
+                timestamp: new Date().toISOString(),
+              }
+            );
+
+            res.json({
+              success: true,
+              agentId,
+              message: `Successfully saved ${knowledgeBaseItemsJson.length} knowledge base items`,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        );
+      }
+    );
   } catch (error) {
-    console.error(`[API] Error in knowledge base save operation for agent ${agentId}:`, {
-      agentId,
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
+    console.error(
+      `[API] Error in knowledge base save operation for agent ${agentId}:`,
+      {
+        agentId,
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      }
+    );
 
     res.status(500).json({
       success: false,
       agentId,
-      error: error.message || 'Unknown error occurred',
-      timestamp: new Date().toISOString()
+      error: error.message || "Unknown error occurred",
+      timestamp: new Date().toISOString(),
     });
   }
 });
 
 // GET /api/agents/:agentId/knowledge-base-db - Get knowledge base mappings from database
-app.get('/api/agents/:agentId/knowledge-base-db', async (req, res) => {
+app.get("/api/agents/:agentId/knowledge-base-db", async (req, res) => {
   const agentId = req.params.agentId;
-  
-  console.log(`[API] Fetching knowledge base from database for agent ID: ${agentId}`, {
-    agentId,
-    timestamp: new Date().toISOString()
-  });
+
+  console.log(
+    `[API] Fetching knowledge base from database for agent ID: ${agentId}`,
+    {
+      agentId,
+      timestamp: new Date().toISOString(),
+    }
+  );
 
   try {
-    db.query('SELECT * FROM agent_knowledge_base WHERE agent_id = ?', [agentId], (err, rows) => {
-      if (err) {
-        console.error(`[API] Error fetching knowledge base items for agent ${agentId}:`, {
-          agentId,
-          error: err.message,
-          timestamp: new Date().toISOString()
-        });
+    db.query(
+      "SELECT * FROM agent_knowledge_base WHERE agent_id = ?",
+      [agentId],
+      (err, rows) => {
+        if (err) {
+          console.error(
+            `[API] Error fetching knowledge base items for agent ${agentId}:`,
+            {
+              agentId,
+              error: err.message,
+              timestamp: new Date().toISOString(),
+            }
+          );
 
-        return res.status(500).json({
-          success: false,
-          agentId,
-          error: err.message || 'Failed to fetch knowledge base items',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      let knowledgeBaseItems = [];
-      if (rows.length > 0 && rows[0].knowledge_base_items) {
-        try {
-          knowledgeBaseItems = JSON.parse(rows[0].knowledge_base_items);
-        } catch (parseErr) {
-          console.error(`[API] Error parsing knowledge base items JSON for agent ${agentId}:`, parseErr);
-          knowledgeBaseItems = [];
+          return res.status(500).json({
+            success: false,
+            agentId,
+            error: err.message || "Failed to fetch knowledge base items",
+            timestamp: new Date().toISOString(),
+          });
         }
-      }
-      
-      console.log(`[API] Found knowledge base items for agent ${agentId}:`, {
-        agentId,
-        itemCount: knowledgeBaseItems.length,
-        items: knowledgeBaseItems,
-        timestamp: new Date().toISOString()
-      });
 
-      res.json({
-        success: true,
-        agentId,
-        knowledgeBaseItems: knowledgeBaseItems,
-        timestamp: new Date().toISOString()
-      });
-    });
+        let knowledgeBaseItems = [];
+        if (rows.length > 0 && rows[0].knowledge_base_items) {
+          try {
+            knowledgeBaseItems = JSON.parse(rows[0].knowledge_base_items);
+          } catch (parseErr) {
+            console.error(
+              `[API] Error parsing knowledge base items JSON for agent ${agentId}:`,
+              parseErr
+            );
+            knowledgeBaseItems = [];
+          }
+        }
+
+        console.log(`[API] Found knowledge base items for agent ${agentId}:`, {
+          agentId,
+          itemCount: knowledgeBaseItems.length,
+          items: knowledgeBaseItems,
+          timestamp: new Date().toISOString(),
+        });
+
+        res.json({
+          success: true,
+          agentId,
+          knowledgeBaseItems: knowledgeBaseItems,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    );
   } catch (error) {
-    console.error(`[API] Error in knowledge base fetch operation for agent ${agentId}:`, {
-      agentId,
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
+    console.error(
+      `[API] Error in knowledge base fetch operation for agent ${agentId}:`,
+      {
+        agentId,
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      }
+    );
 
     res.status(500).json({
       success: false,
       agentId,
-      error: error.message || 'Unknown error occurred',
-      timestamp: new Date().toISOString()
+      error: error.message || "Unknown error occurred",
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -4419,50 +6093,57 @@ app.get('/api/agents/:agentId/knowledge-base-db', async (req, res) => {
 // --- ElevenLabs Secrets Proxy Endpoints ---
 
 // GET /api/workspace-secrets/local - Get secrets from local database
-app.get('/api/workspace-secrets/local', (req, res) => {
+app.get("/api/workspace-secrets/local", (req, res) => {
   try {
-    console.log('[DEBUG] Fetching workspace secrets from local database...');
-    const query = 'SELECT * FROM workspace_secrets ORDER BY created_at DESC';
+    console.log("[DEBUG] Fetching workspace secrets from local database...");
+    const query = "SELECT * FROM workspace_secrets ORDER BY created_at DESC";
     db.query(query, (err, rows) => {
       if (err) {
-        console.error('Error fetching secrets from local database:', err);
-        return res.status(500).json({ error: 'Failed to fetch secrets from local database' });
+        console.error("Error fetching secrets from local database:", err);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch secrets from local database" });
       }
-      
-      console.log('[DEBUG] Raw database rows:', rows);
-      
+
+      console.log("[DEBUG] Raw database rows:", rows);
+
       // Parse used_by JSON for each secret
-      const secrets = rows.map(row => ({
+      const secrets = rows.map((row) => ({
         ...row,
-        used_by: row.used_by ? JSON.parse(row.used_by) : null
+        used_by: row.used_by ? JSON.parse(row.used_by) : null,
       }));
-      
-      console.log('[DEBUG] Processed secrets:', secrets);
-      console.log('[DEBUG] Sending response with secrets count:', secrets.length);
-      
+
+      console.log("[DEBUG] Processed secrets:", secrets);
+      console.log(
+        "[DEBUG] Sending response with secrets count:",
+        secrets.length
+      );
+
       res.json({ secrets });
     });
   } catch (error) {
-    console.error('Error in local secrets endpoint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in local secrets endpoint:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /api/elevenlabs/secrets - Get all workspace secrets
-app.get('/api/elevenlabs/secrets', async (req, res) => {
+app.get("/api/elevenlabs/secrets", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'ElevenLabs API key not configured' });
+      return res
+        .status(500)
+        .json({ error: "ElevenLabs API key not configured" });
     }
 
-    console.log('Fetching secrets from ElevenLabs...');
-    
+    console.log("Fetching secrets from ElevenLabs...");
+
     // Try different possible endpoints
     const endpoints = [
-      'https://api.elevenlabs.io/v1/convai/secrets',
-      'https://api.elevenlabs.io/v1/secrets',
-      'https://api.elevenlabs.io/v1/workspace/secrets'
+      "https://api.elevenlabs.io/v1/convai/secrets",
+      "https://api.elevenlabs.io/v1/secrets",
+      "https://api.elevenlabs.io/v1/workspace/secrets",
     ];
 
     let response = null;
@@ -4473,19 +6154,26 @@ app.get('/api/elevenlabs/secrets', async (req, res) => {
         console.log(`Trying GET endpoint: ${endpoint}`);
         response = await fetch(endpoint, {
           headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
           },
         });
 
-        console.log(`GET endpoint ${endpoint} response status:`, response.status);
-        
+        console.log(
+          `GET endpoint ${endpoint} response status:`,
+          response.status
+        );
+
         if (response.ok) {
           console.log(`GET success with endpoint: ${endpoint}`);
           break;
         } else {
           const errorText = await response.text();
-          console.log(`GET endpoint ${endpoint} failed:`, response.status, errorText);
+          console.log(
+            `GET endpoint ${endpoint} failed:`,
+            response.status,
+            errorText
+          );
           lastError = { status: response.status, text: errorText };
         }
       } catch (error) {
@@ -4495,32 +6183,45 @@ app.get('/api/elevenlabs/secrets', async (req, res) => {
     }
 
     if (!response || !response.ok) {
-      console.error('All GET endpoints failed. Last error:', lastError);
-      return res.status(lastError?.status || 500).json({ 
-        error: 'Failed to fetch secrets from ElevenLabs', 
-        details: lastError?.text || lastError?.error || 'All endpoints failed'
+      console.error("All GET endpoints failed. Last error:", lastError);
+      return res.status(lastError?.status || 500).json({
+        error: "Failed to fetch secrets from ElevenLabs",
+        details: lastError?.text || lastError?.error || "All endpoints failed",
       });
     }
 
-    console.log('ElevenLabs secrets response status:', response.status);
-    console.log('ElevenLabs secrets response headers:', Object.fromEntries(response.headers.entries()));
+    console.log("ElevenLabs secrets response status:", response.status);
+    console.log(
+      "ElevenLabs secrets response headers:",
+      Object.fromEntries(response.headers.entries())
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs secrets API error:', response.status, errorText);
-      return res.status(response.status).json({ 
-        error: 'Failed to fetch secrets from ElevenLabs', 
-        details: errorText 
+      console.error(
+        "ElevenLabs secrets API error:",
+        response.status,
+        errorText
+      );
+      return res.status(response.status).json({
+        error: "Failed to fetch secrets from ElevenLabs",
+        details: errorText,
       });
     }
 
     const secrets = await response.json();
-    console.log('ElevenLabs secrets response:', JSON.stringify(secrets, null, 2));
-    
+    console.log(
+      "ElevenLabs secrets response:",
+      JSON.stringify(secrets, null, 2)
+    );
+
     // Sync secrets with local database
     try {
-      const secretsArray = secrets.secrets || secrets.data || (Array.isArray(secrets) ? secrets : []);
-      
+      const secretsArray =
+        secrets.secrets ||
+        secrets.data ||
+        (Array.isArray(secrets) ? secrets : []);
+
       for (const secret of secretsArray) {
         const insertQuery = `
           INSERT INTO workspace_secrets (secret_id, name, type, used_by) 
@@ -4531,73 +6232,97 @@ app.get('/api/elevenlabs/secrets', async (req, res) => {
           used_by = VALUES(used_by),
           updated_at = CURRENT_TIMESTAMP
         `;
-        
-        const usedByJson = secret.used_by ? JSON.stringify(secret.used_by) : null;
-        
-        db.query(insertQuery, [
-          secret.secret_id || secret.id,
-          secret.name,
-          secret.type || 'new',
-          usedByJson
-        ], (dbErr, result) => {
-          if (dbErr) {
-            console.error('Failed to sync secret to local database:', dbErr);
+
+        const usedByJson = secret.used_by
+          ? JSON.stringify(secret.used_by)
+          : null;
+
+        db.query(
+          insertQuery,
+          [
+            secret.secret_id || secret.id,
+            secret.name,
+            secret.type || "new",
+            usedByJson,
+          ],
+          (dbErr, result) => {
+            if (dbErr) {
+              console.error("Failed to sync secret to local database:", dbErr);
+            }
           }
-        });
+        );
       }
-      
-      console.log('Secrets synced with local database');
+
+      console.log("Secrets synced with local database");
     } catch (dbError) {
-      console.error('Error syncing secrets with local database:', dbError);
+      console.error("Error syncing secrets with local database:", dbError);
     }
-    
+
     res.json(secrets);
   } catch (error) {
-    console.error('Error fetching secrets:', error);
-    res.status(500).json({ error: 'Failed to fetch secrets', details: error.message });
+    console.error("Error fetching secrets:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch secrets", details: error.message });
   }
 });
 
 // MCP Servers - proxy to ElevenLabs and sync minimal metadata locally
-app.get('/api/mcp-servers', authenticateJWT, async (req, res) => {
+app.get("/api/mcp-servers", authenticateJWT, async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
-    const headers = { 'xi-api-key': apiKey, 'Content-Type': 'application/json' };
-    const resp = await fetch('https://api.elevenlabs.io/v1/convai/mcp-servers', { headers });
+    const headers = {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+    };
+    const resp = await fetch(
+      "https://api.elevenlabs.io/v1/convai/mcp-servers",
+      { headers }
+    );
     const data = await resp.json();
-    
-    console.log('[DEBUG] ElevenLabs MCP servers response status:', resp.status);
-    console.log('[DEBUG] ElevenLabs MCP servers raw data:', data);
-    
+
+    console.log("[DEBUG] ElevenLabs MCP servers response status:", resp.status);
+    console.log("[DEBUG] ElevenLabs MCP servers raw data:", data);
+
     if (!resp.ok) {
       return res.status(resp.status).json({ success: false, error: data });
     }
-    
+
     const list = Array.isArray(data)
       ? data
-      : (Array.isArray(data?.items) ? data.items
-        : (Array.isArray(data?.servers) ? data.servers
-          : (Array.isArray(data?.mcp_servers) ? data.mcp_servers : [])));
-    
-    console.log('[DEBUG] Normalized MCP servers list:', list);
+      : Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.servers)
+      ? data.servers
+      : Array.isArray(data?.mcp_servers)
+      ? data.mcp_servers
+      : [];
+
+    console.log("[DEBUG] Normalized MCP servers list:", list);
     if (list.length > 0) {
-      console.log('[DEBUG] First MCP server properties:', Object.keys(list[0]));
-      console.log('[DEBUG] First MCP server data:', list[0]);
+      console.log("[DEBUG] First MCP server properties:", Object.keys(list[0]));
+      console.log("[DEBUG] First MCP server data:", list[0]);
     }
-    
+
     res.json({ success: true, data: list });
   } catch (err) {
-    console.error('[DEBUG] Error in MCP servers endpoint:', err);
+    console.error("[DEBUG] Error in MCP servers endpoint:", err);
     res.status(500).json({ success: false, error: String(err) });
   }
 });
 
-app.get('/api/mcp-servers/:id', authenticateJWT, async (req, res) => {
+app.get("/api/mcp-servers/:id", authenticateJWT, async (req, res) => {
   try {
     const { id } = req.params;
     const apiKey = process.env.ELEVENLABS_API_KEY;
-    const headers = { 'xi-api-key': apiKey, 'Content-Type': 'application/json' };
-    const resp = await fetch(`https://api.elevenlabs.io/v1/convai/mcp-servers/${id}`, { headers });
+    const headers = {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+    };
+    const resp = await fetch(
+      `https://api.elevenlabs.io/v1/convai/mcp-servers/${id}`,
+      { headers }
+    );
     const data = await resp.json();
     if (!resp.ok) {
       return res.status(resp.status).json({ success: false, error: data });
@@ -4608,47 +6333,55 @@ app.get('/api/mcp-servers/:id', authenticateJWT, async (req, res) => {
   }
 });
 
-app.post('/api/mcp-servers', authenticateJWT, async (req, res) => {
+app.post("/api/mcp-servers", authenticateJWT, async (req, res) => {
   try {
     const payload = req.body;
-    console.log('[DEBUG] MCP server creation request payload:', payload);
-    
+    console.log("[DEBUG] MCP server creation request payload:", payload);
+
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      console.error('[DEBUG] ElevenLabs API key not configured');
-      return res.status(500).json({ success: false, error: 'ElevenLabs API key not configured' });
+      console.error("[DEBUG] ElevenLabs API key not configured");
+      return res
+        .status(500)
+        .json({ success: false, error: "ElevenLabs API key not configured" });
     }
-    
-    const headers = { 'xi-api-key': apiKey, 'Content-Type': 'application/json' };
-    
+
+    const headers = {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+    };
+
     const transportMap = {
-      sse: 'SSE',
-      streamable: 'STREAMABLE_HTTP',
+      sse: "SSE",
+      streamable: "STREAMABLE_HTTP",
     };
     const approvalMap = {
-      always: 'require_approval_all',
-      fine: 'require_approval_per_tool',
-      none: 'auto_approve_all',
+      always: "require_approval_all",
+      fine: "require_approval_per_tool",
+      none: "auto_approve_all",
     };
 
     // Normalize incoming fields
     const normalized = {
       name: payload.name,
       description: payload.description,
-      type: payload.type || 'streamable',
+      type: payload.type || "streamable",
       url: payload.url,
       trusted: !!payload.trusted,
       approval_mode: payload.approval_mode,
-      secret_id: payload?.secret?.secret_id && payload?.secret?.secret_id !== 'none' ? payload.secret.secret_id : null,
+      secret_id:
+        payload?.secret?.secret_id && payload?.secret?.secret_id !== "none"
+          ? payload.secret.secret_id
+          : null,
       headers: Array.isArray(payload.headers) ? payload.headers : [],
     };
 
     const headersArray = (normalized.headers || [])
-      .filter(h => h?.name && h?.value)
-      .map(h => ({ name: h.name, type: h.type || 'text', value: h.value }));
+      .filter((h) => h?.name && h?.value)
+      .map((h) => ({ name: h.name, type: h.type || "text", value: h.value }));
 
     const headersObject = headersArray.reduce((acc, h) => {
-      if (h.type === 'text') {
+      if (h.type === "text") {
         acc[h.name] = h.value;
       }
       return acc;
@@ -4657,41 +6390,64 @@ app.post('/api/mcp-servers', authenticateJWT, async (req, res) => {
     // Create multiple candidate payloads to maximize compatibility
     const candidatePayloads = [
       {
-        id: 'shape:type_url',
+        id: "shape:type_url",
         body: {
           name: normalized.name,
           description: normalized.description,
           type: normalized.type,
           url: normalized.url,
           trusted: normalized.trusted,
-          ...(normalized.secret_id ? { secret: { type: 'workspace_secret', secret_id: normalized.secret_id } } : {}),
+          ...(normalized.secret_id
+            ? {
+                secret: {
+                  type: "workspace_secret",
+                  secret_id: normalized.secret_id,
+                },
+              }
+            : {}),
           ...(headersArray.length ? { headers: headersArray } : {}),
           // do not send approval_mode here
         },
       },
       {
-        id: 'shape:transport_url',
+        id: "shape:transport_url",
         body: {
           name: normalized.name,
           description: normalized.description,
-          transport: transportMap[normalized.type] || 'STREAMABLE_HTTP',
+          transport: transportMap[normalized.type] || "STREAMABLE_HTTP",
           url: normalized.url,
           trusted: normalized.trusted,
-          ...(normalized.secret_id ? { secret: { type: 'workspace_secret', secret_id: normalized.secret_id } } : {}),
+          ...(normalized.secret_id
+            ? {
+                secret: {
+                  type: "workspace_secret",
+                  secret_id: normalized.secret_id,
+                },
+              }
+            : {}),
           ...(headersArray.length ? { headers: headersArray } : {}),
         },
       },
       {
-        id: 'shape:config_object',
+        id: "shape:config_object",
         body: {
           config: {
             name: normalized.name,
             description: normalized.description,
             url: normalized.url,
-            transport: transportMap[normalized.type] || 'STREAMABLE_HTTP',
-            ...(normalized.approval_mode ? { approval_policy: approvalMap[normalized.approval_mode] || undefined } : {}),
-            ...(normalized.secret_id ? { secret_token: { secret_id: normalized.secret_id } } : {}),
-            ...(Object.keys(headersObject).length ? { request_headers: headersObject } : {}),
+            transport: transportMap[normalized.type] || "STREAMABLE_HTTP",
+            ...(normalized.approval_mode
+              ? {
+                  approval_policy:
+                    approvalMap[normalized.approval_mode] || undefined,
+                }
+              : {}),
+            ...(normalized.secret_id
+              ? { secret_token: { secret_id: normalized.secret_id } }
+              : {}),
+            ...(Object.keys(headersObject).length
+              ? { request_headers: headersObject }
+              : {}),
           },
         },
       },
@@ -4701,35 +6457,54 @@ app.post('/api/mcp-servers', authenticateJWT, async (req, res) => {
     const attempts = [];
     for (const candidate of candidatePayloads) {
       try {
-        console.log(`[DEBUG] Trying ElevenLabs payload ${candidate.id}:`, JSON.stringify(candidate.body));
-        const resp = await fetch('https://api.elevenlabs.io/v1/convai/mcp-servers', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(candidate.body),
-        });
+        console.log(
+          `[DEBUG] Trying ElevenLabs payload ${candidate.id}:`,
+          JSON.stringify(candidate.body)
+        );
+        const resp = await fetch(
+          "https://api.elevenlabs.io/v1/convai/mcp-servers",
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify(candidate.body),
+          }
+        );
         const text = await resp.text();
         let data;
-        try { data = JSON.parse(text); } catch { data = { raw: text }; }
-        console.log(`[DEBUG] Response for ${candidate.id}: status=${resp.status}`, data);
-        
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text };
+        }
+        console.log(
+          `[DEBUG] Response for ${candidate.id}: status=${resp.status}`,
+          data
+        );
+
         attempts.push({ id: candidate.id, status: resp.status, body: data });
         if (resp.ok) {
           succeeded = { status: resp.status, data };
           break;
         }
-        
+
         if (resp.status >= 500) {
           // server-side error; no point in trying other shapes
           break;
         }
       } catch (err) {
-        console.warn(`[DEBUG] Error while trying payload ${candidate.id}:`, err);
+        console.warn(
+          `[DEBUG] Error while trying payload ${candidate.id}:`,
+          err
+        );
         attempts.push({ id: candidate.id, error: String(err) });
       }
     }
 
     if (!succeeded) {
-      console.error('[DEBUG] All payload shapes failed. Attempts summary:', attempts);
+      console.error(
+        "[DEBUG] All payload shapes failed. Attempts summary:",
+        attempts
+      );
       return res.status(422).json({ success: false, error: attempts });
     }
 
@@ -4751,61 +6526,79 @@ app.post('/api/mcp-servers', authenticateJWT, async (req, res) => {
             trusted = VALUES(trusted),
             updated_at = CURRENT_TIMESTAMP
         `;
-        
-        const headersJson = headersArray.length ? JSON.stringify(headersArray) : null;
-        db.query(insert, [
-          mcp_server_id, 
-          name || normalized.name || null, 
-          description || normalized.description || null,
-          normalized.type || null,
-          normalized.url || null,
-          normalized.secret_id,
-          headersJson,
-          normalized.approval_mode || 'always',
-          normalized.trusted
-        ], (dbErr) => {
-          if (dbErr) {
-            console.error('[DEBUG] Failed to upsert MCP server locally:', dbErr);
-          } else {
-            console.log('[DEBUG] MCP server metadata saved locally successfully');
+
+        const headersJson = headersArray.length
+          ? JSON.stringify(headersArray)
+          : null;
+        db.query(
+          insert,
+          [
+            mcp_server_id,
+            name || normalized.name || null,
+            description || normalized.description || null,
+            normalized.type || null,
+            normalized.url || null,
+            normalized.secret_id,
+            headersJson,
+            normalized.approval_mode || "always",
+            normalized.trusted,
+          ],
+          (dbErr) => {
+            if (dbErr) {
+              console.error(
+                "[DEBUG] Failed to upsert MCP server locally:",
+                dbErr
+              );
+            } else {
+              console.log(
+                "[DEBUG] MCP server metadata saved locally successfully"
+              );
+            }
           }
-        });
+        );
       }
     } catch (dbErr) {
-      console.warn('[DEBUG] Failed to upsert MCP server locally:', dbErr);
+      console.warn("[DEBUG] Failed to upsert MCP server locally:", dbErr);
     }
 
-    console.log('[DEBUG] MCP server created successfully on ElevenLabs and locally');
+    console.log(
+      "[DEBUG] MCP server created successfully on ElevenLabs and locally"
+    );
     res.status(201).json({ success: true, data: succeeded.data });
   } catch (err) {
-    console.error('[DEBUG] Error in MCP server creation endpoint:', err);
+    console.error("[DEBUG] Error in MCP server creation endpoint:", err);
     res.status(500).json({ success: false, error: String(err) });
   }
 });
 
 // POST /api/elevenlabs/secrets - Create a new secret
-app.post('/api/elevenlabs/secrets', async (req, res) => {
+app.post("/api/elevenlabs/secrets", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'ElevenLabs API key not configured' });
+      return res
+        .status(500)
+        .json({ error: "ElevenLabs API key not configured" });
     }
 
     const { name, value } = req.body;
-    console.log('Creating secret with:', { name, value: value ? '[HIDDEN]' : 'undefined' });
-    
+    console.log("Creating secret with:", {
+      name,
+      value: value ? "[HIDDEN]" : "undefined",
+    });
+
     if (!name || !value) {
-      return res.status(400).json({ error: 'Name and value are required' });
+      return res.status(400).json({ error: "Name and value are required" });
     }
 
-    const requestBody = { name, value, type: 'new' };
-    console.log('Request body:', { name, value: '[HIDDEN]', type: 'new' });
+    const requestBody = { name, value, type: "new" };
+    console.log("Request body:", { name, value: "[HIDDEN]", type: "new" });
 
     // Try different possible endpoints
     const endpoints = [
-      'https://api.elevenlabs.io/v1/convai/secrets',
-      'https://api.elevenlabs.io/v1/secrets',
-      'https://api.elevenlabs.io/v1/workspace/secrets'
+      "https://api.elevenlabs.io/v1/convai/secrets",
+      "https://api.elevenlabs.io/v1/secrets",
+      "https://api.elevenlabs.io/v1/workspace/secrets",
     ];
 
     let response = null;
@@ -4815,22 +6608,26 @@ app.post('/api/elevenlabs/secrets', async (req, res) => {
       try {
         console.log(`Trying endpoint: ${endpoint}`);
         response = await fetch(endpoint, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(requestBody),
         });
 
         console.log(`Endpoint ${endpoint} response status:`, response.status);
-        
+
         if (response.ok) {
           console.log(`Success with endpoint: ${endpoint}`);
           break;
         } else {
           const errorText = await response.text();
-          console.log(`Endpoint ${endpoint} failed:`, response.status, errorText);
+          console.log(
+            `Endpoint ${endpoint} failed:`,
+            response.status,
+            errorText
+          );
           lastError = { status: response.status, text: errorText };
         }
       } catch (error) {
@@ -4840,28 +6637,35 @@ app.post('/api/elevenlabs/secrets', async (req, res) => {
     }
 
     if (!response || !response.ok) {
-      console.error('All endpoints failed. Last error:', lastError);
-      return res.status(lastError?.status || 500).json({ 
-        error: 'Failed to create secret in ElevenLabs', 
-        details: lastError?.text || lastError?.error || 'All endpoints failed'
+      console.error("All endpoints failed. Last error:", lastError);
+      return res.status(lastError?.status || 500).json({
+        error: "Failed to create secret in ElevenLabs",
+        details: lastError?.text || lastError?.error || "All endpoints failed",
       });
     }
 
-    console.log('ElevenLabs response status:', response.status);
-    console.log('ElevenLabs response headers:', Object.fromEntries(response.headers.entries()));
+    console.log("ElevenLabs response status:", response.status);
+    console.log(
+      "ElevenLabs response headers:",
+      Object.fromEntries(response.headers.entries())
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs create secret API error:', response.status, errorText);
-      return res.status(response.status).json({ 
-        error: 'Failed to create secret in ElevenLabs', 
-        details: errorText 
+      console.error(
+        "ElevenLabs create secret API error:",
+        response.status,
+        errorText
+      );
+      return res.status(response.status).json({
+        error: "Failed to create secret in ElevenLabs",
+        details: errorText,
       });
     }
 
     const secret = await response.json();
-    console.log('Successfully created secret:', secret);
-    
+    console.log("Successfully created secret:", secret);
+
     // Save secret to local database
     try {
       const insertQuery = `
@@ -4873,180 +6677,221 @@ app.post('/api/elevenlabs/secrets', async (req, res) => {
         used_by = VALUES(used_by),
         updated_at = CURRENT_TIMESTAMP
       `;
-      
+
       const usedByJson = secret.used_by ? JSON.stringify(secret.used_by) : null;
-      
-      db.query(insertQuery, [
-        secret.secret_id || secret.id,
-        secret.name,
-        secret.type || 'new',
-        usedByJson
-      ], (dbErr, result) => {
-        if (dbErr) {
-          console.error('Failed to save secret to local database:', dbErr);
-          // Still return success since ElevenLabs creation was successful
-        } else {
-          console.log('Secret saved to local database successfully');
+
+      db.query(
+        insertQuery,
+        [
+          secret.secret_id || secret.id,
+          secret.name,
+          secret.type || "new",
+          usedByJson,
+        ],
+        (dbErr, result) => {
+          if (dbErr) {
+            console.error("Failed to save secret to local database:", dbErr);
+            // Still return success since ElevenLabs creation was successful
+          } else {
+            console.log("Secret saved to local database successfully");
+          }
         }
-      });
+      );
     } catch (dbError) {
-      console.error('Error saving secret to local database:', dbError);
+      console.error("Error saving secret to local database:", dbError);
       // Still return success since ElevenLabs creation was successful
     }
-    
+
     res.json(secret);
   } catch (error) {
-    console.error('Error creating secret:', error);
-    res.status(500).json({ error: 'Failed to create secret', details: error.message });
+    console.error("Error creating secret:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to create secret", details: error.message });
   }
 });
 
 // DELETE /api/elevenlabs/secrets/:secret_id - Delete a secret
-app.delete('/api/elevenlabs/secrets/:secret_id', async (req, res) => {
+app.delete("/api/elevenlabs/secrets/:secret_id", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'ElevenLabs API key not configured' });
+      return res
+        .status(500)
+        .json({ error: "ElevenLabs API key not configured" });
     }
 
     const { secret_id } = req.params;
-    const response = await fetch(`https://api.elevenlabs.io/v1/convai/secrets/${encodeURIComponent(secret_id)}`, {
-      method: 'DELETE',
-      headers: {
-        'xi-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/secrets/${encodeURIComponent(
+        secret_id
+      )}`,
+      {
+        method: "DELETE",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs delete secret API error:', response.status, errorText);
-      return res.status(response.status).json({ 
-        error: 'Failed to delete secret from ElevenLabs', 
-        details: errorText 
+      console.error(
+        "ElevenLabs delete secret API error:",
+        response.status,
+        errorText
+      );
+      return res.status(response.status).json({
+        error: "Failed to delete secret from ElevenLabs",
+        details: errorText,
       });
     }
 
     // Delete secret from local database
     try {
-      const deleteQuery = 'DELETE FROM workspace_secrets WHERE secret_id = ?';
+      const deleteQuery = "DELETE FROM workspace_secrets WHERE secret_id = ?";
       db.query(deleteQuery, [secret_id], (dbErr, result) => {
         if (dbErr) {
-          console.error('Failed to delete secret from local database:', dbErr);
+          console.error("Failed to delete secret from local database:", dbErr);
           // Still return success since ElevenLabs deletion was successful
         } else {
-          console.log('Secret deleted from local database successfully');
+          console.log("Secret deleted from local database successfully");
         }
       });
     } catch (dbError) {
-      console.error('Error deleting secret from local database:', dbError);
+      console.error("Error deleting secret from local database:", dbError);
       // Still return success since ElevenLabs deletion was successful
     }
 
-    res.json({ success: true, message: 'Secret deleted successfully' });
+    res.json({ success: true, message: "Secret deleted successfully" });
   } catch (error) {
-    console.error('Error deleting secret:', error);
-    res.status(500).json({ error: 'Failed to delete secret', details: error.message });
+    console.error("Error deleting secret:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to delete secret", details: error.message });
   }
 });
 
 // PATCH /api/elevenlabs/secrets/:secret_id - Update a secret
-app.patch('/api/elevenlabs/secrets/:secret_id', async (req, res) => {
+app.patch("/api/elevenlabs/secrets/:secret_id", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'ElevenLabs API key not configured' });
+      return res
+        .status(500)
+        .json({ error: "ElevenLabs API key not configured" });
     }
 
     const { secret_id } = req.params;
     const updateData = req.body;
 
-    const response = await fetch(`https://api.elevenlabs.io/v1/convai/secrets/${encodeURIComponent(secret_id)}`, {
-      method: 'PATCH',
-      headers: {
-        'xi-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/secrets/${encodeURIComponent(
+        secret_id
+      )}`,
+      {
+        method: "PATCH",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs update secret API error:', response.status, errorText);
-      return res.status(response.status).json({ 
-        error: 'Failed to update secret in ElevenLabs', 
-        details: errorText 
+      console.error(
+        "ElevenLabs update secret API error:",
+        response.status,
+        errorText
+      );
+      return res.status(response.status).json({
+        error: "Failed to update secret in ElevenLabs",
+        details: errorText,
       });
     }
 
     const secret = await response.json();
     res.json(secret);
   } catch (error) {
-    console.error('Error updating secret:', error);
-    res.status(500).json({ error: 'Failed to update secret', details: error.message });
+    console.error("Error updating secret:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to update secret", details: error.message });
   }
 });
 
 // Debug endpoint to check database schema
-app.get('/api/debug/agent-knowledge-base-schema', (req, res) => {
-  db.query('DESCRIBE agent_knowledge_base', (err, rows) => {
+app.get("/api/debug/agent-knowledge-base-schema", (req, res) => {
+  db.query("DESCRIBE agent_knowledge_base", (err, rows) => {
     if (err) {
       return res.status(500).json({ success: false, error: err.message });
     }
-    
-    db.query('SELECT COUNT(*) as count FROM agent_knowledge_base', (countErr, countRows) => {
-      if (countErr) {
-        return res.status(500).json({ success: false, error: countErr.message });
+
+    db.query(
+      "SELECT COUNT(*) as count FROM agent_knowledge_base",
+      (countErr, countRows) => {
+        if (countErr) {
+          return res
+            .status(500)
+            .json({ success: false, error: countErr.message });
+        }
+
+        res.json({
+          success: true,
+          schema: rows,
+          recordCount: countRows[0].count,
+        });
       }
-      
-      res.json({
-        success: true,
-        schema: rows,
-        recordCount: countRows[0].count
-      });
-    });
+    );
   });
 });
 
 // Debug endpoint to check if agent exists
-app.get('/api/debug/agent/:agentId', (req, res) => {
+app.get("/api/debug/agent/:agentId", (req, res) => {
   const agentId = req.params.agentId;
-  
-  db.query('SELECT agent_id, name FROM agents WHERE agent_id = ?', [agentId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ success: false, error: err.message });
+
+  db.query(
+    "SELECT agent_id, name FROM agents WHERE agent_id = ?",
+    [agentId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+
+      res.json({
+        success: true,
+        agentExists: rows.length > 0,
+        agent: rows[0] || null,
+      });
     }
-    
-    res.json({
-      success: true,
-      agentExists: rows.length > 0,
-      agent: rows[0] || null
-    });
-  });
+  );
 });
 
 // Cleanup endpoint to fix agent_knowledge_base table
-app.post('/api/debug/fix-agent-knowledge-base-table', (req, res) => {
-  console.log('[API] Starting agent_knowledge_base table cleanup...');
-  
+app.post("/api/debug/fix-agent-knowledge-base-table", (req, res) => {
+  console.log("[API] Starting agent_knowledge_base table cleanup...");
+
   // Disable foreign key checks
-  db.query('SET FOREIGN_KEY_CHECKS = 0', (fkErr) => {
+  db.query("SET FOREIGN_KEY_CHECKS = 0", (fkErr) => {
     if (fkErr) {
-      console.error('[API] Failed to disable foreign key checks:', fkErr);
+      console.error("[API] Failed to disable foreign key checks:", fkErr);
       return res.status(500).json({ success: false, error: fkErr.message });
     }
-    
-    console.log('[API] Disabled foreign key checks');
-    
+
+    console.log("[API] Disabled foreign key checks");
+
     // Drop the table completely
-    db.query('DROP TABLE IF EXISTS agent_knowledge_base', (dropErr) => {
+    db.query("DROP TABLE IF EXISTS agent_knowledge_base", (dropErr) => {
       if (dropErr) {
-        console.error('[API] Failed to drop table:', dropErr);
+        console.error("[API] Failed to drop table:", dropErr);
         return res.status(500).json({ success: false, error: dropErr.message });
       }
-      
-      console.log('[API] Dropped agent_knowledge_base table');
-      
+
+      console.log("[API] Dropped agent_knowledge_base table");
+
       // Create the table with correct schema
       const createTableSQL = `
         CREATE TABLE agent_knowledge_base (
@@ -5058,26 +6903,33 @@ app.post('/api/debug/fix-agent-knowledge-base-table', (req, res) => {
           INDEX idx_agent_id (agent_id)
         ) ENGINE=InnoDB;
       `;
-      
+
       db.query(createTableSQL, (createErr) => {
         if (createErr) {
-          console.error('[API] Failed to create table:', createErr);
-          return res.status(500).json({ success: false, error: createErr.message });
+          console.error("[API] Failed to create table:", createErr);
+          return res
+            .status(500)
+            .json({ success: false, error: createErr.message });
         }
-        
-        console.log('[API] Created agent_knowledge_base table with correct schema');
-        
+
+        console.log(
+          "[API] Created agent_knowledge_base table with correct schema"
+        );
+
         // Re-enable foreign key checks
-        db.query('SET FOREIGN_KEY_CHECKS = 1', (fkErr2) => {
+        db.query("SET FOREIGN_KEY_CHECKS = 1", (fkErr2) => {
           if (fkErr2) {
-            console.error('[API] Failed to re-enable foreign key checks:', fkErr2);
+            console.error(
+              "[API] Failed to re-enable foreign key checks:",
+              fkErr2
+            );
           } else {
-            console.log('[API] Re-enabled foreign key checks');
+            console.log("[API] Re-enabled foreign key checks");
           }
-          
+
           res.json({
             success: true,
-            message: 'Agent knowledge base table has been fixed successfully'
+            message: "Agent knowledge base table has been fixed successfully",
           });
         });
       });
@@ -5089,36 +6941,53 @@ app.post('/api/debug/fix-agent-knowledge-base-table', (req, res) => {
 app.post("/api/test-email", async (req, res) => {
   try {
     const { testEmail } = req.body;
-    
+
     if (!testEmail) {
-      return res.status(400).json({ success: false, message: "Test email address is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Test email address is required" });
     }
-    
+
     // Test email configuration
     const isConfigValid = await testEmailConfig();
     if (!isConfigValid) {
-      return res.status(500).json({ success: false, message: "Email service configuration is invalid" });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Email service configuration is invalid",
+        });
     }
-    
+
     // Send test email
     const testClientData = {
-      companyName: 'Test Company',
+      companyName: "Test Company",
       companyEmail: testEmail,
-      contactPersonName: 'Test User',
-      phoneNumber: '1234567890'
+      contactPersonName: "Test User",
+      phoneNumber: "1234567890",
     };
-    
-    const emailResult = await sendEmail(testEmail, 'welcomeEmail', testClientData);
-    
-    res.json({ 
-      success: true, 
+
+    const emailResult = await sendEmail(
+      testEmail,
+      "welcomeEmail",
+      testClientData
+    );
+
+    res.json({
+      success: true,
       message: "Test email sent successfully",
       to: testEmail,
-      messageId: emailResult.messageId
+      messageId: emailResult.messageId,
     });
   } catch (error) {
     console.error("Error sending test email:", error);
-    res.status(500).json({ success: false, message: "Failed to send test email", error: error.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to send test email",
+        error: error.message,
+      });
   }
 });
 
@@ -5142,25 +7011,37 @@ app.post("/api/clients/reset-monthly-usage", (req, res) => {
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Failed to reset monthly usage:", err);
-      return res.status(500).json({ success: false, message: "Failed to reset monthly usage", error: err });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to reset monthly usage",
+          error: err,
+        });
     }
     console.log(`✅ Monthly usage reset for ${result.affectedRows} clients`);
-    res.json({ success: true, message: `Monthly usage reset for ${result.affectedRows} clients`, affectedClients: result.affectedRows });
+    res.json({
+      success: true,
+      message: `Monthly usage reset for ${result.affectedRows} clients`,
+      affectedClients: result.affectedRows,
+    });
   });
 });
 
 // Get current admin user's sales person profile by email
-app.get('/api/sales-persons/me', authenticateJWT, (req, res) => {
-	if (req.user.type !== 'admin') {
-		return res.status(403).json({ success: false, message: 'Access denied' });
-	}
+app.get("/api/sales-persons/me", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
 
-	const userEmail = req.user.email;
-	if (!userEmail) {
-		return res.status(400).json({ success: false, message: 'Missing user email' });
-	}
+  const userEmail = req.user.email;
+  if (!userEmail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing user email" });
+  }
 
-	const sql = `
+  const sql = `
 		SELECT 
 			au.id AS admin_user_id,
 			au.name,
@@ -5172,90 +7053,154 @@ app.get('/api/sales-persons/me', authenticateJWT, (req, res) => {
 		WHERE au.email = ?
 		LIMIT 1
 	`;
-	db.query(sql, [userEmail], (err, rows) => {
-		if (err) {
-			console.error('Error fetching current sales admin profile:', err);
-			return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-		}
-		if (!rows || rows.length === 0) return res.json({ success: true, data: null });
-		const r = rows[0];
-		return res.json({ success: true, data: {
-			id: r.admin_user_id,
-			name: r.name,
-			email: r.email,
-			phone: null,
-			referral_code: r.referral_code,
-			total_referrals: 0,
-			monthly_referrals: 0,
-			total_referrals_count: 0,
-			monthly_referrals_count: 0,
-			status: 'active',
-			created_at: r.created_at,
-		}});
-	});
+  db.query(sql, [userEmail], (err, rows) => {
+    if (err) {
+      console.error("Error fetching current sales admin profile:", err);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
+    }
+    if (!rows || rows.length === 0)
+      return res.json({ success: true, data: null });
+    const r = rows[0];
+    return res.json({
+      success: true,
+      data: {
+        id: r.admin_user_id,
+        name: r.name,
+        email: r.email,
+        phone: null,
+        referral_code: r.referral_code,
+        total_referrals: 0,
+        monthly_referrals: 0,
+        total_referrals_count: 0,
+        monthly_referrals_count: 0,
+        status: "active",
+        created_at: r.created_at,
+      },
+    });
+  });
 });
 
 // Get referrals for current admin user's sales person profile
-app.get('/api/sales-persons/me/referrals', authenticateJWT, (req, res) => {
-	if (req.user.type !== 'admin') {
-		return res.status(403).json({ success: false, message: 'Access denied' });
-	}
+app.get("/api/sales-persons/me/referrals", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
 
-	const userId = req.user.id;
-	if (!userId) {
-		return res.status(400).json({ success: false, message: 'Missing user ID' });
-	}
+  const userId = req.user.id;
+  const userEmail = req.user.email;
+  if (!userId && !userEmail) {
+    return res.status(400).json({ success: false, message: "Missing user ID" });
+  }
 
-	const { q, plan, clientStatus, commissionStatus } = req.query;
-	const commissionPercent = Number(process.env.COMMISSION_PERCENT || 10);
+  const { q, plan, clientStatus, commissionStatus } = req.query;
+  const clientIdFilter = Number(req.query.clientId || 0);
+  const commissionPercent = Number(process.env.COMMISSION_PERCENT || 10);
 
-	// Get the current user's referral code from sales_admin_referral_codes using user ID
-	const fbSql = 'SELECT sarc.referral_code FROM sales_admin_referral_codes sarc WHERE sarc.admin_user_id = ? LIMIT 1';
-	db.query(fbSql, [userId], (fbErr, fbRows) => {
-		if (fbErr) {
-			console.error('Error fetching referral code for current admin:', fbErr);
-			return res.status(500).json({ success: false, message: 'Database error', error: fbErr.message });
-		}
-		const code = fbRows && fbRows[0] ? fbRows[0].referral_code : null;
-		if (!code) return res.json({ success: true, data: [] });
+  // Get the current user's referral code. Prefer matching by email to avoid id mismatches across envs.
+  const fbSql = `
+		SELECT sarc.referral_code
+		FROM sales_admin_referral_codes sarc
+		JOIN admin_users au ON au.id = sarc.admin_user_id
+		WHERE ${userEmail ? "au.email = ?" : "sarc.admin_user_id = ?"}
+		LIMIT 1
+	`;
+  db.query(fbSql, [userEmail ? userEmail : userId], (fbErr, fbRows) => {
+    if (fbErr) {
+      console.error("Error fetching referral code for current admin:", fbErr);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: fbErr.message,
+        });
+    }
+    const code = fbRows && fbRows[0] ? fbRows[0].referral_code : null;
+    if (!code) return res.json({ success: true, data: [] });
 
-		const whereClauses = ['r.referral_code = ?'];
-		const params = [code];
-		if (q) { whereClauses.push('(c.companyName LIKE ? OR c.companyEmail LIKE ? OR c.contactPersonName LIKE ? OR r.referral_code LIKE ?)'); const like = `%${q}%`; params.push(like, like, like, like); }
-		if (plan && plan !== 'ALL') { whereClauses.push('r.plan_subscribed = ?'); params.push(plan); }
-		if (clientStatus === 'trial') { whereClauses.push('r.is_trial = 1'); }
-		else if (clientStatus === 'paid') { whereClauses.push('r.is_trial = 0'); }
-		if (commissionStatus && commissionStatus !== 'ALL') { whereClauses.push('r.commission_status = ?'); params.push(commissionStatus); }
+    const whereClauses = ["r.referral_code = ?"];
+    const params = [code];
+    if (q) {
+      whereClauses.push(
+        "(c.companyName LIKE ? OR c.companyEmail LIKE ? OR c.contactPersonName LIKE ? OR r.referral_code LIKE ?)"
+      );
+      const like = `%${q}%`;
+      params.push(like, like, like, like);
+    }
+    if (plan && plan !== "ALL") {
+      whereClauses.push("r.plan_subscribed = ?");
+      params.push(plan);
+    }
+    if (clientStatus === "trial") {
+      whereClauses.push("r.is_trial = 1");
+    } else if (clientStatus === "paid") {
+      whereClauses.push("r.is_trial = 0");
+    }
+    if (!Number.isNaN(clientIdFilter) && clientIdFilter > 0) {
+      whereClauses.push("r.client_id = ?");
+      params.push(clientIdFilter);
+    }
+    if (commissionStatus && commissionStatus !== "ALL") {
+      whereClauses.push("r.commission_status = ?");
+      params.push(commissionStatus);
+    }
 
-		const sql = `
+    const sql = `
 			SELECT 
 				r.*, c.companyName, c.companyEmail, c.contactPersonName, c.phoneNumber, c.created_at as client_created_at,
 				CASE WHEN r.commission_amount IS NOT NULL THEN r.commission_amount ELSE ROUND(r.revenue_generated * ${commissionPercent} / 100, 2) END AS commission_calculated
 			FROM referrals r
-			JOIN clients c ON r.client_id = c.id
-			WHERE ${whereClauses.join(' AND ')}
+			LEFT JOIN clients c ON r.client_id = c.id
+			WHERE ${whereClauses.join(" AND ")}
 			ORDER BY r.referred_at DESC
 		`;
-		db.query(sql, params, (e2, rs) => {
-			if (e2) {
-				console.error('Error fetching referrals:', e2);
-				return res.status(500).json({ success: false, message: 'Database error', error: e2.message });
-			}
-			if (String(req.query.debug || '') === '1') {
-				return res.json({ success: true, data: rs, debug: { resolvedReferralCode: code, matched: rs.length } });
-			}
-			return res.json({ success: true, data: rs });
-		});
-	});
+    db.query(sql, params, (e2, rs) => {
+      if (e2) {
+        console.error("Error fetching referrals:", e2);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: e2.message,
+          });
+      }
+      if (String(req.query.debug || "") === "1") {
+        return res.json({
+          success: true,
+          data: rs,
+          debug: {
+            resolvedReferralCode: code,
+            matched: rs.length,
+            where: whereClauses,
+            params,
+          },
+        });
+      }
+      console.log("[GET /api/sales-persons/me/referrals]", {
+        userId,
+        code,
+        matched: (rs || []).length,
+      });
+      return res.json({ success: true, data: rs });
+    });
+  });
 });
 
 // Admin-only: Inspect referrals by referral code (diagnostic)
-app.get('/api/referrals/by-code/:code', authenticateJWT, (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+app.get("/api/referrals/by-code/:code", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
-  const code = String(req.params.code || '').trim();
-  if (!code) return res.status(400).json({ success: false, message: 'Missing code' });
+  const code = String(req.params.code || "").trim();
+  if (!code)
+    return res.status(400).json({ success: false, message: "Missing code" });
   const sql = `
     SELECT r.*, c.companyName, c.companyEmail, c.phoneNumber
     FROM referrals r
@@ -5264,49 +7209,70 @@ app.get('/api/referrals/by-code/:code', authenticateJWT, (req, res) => {
     ORDER BY r.referred_at DESC
   `;
   db.query(sql, [code], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+    if (err)
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
     res.json({ success: true, data: rows });
   });
 });
 
 // Update commission status/amount for a referral
-app.put('/api/referrals/:id/commission', authenticateJWT, (req, res) => {
-	if (req.user.type !== 'admin') {
-		return res.status(403).json({ success: false, message: 'Access denied' });
-	}
+app.put("/api/referrals/:id/commission", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
 
-	const referralId = Number(req.params.id);
-	const { commission_status, commission_amount } = req.body || {};
-	if (!referralId || !commission_status) {
-		return res.status(400).json({ success: false, message: 'Missing required fields' });
-	}
+  const referralId = Number(req.params.id);
+  const { commission_status, commission_amount } = req.body || {};
+  if (!referralId || !commission_status) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
 
-	const allowed = ['pending', 'approved', 'paid'];
-	if (!allowed.includes(commission_status)) {
-		return res.status(400).json({ success: false, message: 'Invalid commission status' });
-	}
+  const allowed = ["pending", "approved", "paid"];
+  if (!allowed.includes(commission_status)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid commission status" });
+  }
 
-	const fields = ['commission_status = ?'];
-	const params = [commission_status, referralId];
-	if (commission_amount !== undefined && commission_amount !== null && commission_amount !== '') {
-		fields.unshift('commission_amount = ?');
-		params.unshift(Number(commission_amount));
-	}
+  const fields = ["commission_status = ?"];
+  const params = [commission_status, referralId];
+  if (
+    commission_amount !== undefined &&
+    commission_amount !== null &&
+    commission_amount !== ""
+  ) {
+    fields.unshift("commission_amount = ?");
+    params.unshift(Number(commission_amount));
+  }
 
-	const sql = `UPDATE referrals SET ${fields.join(', ')} WHERE id = ?`;
-	db.query(sql, params, (err) => {
-		if (err) {
-			console.error('Failed updating commission:', err);
-			return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-		}
-		res.json({ success: true });
-	});
+  const sql = `UPDATE referrals SET ${fields.join(", ")} WHERE id = ?`;
+  db.query(sql, params, (err) => {
+    if (err) {
+      console.error("Failed updating commission:", err);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
+    }
+    res.json({ success: true });
+  });
 });
 
 // Admin-only: Backfill referrals for existing clients that have referralCode but no row in referrals
-app.post('/api/referrals/backfill', authenticateJWT, (req, res) => {
-  if (req.user.type !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+app.post("/api/referrals/backfill", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
   }
 
   // Find clients that have referralCode set but no corresponding referrals row
@@ -5321,11 +7287,21 @@ app.post('/api/referrals/backfill', authenticateJWT, (req, res) => {
 
   db.query(findSql, (err, rows) => {
     if (err) {
-      console.error('Backfill lookup failed:', err);
-      return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+      console.error("Backfill lookup failed:", err);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
     }
     if (!rows || rows.length === 0) {
-      return res.json({ success: true, message: 'No missing referrals to backfill', inserted: 0 });
+      return res.json({
+        success: true,
+        message: "No missing referrals to backfill",
+        inserted: 0,
+      });
     }
 
     const insertSql = `
@@ -5334,51 +7310,129 @@ app.post('/api/referrals/backfill', authenticateJWT, (req, res) => {
     `;
 
     let inserted = 0;
-    const tasks = rows.map(r => new Promise((resolve) => {
-      db.query(insertSql, [r.admin_user_id, r.client_id, r.referral_code], (e) => {
-        if (!e) inserted += 1; else console.error('Insert backfill referral failed for client', r.client_id, e);
-        resolve(true);
-      });
-    }));
+    const tasks = rows.map(
+      (r) =>
+        new Promise((resolve) => {
+          db.query(
+            insertSql,
+            [r.admin_user_id, r.client_id, r.referral_code],
+            (e) => {
+              if (!e) inserted += 1;
+              else
+                console.error(
+                  "Insert backfill referral failed for client",
+                  r.client_id,
+                  e
+                );
+              resolve(true);
+            }
+          );
+        })
+    );
 
-    Promise.all(tasks).then(() => {
-      res.json({ success: true, message: 'Backfill complete', inserted, totalCandidates: rows.length });
-    }).catch((e) => {
-      console.error('Backfill unexpected error:', e);
-      res.status(500).json({ success: false, message: 'Backfill failed', error: e.message });
-    });
+    Promise.all(tasks)
+      .then(() => {
+        res.json({
+          success: true,
+          message: "Backfill complete",
+          inserted,
+          totalCandidates: rows.length,
+        });
+      })
+      .catch((e) => {
+        console.error("Backfill unexpected error:", e);
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: "Backfill failed",
+            error: e.message,
+          });
+      });
+  });
+});
+
+// Admin-only: Normalize referrals.admin_user_id from sales_admin_referral_codes by referral_code
+app.post("/api/referrals/normalize-admin", authenticateJWT, (req, res) => {
+  if (req.user.type !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
+
+  // Update referrals.admin_user_id to the value mapped by referral_code
+  const sql = `
+		UPDATE referrals r
+		JOIN sales_admin_referral_codes s ON s.referral_code = r.referral_code
+		SET r.admin_user_id = s.admin_user_id
+		WHERE r.admin_user_id <> s.admin_user_id
+	`;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("Normalize admin_user_id failed:", err);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
+    }
+    res.json({ success: true, updated: result.affectedRows });
   });
 });
 
 // Export referrals CSV for current sales admin
-app.get('/api/sales-persons/me/referrals/export', authenticateJWT, (req, res) => {
-	if (req.user.type !== 'admin') {
-		return res.status(403).json({ success: false, message: 'Access denied' });
-	}
-	
-	// Get the current user's referral code from sales_admin_referral_codes
-	const userId = req.user.id;
-	const findReferralCodeSql = 'SELECT referral_code FROM sales_admin_referral_codes WHERE admin_user_id = ? LIMIT 1';
-	db.query(findReferralCodeSql, [userId], (err, rows) => {
-		if (err) return res.status(500).json({ success: false, message: 'Database error', error: err.message });
-		if (!rows || rows.length === 0) return res.json({ success: true, data: [] });
-		const referralCode = rows[0].referral_code;
+app.get(
+  "/api/sales-persons/me/referrals/export",
+  authenticateJWT,
+  (req, res) => {
+    if (req.user.type !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
 
-		const { q, plan, clientStatus, commissionStatus } = req.query;
-		const whereClauses = ['r.referral_code = ?'];
-		const params = [referralCode];
-		if (q) {
-			whereClauses.push('(c.companyName LIKE ? OR c.companyEmail LIKE ? OR c.contactPersonName LIKE ? OR r.referral_code LIKE ?)');
-			const like = `%${q}%`;
-			params.push(like, like, like, like);
-		}
-		if (plan && plan !== 'ALL') { whereClauses.push('r.plan_subscribed = ?'); params.push(plan); }
-		if (clientStatus === 'trial') { whereClauses.push('r.is_trial = 1'); }
-		else if (clientStatus === 'paid') { whereClauses.push('r.is_trial = 0'); }
-		if (commissionStatus && commissionStatus !== 'ALL') { whereClauses.push('r.commission_status = ?'); params.push(commissionStatus); }
+    // Get the current user's referral code from sales_admin_referral_codes
+    const userId = req.user.id;
+    const findReferralCodeSql =
+      "SELECT referral_code FROM sales_admin_referral_codes WHERE admin_user_id = ? LIMIT 1";
+    db.query(findReferralCodeSql, [userId], (err, rows) => {
+      if (err)
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Database error",
+            error: err.message,
+          });
+      if (!rows || rows.length === 0)
+        return res.json({ success: true, data: [] });
+      const referralCode = rows[0].referral_code;
 
-		const commissionPercent = Number(process.env.COMMISSION_PERCENT || 10);
-		const sql = `
+      const { q, plan, clientStatus, commissionStatus } = req.query;
+      const whereClauses = ["r.referral_code = ?"];
+      const params = [referralCode];
+      if (q) {
+        whereClauses.push(
+          "(c.companyName LIKE ? OR c.companyEmail LIKE ? OR c.contactPersonName LIKE ? OR r.referral_code LIKE ?)"
+        );
+        const like = `%${q}%`;
+        params.push(like, like, like, like);
+      }
+      if (plan && plan !== "ALL") {
+        whereClauses.push("r.plan_subscribed = ?");
+        params.push(plan);
+      }
+      if (clientStatus === "trial") {
+        whereClauses.push("r.is_trial = 1");
+      } else if (clientStatus === "paid") {
+        whereClauses.push("r.is_trial = 0");
+      }
+      if (commissionStatus && commissionStatus !== "ALL") {
+        whereClauses.push("r.commission_status = ?");
+        params.push(commissionStatus);
+      }
+
+      const commissionPercent = Number(process.env.COMMISSION_PERCENT || 10);
+      const sql = `
 			SELECT 
 				r.referral_code,
 				c.companyName,
@@ -5394,39 +7448,65 @@ app.get('/api/sales-persons/me/referrals/export', authenticateJWT, (req, res) =>
 				r.commission_status
 			FROM referrals r
 			JOIN clients c ON r.client_id = c.id
-			WHERE ${whereClauses.join(' AND ')}
+			WHERE ${whereClauses.join(" AND ")}
 			ORDER BY r.referred_at DESC
 		`;
 
-		db.query(sql, params, (err2, rows2) => {
-			if (err2) return res.status(500).json({ success: false, message: 'Database error', error: err2.message });
-			// Build CSV
-			const headers = [
-				'Referral Code','Client Name','Client Email','Client Phone','Plan','Trial',
-				'Conversion Status','Signup Date','Conversion Date','Revenue','Commission','Commission Status'
-			];
-			const lines = [headers.join(',')];
-			for (const r of rows2) {
-				lines.push([
-					r.referral_code,
-					r.companyName,
-					r.companyEmail,
-					r.phoneNumber || '',
-					r.plan_subscribed || '',
-					r.is_trial ? 'Yes' : 'No',
-					r.status === 'converted' ? 'Converted to Paid' : 'Still in Trial',
-					new Date(r.referred_at).toISOString(),
-					r.conversion_date ? new Date(r.conversion_date).toISOString() : '',
-					Number(r.revenue_generated || 0).toFixed(2),
-					Number(r.commission || 0).toFixed(2),
-					r.commission_status
-				].map(v => `${String(v).replace(/"/g,'""')}`).join(',')
-				);
-			}
-			const csv = lines.join('\n');
-			res.setHeader('Content-Type', 'text/csv');
-			res.setHeader('Content-Disposition', 'attachment; filename="referrals.csv"');
-			res.send(csv);
-		});
-	});
-});
+      db.query(sql, params, (err2, rows2) => {
+        if (err2)
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Database error",
+              error: err2.message,
+            });
+        // Build CSV
+        const headers = [
+          "Referral Code",
+          "Client Name",
+          "Client Email",
+          "Client Phone",
+          "Plan",
+          "Trial",
+          "Conversion Status",
+          "Signup Date",
+          "Conversion Date",
+          "Revenue",
+          "Commission",
+          "Commission Status",
+        ];
+        const lines = [headers.join(",")];
+        for (const r of rows2) {
+          lines.push(
+            [
+              r.referral_code,
+              r.companyName,
+              r.companyEmail,
+              r.phoneNumber || "",
+              r.plan_subscribed || "",
+              r.is_trial ? "Yes" : "No",
+              r.status === "converted" ? "Converted to Paid" : "Still in Trial",
+              new Date(r.referred_at).toISOString(),
+              r.conversion_date
+                ? new Date(r.conversion_date).toISOString()
+                : "",
+              Number(r.revenue_generated || 0).toFixed(2),
+              Number(r.commission || 0).toFixed(2),
+              r.commission_status,
+            ]
+              .map((v) => `${String(v).replace(/"/g, '""')}`)
+              .join(",")
+          );
+        }
+        const csv = lines.join("\n");
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          'attachment; filename="referrals.csv"'
+        );
+        res.send(csv);
+      });
+    });
+  }
+);
