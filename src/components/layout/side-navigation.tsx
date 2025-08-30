@@ -16,7 +16,6 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
-import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -30,6 +29,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import React, { useState } from 'react';
 import { useUser } from '@/lib/utils';
+import { Logo } from '../logo';
 
 // Define types for navigation items
 type SubNavItem = {
@@ -212,7 +212,7 @@ export function SideNavigation() {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="py-4 px-2 border-b border-sidebar-border">
         <Logo iconClassName="text-sidebar-primary" textClassName="text-sidebar-foreground" />
       </SidebarHeader>
       <SidebarContent className="p-2">
