@@ -6,8 +6,8 @@ import { UserProvider } from '@/lib/utils';
 import { UserHydrator } from '@/components/UserHydrator';
 
 export const metadata: Metadata = {
-  title: 'AI Caller',
-  description: 'Welcome to AI Caller',
+  title: 'Avyukta AI Caller',
+  description: 'Welcome to Avyukta AI Caller',
 };
 
 export default function RootLayout({

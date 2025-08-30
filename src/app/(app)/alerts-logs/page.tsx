@@ -6,9 +6,9 @@ import { ShieldAlert, FileText, History, Users, ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Alerts & Logs Overview | Admin - AI Caller',
-  description: 'Central hub for monitoring system alerts, audit trails, login history, and user activities within AI Caller.',
-  keywords: ['alerts', 'logs', 'audit trail', 'login history', 'activity feed', 'system monitoring', 'AI Caller admin'],
+  title: 'Alerts & Logs Overview | Admin - Avyukta AI Caller',
+  description: 'Central hub for monitoring system alerts, audit trails, login history, and user activities within Avyukta AI Caller.',
+  keywords: ['alerts', 'logs', 'audit trail', 'login history', 'activity feed', 'system monitoring', 'Avyukta AI Caller admin'],
 };
 
 export default function AlertsLogsOverviewPage() {

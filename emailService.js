@@ -1,14 +1,14 @@
 const nodemailer = require('nodemailer');
 
 // Email configuration
-const emailConfig = {
-  // For Gmail (you can change this to your preferred email service)
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com', // Your Gmail address
-    pass: process.env.EMAIL_PASS || 'your-app-password'    // Gmail App Password (not regular password)
-  }
-};
+// const emailConfig = {
+//   // For Gmail (you can change this to your preferred email service)
+//   service: 'gmail',
+//   auth: {
+//     user: process.env.EMAIL_USER || 'info@avyukta.in', // Your Gmail address
+//     pass: process.env.EMAIL_PASS || 'Avyukta@1234'    // Gmail App Password (not regular password)
+//   }
+// };
 
 // Alternative configurations for other email services:
 
@@ -22,15 +22,15 @@ const emailConfig = {
 // };
 
 // For custom SMTP server:
-// const emailConfig = {
-//   host: process.env.SMTP_HOST || 'smtp.yourdomain.com',
-//   port: process.env.SMTP_PORT || 587,
-//   secure: false, // true for 465, false for other ports
-//   auth: {
-//     user: process.env.EMAIL_USER || 'your-email@yourdomain.com',
-//     pass: process.env.EMAIL_PASS || 'your-password'
-//   }
-// };
+const emailConfig = {
+  host: process.env.SMTP_HOST || 'imap.hostinger.com',
+  port: process.env.SMTP_PORT || 993,
+  secure: true, 
+  auth: {
+    user: process.env.EMAIL_USER || 'info@avyukta.in',
+    pass: process.env.EMAIL_PASS || 'Avyukta@1234'
+  }
+};
 
 // Create transporter
 const transporter = nodemailer.createTransport(emailConfig);
