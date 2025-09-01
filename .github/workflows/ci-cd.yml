@@ -265,6 +265,24 @@ jobs:
 
       - name: Build for deployment
         run: npm run build
+        
+      - name: Verify build output
+        run: |
+          echo "🔍 Verifying build output..."
+          if [ -d ".next" ]; then
+            echo "✅ .next directory exists"
+            ls -la .next/
+          else
+            echo "❌ .next directory not found - build may have failed"
+            exit 1
+          fi
+          
+          if [ -f "server.js" ]; then
+            echo "✅ server.js exists"
+          else
+            echo "❌ server.js not found"
+            exit 1
+          fi
 
       - name: Create deployment package
         run: |
@@ -279,7 +297,18 @@ jobs:
           fi
           
           echo "📁 Including environment file: $ENV_FILE"
-          tar -czf ai-caller-deployment.tar.gz \
+          
+          # Check if required files exist
+          echo "🔍 Checking required files..."
+          ls -la .next/ || echo "⚠️ .next directory not found"
+          ls -la public/ || echo "⚠️ public directory not found"
+          ls -la src/ || echo "⚠️ src directory not found"
+          ls -la server.js || echo "⚠️ server.js not found"
+          ls -la package.json || echo "⚠️ package.json not found"
+          ls -la $ENV_FILE || echo "⚠️ $ENV_FILE not found"
+          
+          # Create deployment package with error handling
+          if tar -czf ai-caller-deployment.tar.gz \
             .next/ \
             public/ \
             src/ \
@@ -289,7 +318,13 @@ jobs:
             $ENV_FILE \
             --exclude=node_modules \
             --exclude=.git \
-            --exclude=.github
+            --exclude=.github; then
+            echo "✅ Deployment package created successfully"
+            ls -la ai-caller-deployment.tar.gz
+          else
+            echo "❌ Failed to create deployment package"
+            exit 1
+          fi
 
       - name: Upload deployment package
         uses: actions/upload-artifact@v4
