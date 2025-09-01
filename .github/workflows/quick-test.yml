@@ -28,6 +28,16 @@ jobs:
       - name: Quick build check
         run: npm run build
 
+      - name: Quick lint check
+        run: |
+          # Check if ESLint is configured
+          if [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ] || [ -f ".eslintrc" ]; then
+            echo "✅ ESLint configuration found, running quick lint check..."
+            npm run lint --silent || echo "⚠️  Linting issues found (non-blocking)"
+          else
+            echo "⚠️  No ESLint configuration found, skipping lint check"
+          fi
+
       - name: Check for obvious issues
         run: |
           echo "🔍 Quick health check..."
