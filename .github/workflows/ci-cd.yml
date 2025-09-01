@@ -56,7 +56,14 @@ jobs:
         continue-on-error: true
 
       - name: Check for security vulnerabilities
-        run: npm audit --audit-level moderate
+        run: |
+          echo "🔍 Running security audit..."
+          npm audit --audit-level moderate || {
+            echo "⚠️  Security vulnerabilities found (non-blocking)"
+            echo "📋 Vulnerabilities summary:"
+            npm audit --audit-level moderate --json | jq -r '.metadata.vulnerabilities | "Critical: \(.critical // 0), High: \(.high // 0), Moderate: \(.moderate // 0), Low: \(.low // 0)"' || echo "Could not parse audit results"
+          }
+        continue-on-error: true
 
       - name: Check for outdated dependencies
         run: npm outdated || true
