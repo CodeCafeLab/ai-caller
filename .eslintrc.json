@@ -1,0 +1,9 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    // Basic rules for development
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "prefer-const": "warn"
+  }
+}

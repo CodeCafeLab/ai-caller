@@ -101,7 +101,7 @@ import {
   SheetDescription,
   SheetClose
 } from '@/components/ui/sheet';
-import * as XLSX from "xlsx";
+import * as ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { useUser } from '@/components/UserHydrator';
@@ -639,12 +639,33 @@ export default function CallReportsPage() {
       return;
     }
     if (format === "Excel") {
-      // Excel export using xlsx
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Call Reports");
-      XLSX.writeFile(wb, `call-reports-${Date.now()}.xlsx`);
-      toast({ title: "Excel Exported", description: "The Excel file has been downloaded." });
+      // Excel export using ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Call Reports");
+      
+      // Add headers
+      if (exportData.length > 0) {
+        const headers = Object.keys(exportData[0]);
+        worksheet.addRow(headers);
+        
+        // Add data rows
+        exportData.forEach(row => {
+          const rowData = headers.map(header => (row as any)[header] || '');
+          worksheet.addRow(rowData);
+        });
+      }
+      
+      // Generate and download
+      workbook.xlsx.writeBuffer().then(buffer => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `call-reports-${Date.now()}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        toast({ title: "Excel Exported", description: "The Excel file has been downloaded." });
+      });
       return;
     }
     if (format === "PDF") {
@@ -760,9 +781,6 @@ export default function CallReportsPage() {
     if (!conversationDetails) return;
     
     try {
-      // Import xlsx dynamically to avoid SSR issues
-      const XLSX = await import('xlsx');
-      
       // Prepare overview data with proper typing
       const overviewData: Record<string, any> = {
         'Conversation ID': selectedConversation?.conversation_id || 'N/A',
@@ -799,18 +817,32 @@ export default function CallReportsPage() {
         });
       }
       
-      // Create workbook and worksheet
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet([overviewData]);
+      // Create workbook and worksheet using ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Conversation Overview');
+      
+      // Add headers
+      const headers = Object.keys(overviewData);
+      worksheet.addRow(headers);
+      
+      // Add data row
+      const rowData = headers.map(header => overviewData[header] || '');
+      worksheet.addRow(rowData);
       
       // Auto-size columns
-      const maxWidth = Object.keys(overviewData).reduce((max, key) => Math.max(max, key.length), 0);
-      worksheet['!cols'] = [{ wch: maxWidth }];
+      worksheet.columns.forEach(column => {
+        column.width = Math.max(...headers.map(h => h.length)) + 2;
+      });
       
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Conversation Overview');
-      
-      // Download the file
-      XLSX.writeFile(workbook, `conversation_${selectedConversation?.conversation_id || 'overview'}_data.xlsx`);
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversation_${selectedConversation?.conversation_id || 'overview'}_data.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading overview data:", error);
     }

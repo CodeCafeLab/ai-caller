@@ -28,8 +28,8 @@ app.use(
       const allowedOrigins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://aicaller.codecafelab.in",
-        "https://2nq68jpg-3000.inc1.devtunnels.ms",
+        "https://aidial.in",
+        "https://2nq68jpg-3000.inc1.devtunnels.ms", 
       ];
 
       // Check if origin is in allowed list
@@ -66,7 +66,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-very-secret-key"; // Use env variable in production!
+const JWT_SECRET = process.env.JWT_SECRET || "c0521e3d6c692f41107ec94a9a1a1504"; // Use env variable in production!
 
 // DB config
 const db = mysql.createConnection({
@@ -759,12 +759,10 @@ app.get("/api/voices", async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
-      return res
-        .status(response.status)
-        .json({
-          error: "Failed to fetch voices from ElevenLabs",
-          details: errorText,
-        });
+      return res.status(response.status).json({
+        error: "Failed to fetch voices from ElevenLabs",
+        details: errorText,
+      });
     }
     const data = await response.json();
     res.json(data);
@@ -934,13 +932,11 @@ app.get("/api/agents", authenticateJWT, (req, res) => {
   db.query(sql, [fallbackName], (err, results) => {
     if (err) {
       console.error("[API] /api/agents ERROR:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch agents",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch agents",
+        error: err,
+      });
     }
     console.log(`[API] /api/agents returned ${results.length} agents`);
     if (results.length > 0) {
@@ -1324,73 +1320,54 @@ app.patch("/api/elevenlabs/agent/:id/widget-config", async (req, res) => {
 
 // Voice Config (stub, as ElevenLabs may not support this directly)
 app.get("/api/elevenlabs/agent/:id/voice", (req, res) => {
-  res
-    .status(200)
-    .json({
-      stub: true,
-      message: "Voice config endpoint not implemented in ElevenLabs API yet.",
-    });
+  res.status(200).json({
+    stub: true,
+    message: "Voice config endpoint not implemented in ElevenLabs API yet.",
+  });
 });
 app.patch("/api/elevenlabs/agent/:id/voice", (req, res) => {
-  res
-    .status(501)
-    .json({
-      error: "Voice config update not implemented in ElevenLabs API yet.",
-    });
+  res.status(501).json({
+    error: "Voice config update not implemented in ElevenLabs API yet.",
+  });
 });
 
 // Security Config (stub)
 app.get("/api/elevenlabs/agent/:id/security", (req, res) => {
-  res
-    .status(200)
-    .json({
-      stub: true,
-      message:
-        "Security config endpoint not implemented in ElevenLabs API yet.",
-    });
+  res.status(200).json({
+    stub: true,
+    message: "Security config endpoint not implemented in ElevenLabs API yet.",
+  });
 });
 app.patch("/api/elevenlabs/agent/:id/security", (req, res) => {
-  res
-    .status(501)
-    .json({
-      error: "Security config update not implemented in ElevenLabs API yet.",
-    });
+  res.status(501).json({
+    error: "Security config update not implemented in ElevenLabs API yet.",
+  });
 });
 
 // Advanced Config (stub)
 app.get("/api/elevenlabs/agent/:id/advanced", (req, res) => {
-  res
-    .status(200)
-    .json({
-      stub: true,
-      message:
-        "Advanced config endpoint not implemented in ElevenLabs API yet.",
-    });
+  res.status(200).json({
+    stub: true,
+    message: "Advanced config endpoint not implemented in ElevenLabs API yet.",
+  });
 });
 app.patch("/api/elevenlabs/agent/:id/advanced", (req, res) => {
-  res
-    .status(501)
-    .json({
-      error: "Advanced config update not implemented in ElevenLabs API yet.",
-    });
+  res.status(501).json({
+    error: "Advanced config update not implemented in ElevenLabs API yet.",
+  });
 });
 
 // Analysis Config (stub)
 app.get("/api/elevenlabs/agent/:id/analysis", (req, res) => {
-  res
-    .status(200)
-    .json({
-      stub: true,
-      message:
-        "Analysis config endpoint not implemented in ElevenLabs API yet.",
-    });
+  res.status(200).json({
+    stub: true,
+    message: "Analysis config endpoint not implemented in ElevenLabs API yet.",
+  });
 });
 app.patch("/api/elevenlabs/agent/:id/analysis", (req, res) => {
-  res
-    .status(501)
-    .json({
-      error: "Analysis config update not implemented in ElevenLabs API yet.",
-    });
+  res.status(501).json({
+    error: "Analysis config update not implemented in ElevenLabs API yet.",
+  });
 });
 
 // ElevenLabs Get All Agents Endpoint
@@ -1523,13 +1500,11 @@ app.get("/api/plans/:id", (req, res) => {
     [req.params.id],
     (err, results) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to fetch plan",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to fetch plan",
+          error: err,
+        });
       }
       if (results.length === 0) {
         return res
@@ -1558,13 +1533,11 @@ app.post("/api/plans", (req, res) => {
       [result.insertId],
       (err, results) => {
         if (err) {
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Plan created but failed to fetch",
-              error: err,
-            });
+          return res.status(500).json({
+            success: false,
+            message: "Plan created but failed to fetch",
+            error: err,
+          });
         }
         res
           .status(201)
@@ -1583,13 +1556,11 @@ app.put("/api/plans/:id", (req, res) => {
   // First, fetch the current plan data
   db.query("SELECT * FROM plans WHERE id = ?", [planId], (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch current plan data",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch current plan data",
+        error: err,
+      });
     }
     if (results.length === 0) {
       return res
@@ -1754,13 +1725,11 @@ app.get("/api/clients", (req, res) => {
   `;
   db.query(sql, (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch clients",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch clients",
+        error: err,
+      });
     }
 
     const processedResults = results.map((client) => ({
@@ -1792,13 +1761,11 @@ app.get("/api/clients/:id", (req, res) => {
   `;
   db.query(sql, [req.params.id], (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch client",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch client",
+        error: err,
+      });
     }
     if (results.length === 0) {
       return res
@@ -1837,13 +1804,11 @@ app.post("/api/clients", async (req, res) => {
     db.beginTransaction(async (err) => {
       if (err) {
         console.error("Error starting transaction:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: err.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
       }
 
       try {
@@ -1852,13 +1817,11 @@ app.post("/api/clients", async (req, res) => {
           if (err) {
             console.error("Failed to create client:", err);
             return db.rollback(() => {
-              res
-                .status(500)
-                .json({
-                  success: false,
-                  message: "Failed to create client",
-                  error: err,
-                });
+              res.status(500).json({
+                success: false,
+                message: "Failed to create client",
+                error: err,
+              });
             });
           }
 
@@ -1882,13 +1845,11 @@ app.post("/api/clients", async (req, res) => {
                     err
                   );
                   return db.rollback(() => {
-                    res
-                      .status(500)
-                      .json({
-                        success: false,
-                        message: "Database error",
-                        error: err.message,
-                      });
+                    res.status(500).json({
+                      success: false,
+                      message: "Database error",
+                      error: err.message,
+                    });
                   });
                 }
 
@@ -1925,13 +1886,11 @@ app.post("/api/clients", async (req, res) => {
                       if (err) {
                         console.error("Error creating referral:", err);
                         return db.rollback(() => {
-                          res
-                            .status(500)
-                            .json({
-                              success: false,
-                              message: "Database error",
-                              error: err.message,
-                            });
+                          res.status(500).json({
+                            success: false,
+                            message: "Database error",
+                            error: err.message,
+                          });
                         });
                       }
 
@@ -1943,13 +1902,11 @@ app.post("/api/clients", async (req, res) => {
                         if (err) {
                           console.error("Error committing transaction:", err);
                           return db.rollback(() => {
-                            res
-                              .status(500)
-                              .json({
-                                success: false,
-                                message: "Database error",
-                                error: err.message,
-                              });
+                            res.status(500).json({
+                              success: false,
+                              message: "Database error",
+                              error: err.message,
+                            });
                           });
                         }
 
@@ -1959,13 +1916,11 @@ app.post("/api/clients", async (req, res) => {
                           [clientId],
                           (err, results) => {
                             if (err) {
-                              return res
-                                .status(500)
-                                .json({
-                                  success: false,
-                                  message: "Client created but failed to fetch",
-                                  error: err,
-                                });
+                              return res.status(500).json({
+                                success: false,
+                                message: "Client created but failed to fetch",
+                                error: err,
+                              });
                             }
                             res.status(201).json({
                               success: true,
@@ -1988,13 +1943,11 @@ app.post("/api/clients", async (req, res) => {
                     if (err) {
                       console.error("Error committing transaction:", err);
                       return db.rollback(() => {
-                        res
-                          .status(500)
-                          .json({
-                            success: false,
-                            message: "Database error",
-                            error: err.message,
-                          });
+                        res.status(500).json({
+                          success: false,
+                          message: "Database error",
+                          error: err.message,
+                        });
                       });
                     }
 
@@ -2004,13 +1957,11 @@ app.post("/api/clients", async (req, res) => {
                       [clientId],
                       (err, results) => {
                         if (err) {
-                          return res
-                            .status(500)
-                            .json({
-                              success: false,
-                              message: "Client created but failed to fetch",
-                              error: err,
-                            });
+                          return res.status(500).json({
+                            success: false,
+                            message: "Client created but failed to fetch",
+                            error: err,
+                          });
                         }
                         res.status(201).json({
                           success: true,
@@ -2029,13 +1980,11 @@ app.post("/api/clients", async (req, res) => {
               if (err) {
                 console.error("Error committing transaction:", err);
                 return db.rollback(() => {
-                  res
-                    .status(500)
-                    .json({
-                      success: false,
-                      message: "Database error",
-                      error: err.message,
-                    });
+                  res.status(500).json({
+                    success: false,
+                    message: "Database error",
+                    error: err.message,
+                  });
                 });
               }
 
@@ -2045,21 +1994,17 @@ app.post("/api/clients", async (req, res) => {
                 [clientId],
                 (err, results) => {
                   if (err) {
-                    return res
-                      .status(500)
-                      .json({
-                        success: false,
-                        message: "Client created but failed to fetch",
-                        error: err,
-                      });
-                  }
-                  res
-                    .status(201)
-                    .json({
-                      success: true,
-                      message: "Client created",
-                      data: results[0],
+                    return res.status(500).json({
+                      success: false,
+                      message: "Client created but failed to fetch",
+                      error: err,
                     });
+                  }
+                  res.status(201).json({
+                    success: true,
+                    message: "Client created",
+                    data: results[0],
+                  });
                 }
               );
             });
@@ -2068,25 +2013,21 @@ app.post("/api/clients", async (req, res) => {
       } catch (error) {
         console.error("Error in client creation transaction:", error);
         return db.rollback(() => {
-          res
-            .status(500)
-            .json({
-              success: false,
-              message: "Database error",
-              error: error.message,
-            });
+          res.status(500).json({
+            success: false,
+            message: "Database error",
+            error: error.message,
+          });
         });
       }
     });
   } catch (err) {
     console.error("Error hashing password or creating client:", err);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to create client",
-        error: err.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to create client",
+      error: err.message,
+    });
   }
 });
 
@@ -2149,13 +2090,11 @@ app.put("/api/clients/:id", (req, res) => {
         "[PUT /api/clients/:id] Failed to introspect columns:",
         colsErr
       );
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to update client (introspection)",
-          error: colsErr,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update client (introspection)",
+        error: colsErr,
+      });
     }
     const allowed = new Set((colsRows || []).map((r) => r.Field));
     const filtered = {};
@@ -2168,13 +2107,11 @@ app.put("/api/clients/:id", (req, res) => {
       (err, result) => {
         if (err) {
           console.error("[PUT /api/clients/:id] MySQL error:", err);
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Failed to update client",
-              error: err,
-            });
+          return res.status(500).json({
+            success: false,
+            message: "Failed to update client",
+            error: err,
+          });
         }
         if (result.affectedRows === 0) {
           return res
@@ -2190,13 +2127,11 @@ app.put("/api/clients/:id", (req, res) => {
                 "[PUT /api/clients/:id] MySQL error (fetch after update):",
                 err2
               );
-              return res
-                .status(500)
-                .json({
-                  success: false,
-                  message: "Client updated but failed to fetch",
-                  error: err2,
-                });
+              return res.status(500).json({
+                success: false,
+                message: "Client updated but failed to fetch",
+                error: err2,
+              });
             }
             res.json({
               success: true,
@@ -2217,13 +2152,11 @@ app.delete("/api/clients/:id", (req, res) => {
     [req.params.id],
     (err, result) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to delete client",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete client",
+          error: err,
+        });
       }
       if (result.affectedRows === 0) {
         return res
@@ -2429,13 +2362,11 @@ app.get("/api/clients/:id/agents-analytics", async (req, res) => {
 
     res.json({ success: true, data: { agents: perAgent, totals } });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch agents analytics",
-        error: String(e),
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch agents analytics",
+      error: String(e),
+    });
   }
 });
 
@@ -2600,13 +2531,11 @@ app.get("/api/clients/:id/elevenlabs-usage", async (req, res) => {
       data: { monthlyCalls, monthlyLimit, lifetimeCalls },
     });
   } catch (e) {
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch ElevenLabs usage",
-        error: String(e),
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch ElevenLabs usage",
+      error: String(e),
+    });
   }
 });
 
@@ -2625,12 +2554,10 @@ app.post("/api/clients/:id/send-welcome-email", async (req, res) => {
       async (err, results) => {
         if (err) {
           console.error("Failed to fetch client for welcome email:", err);
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Failed to fetch client details",
-            });
+          return res.status(500).json({
+            success: false,
+            message: "Failed to fetch client details",
+          });
         }
 
         if (results.length === 0) {
@@ -2685,13 +2612,11 @@ app.post("/api/clients/:id/send-welcome-email", async (req, res) => {
     );
   } catch (error) {
     console.error("Error in welcome email endpoint:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to process welcome email request",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to process welcome email request",
+      error: error.message,
+    });
   }
 });
 
@@ -2715,13 +2640,11 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
   db.query(sql, [clientId], (err, results) => {
     if (err) {
       console.error("Failed to fetch client data:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch client data",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch client data",
+        error: err,
+      });
     }
     if (results.length === 0) {
       return res
@@ -2764,13 +2687,11 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
     db.query(updateQuery, updateParams, (err2, result) => {
       if (err2) {
         console.error("Failed to increment call count:", err2);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to increment call count",
-            error: err2,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to increment call count",
+          error: err2,
+        });
       }
       if (result.affectedRows === 0) {
         return res
@@ -2783,13 +2704,11 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
         (err3, results2) => {
           if (err3) {
             console.error("Failed to fetch updated call count:", err3);
-            return res
-              .status(500)
-              .json({
-                success: false,
-                message:
-                  "Call count incremented but failed to fetch updated count",
-              });
+            return res.status(500).json({
+              success: false,
+              message:
+                "Call count incremented but failed to fetch updated count",
+            });
           }
           const updatedData = results2[0];
           res.json({
@@ -2810,13 +2729,11 @@ app.post("/api/clients/:id/increment-call", (req, res) => {
 app.get("/api/user-roles", (req, res) => {
   db.query("SELECT * FROM user_roles", (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch user roles",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch user roles",
+        error: err,
+      });
     }
     res.json({ success: true, data: results });
   });
@@ -2835,34 +2752,28 @@ app.post("/api/user-roles", (req, res) => {
     [role_name, description, permissions_summary, status],
     (err, result) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to create user role",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create user role",
+          error: err,
+        });
       }
       db.query(
         "SELECT * FROM user_roles WHERE id = ?",
         [result.insertId],
         (err, results) => {
           if (err) {
-            return res
-              .status(500)
-              .json({
-                success: false,
-                message: "User role created but failed to fetch",
-                error: err,
-              });
-          }
-          res
-            .status(201)
-            .json({
-              success: true,
-              message: "User role created",
-              data: results[0],
+            return res.status(500).json({
+              success: false,
+              message: "User role created but failed to fetch",
+              error: err,
             });
+          }
+          res.status(201).json({
+            success: true,
+            message: "User role created",
+            data: results[0],
+          });
         }
       );
     }
@@ -2876,13 +2787,11 @@ app.get("/api/user-roles/:id", (req, res) => {
     [req.params.id],
     (err, results) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to fetch user role",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to fetch user role",
+          error: err,
+        });
       }
       if (results.length === 0) {
         return res
@@ -2902,26 +2811,22 @@ app.put("/api/user-roles/:id", (req, res) => {
     [role_name, description, permissions_summary, status, req.params.id],
     (err) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to update user role",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update user role",
+          error: err,
+        });
       }
       db.query(
         "SELECT * FROM user_roles WHERE id = ?",
         [req.params.id],
         (err, results) => {
           if (err) {
-            return res
-              .status(500)
-              .json({
-                success: false,
-                message: "User role updated but failed to fetch",
-                error: err,
-              });
+            return res.status(500).json({
+              success: false,
+              message: "User role updated but failed to fetch",
+              error: err,
+            });
           }
           res.json({
             success: true,
@@ -3309,13 +3214,11 @@ app.post("/api/assigned-plans", (req, res) => {
     (err, result) => {
       if (err) {
         console.error("Failed to assign plan:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to assign plan",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to assign plan",
+          error: err,
+        });
       }
 
       // Turn off trial mode when a plan is assigned
@@ -3370,22 +3273,18 @@ app.post("/api/assigned-plans", (req, res) => {
                     );
                   }
                 }
-                res
-                  .status(201)
-                  .json({
-                    success: true,
-                    message:
-                      "Plan assigned successfully and trial mode turned off",
-                  });
+                res.status(201).json({
+                  success: true,
+                  message:
+                    "Plan assigned successfully and trial mode turned off",
+                });
               }
             );
           } else {
-            res
-              .status(201)
-              .json({
-                success: true,
-                message: "Plan assigned successfully and trial mode turned off",
-              });
+            res.status(201).json({
+              success: true,
+              message: "Plan assigned successfully and trial mode turned off",
+            });
           }
         }
       );
@@ -3422,13 +3321,11 @@ app.get("/api/clients/:id/assigned-plans", (req, res) => {
   db.query(sql, [clientId], (err, results) => {
     if (err) {
       console.error("Failed to fetch assigned plans:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch assigned plans",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch assigned plans",
+        error: err,
+      });
     }
     res.json({ success: true, data: results });
   });
@@ -3454,13 +3351,11 @@ app.patch("/api/assigned-plans/:assignmentId/enable", (req, res) => {
                   "Failed to add assigned_plans.is_enabled column:",
                   altErr
                 );
-                return res
-                  .status(500)
-                  .json({
-                    success: false,
-                    message: "Failed to add is_enabled column",
-                    error: altErr,
-                  });
+                return res.status(500).json({
+                  success: false,
+                  message: "Failed to add is_enabled column",
+                  error: altErr,
+                });
               }
               db.query(
                 "UPDATE assigned_plans SET is_enabled = ? WHERE id = ?",
@@ -3471,21 +3366,17 @@ app.patch("/api/assigned-plans/:assignmentId/enable", (req, res) => {
                       "Retry failed updating is_enabled:",
                       retryErr
                     );
-                    return res
-                      .status(500)
-                      .json({
-                        success: false,
-                        message: "Failed to update plan state after migration",
-                        error: retryErr,
-                      });
+                    return res.status(500).json({
+                      success: false,
+                      message: "Failed to update plan state after migration",
+                      error: retryErr,
+                    });
                   }
                   if (retryResult.affectedRows === 0) {
-                    return res
-                      .status(404)
-                      .json({
-                        success: false,
-                        message: "Assigned plan not found",
-                      });
+                    return res.status(404).json({
+                      success: false,
+                      message: "Assigned plan not found",
+                    });
                   }
                   return res.json({ success: true });
                 }
@@ -3495,13 +3386,11 @@ app.patch("/api/assigned-plans/:assignmentId/enable", (req, res) => {
           return;
         }
         console.error("Failed to update assigned plan enable state:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to update plan state",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update plan state",
+          error: err,
+        });
       }
       if (result.affectedRows === 0) {
         return res
@@ -3522,13 +3411,11 @@ app.delete("/api/assigned-plans/:assignmentId", (req, res) => {
     (err, result) => {
       if (err) {
         console.error("Failed to delete assigned plan:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to delete assigned plan",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete assigned plan",
+          error: err,
+        });
       }
       if (result.affectedRows === 0) {
         return res
@@ -4077,13 +3964,11 @@ app.get("/api/sales-persons", authenticateJWT, (req, res) => {
             "Error fetching sales persons (fallback query):",
             fbErr
           );
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Database error",
-              error: fbErr.sqlMessage || fbErr.message,
-            });
+          return res.status(500).json({
+            success: false,
+            message: "Database error",
+            error: fbErr.sqlMessage || fbErr.message,
+          });
         }
         return res.json({ success: true, data: fbRows });
       });
@@ -4154,12 +4039,10 @@ app.post("/api/sales-persons", authenticateJWT, async (req, res) => {
             if (results.length > 0) {
               attempts++;
               if (attempts >= maxAttempts) {
-                return res
-                  .status(500)
-                  .json({
-                    success: false,
-                    message: "Failed to generate unique referral code",
-                  });
+                return res.status(500).json({
+                  success: false,
+                  message: "Failed to generate unique referral code",
+                });
               }
               referralCode = generateReferralCode();
               checkAndCreate();
@@ -4183,13 +4066,11 @@ app.post("/api/sales-persons", authenticateJWT, async (req, res) => {
                     (err, result) => {
                       if (err) {
                         console.error("Error creating admin user:", err);
-                        return res
-                          .status(500)
-                          .json({
-                            success: false,
-                            message: "Database error",
-                            error: err.message,
-                          });
+                        return res.status(500).json({
+                          success: false,
+                          message: "Database error",
+                          error: err.message,
+                        });
                       }
 
                       const adminUserId = result.insertId;
@@ -4206,13 +4087,11 @@ app.post("/api/sales-persons", authenticateJWT, async (req, res) => {
                               "Error creating sales admin referral code:",
                               err
                             );
-                            return res
-                              .status(500)
-                              .json({
-                                success: false,
-                                message: "Database error",
-                                error: err.message,
-                              });
+                            return res.status(500).json({
+                              success: false,
+                              message: "Database error",
+                              error: err.message,
+                            });
                           }
 
                           // Fetch the created sales admin with referral code
@@ -4230,12 +4109,10 @@ app.post("/api/sales-persons", authenticateJWT, async (req, res) => {
                                   "Error fetching created sales admin:",
                                   err2
                                 );
-                                return res
-                                  .status(500)
-                                  .json({
-                                    success: false,
-                                    message: "Database error",
-                                  });
+                                return res.status(500).json({
+                                  success: false,
+                                  message: "Database error",
+                                });
                               }
                               res.json({ success: true, data: results[0] });
                             }
@@ -4247,13 +4124,11 @@ app.post("/api/sales-persons", authenticateJWT, async (req, res) => {
                 })
                 .catch((err) => {
                   console.error("Error hashing password:", err);
-                  return res
-                    .status(500)
-                    .json({
-                      success: false,
-                      message: "Database error",
-                      error: err.message,
-                    });
+                  return res.status(500).json({
+                    success: false,
+                    message: "Database error",
+                    error: err.message,
+                  });
                 });
             }
           }
@@ -4287,13 +4162,11 @@ app.put("/api/sales-persons/:id", authenticateJWT, (req, res) => {
             .status(400)
             .json({ success: false, message: "Email already exists" });
         }
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: err.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
       }
 
       if (result.affectedRows === 0) {
@@ -4340,13 +4213,11 @@ app.delete("/api/sales-persons/:id", authenticateJWT, (req, res) => {
     (err, result) => {
       if (err) {
         console.error("Error deleting sales admin referral code:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: err.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
       }
 
       // Note: We don't delete the admin user, just their referral code
@@ -4385,13 +4256,11 @@ app.get("/api/sales-persons/:id/referrals", authenticateJWT, (req, res) => {
   db.query(query, [adminUserId], (err, results) => {
     if (err) {
       console.error("Error fetching referrals:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: err.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message,
+      });
     }
     res.json({ success: true, data: results });
   });
@@ -4412,13 +4281,11 @@ app.get("/api/sales-persons/referral/:code", (req, res) => {
     (err, results) => {
       if (err) {
         console.error("Error fetching sales admin by referral code:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: err.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
       }
 
       if (results.length === 0) {
@@ -4462,13 +4329,11 @@ app.post("/api/referrals", async (req, res) => {
           if (err) {
             console.error("Error creating referral:", err);
             return db.rollback(() => {
-              res
-                .status(500)
-                .json({
-                  success: false,
-                  message: "Database error",
-                  error: err.message,
-                });
+              res.status(500).json({
+                success: false,
+                message: "Database error",
+                error: err.message,
+              });
             });
           }
 
@@ -4480,13 +4345,11 @@ app.post("/api/referrals", async (req, res) => {
             if (err3) {
               console.error("Error committing transaction:", err3);
               return db.rollback(() => {
-                res
-                  .status(500)
-                  .json({
-                    success: false,
-                    message: "Database error",
-                    error: err3.message,
-                  });
+                res.status(500).json({
+                  success: false,
+                  message: "Database error",
+                  error: err3.message,
+                });
               });
             }
 
@@ -4500,13 +4363,11 @@ app.post("/api/referrals", async (req, res) => {
     } catch (error) {
       console.error("Error in referral creation:", error);
       return db.rollback(() => {
-        res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: error.message,
-          });
+        res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: error.message,
+        });
       });
     }
   });
@@ -4798,13 +4659,11 @@ app.use("/uploads", express.static("uploads"));
 app.get("/api/languages", (req, res) => {
   db.query("SELECT * FROM languages ORDER BY name ASC", (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch languages",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch languages",
+        error: err,
+      });
     }
     res.json({ success: true, data: results });
   });
@@ -4818,26 +4677,22 @@ app.post("/api/languages", (req, res) => {
     [name, code, country_code, calling_code, enabled],
     (err, result) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to add language",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to add language",
+          error: err,
+        });
       }
       db.query(
         "SELECT * FROM languages WHERE id = ?",
         [result.insertId],
         (err, results) => {
           if (err || results.length === 0) {
-            return res
-              .status(500)
-              .json({
-                success: false,
-                message: "Language added but failed to fetch",
-                error: err,
-              });
+            return res.status(500).json({
+              success: false,
+              message: "Language added but failed to fetch",
+              error: err,
+            });
           }
           res.status(201).json({ success: true, data: results[0] });
         }
@@ -4855,23 +4710,19 @@ app.patch("/api/languages/:id", (req, res) => {
     [enabled, id],
     (err) => {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to update language",
-            error: err,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update language",
+          error: err,
+        });
       }
       db.query("SELECT * FROM languages WHERE id = ?", [id], (err, results) => {
         if (err || results.length === 0) {
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Language updated but failed to fetch",
-              error: err,
-            });
+          return res.status(500).json({
+            success: false,
+            message: "Language updated but failed to fetch",
+            error: err,
+          });
         }
         res.json({ success: true, data: results[0] });
       });
@@ -4884,13 +4735,11 @@ app.delete("/api/languages/:id", (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM languages WHERE id = ?", [id], (err) => {
     if (err) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to delete language",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete language",
+        error: err,
+      });
     }
     res.json({ success: true });
   });
@@ -5217,21 +5066,17 @@ app.post("/api/clients/:id/reset-password", async (req, res) => {
               currentHashedPassword
             );
             if (!isValid) {
-              return res
-                .status(400)
-                .json({
-                  success: false,
-                  message: "Current password is incorrect",
-                });
+              return res.status(400).json({
+                success: false,
+                message: "Current password is incorrect",
+              });
             }
           } catch (err) {
             console.error("Error comparing passwords:", err);
-            return res
-              .status(500)
-              .json({
-                success: false,
-                message: "Error verifying current password",
-              });
+            return res.status(500).json({
+              success: false,
+              message: "Error verifying current password",
+            });
           }
         }
 
@@ -5562,12 +5407,10 @@ app.patch("/v1/convai/agents/:agentId", async (req, res) => {
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        error: "Failed to proxy PATCH to ElevenLabs",
-        details: err.message,
-      });
+    res.status(500).json({
+      error: "Failed to proxy PATCH to ElevenLabs",
+      details: err.message,
+    });
   }
 });
 
@@ -5841,12 +5684,10 @@ app.delete("/api/agents/:agentId", authenticateJWT, async (req, res) => {
             deletedFromLocal,
           });
         } else {
-          return res
-            .status(404)
-            .json({
-              success: false,
-              message: "Agent not found in ElevenLabs or local DB",
-            });
+          return res.status(404).json({
+            success: false,
+            message: "Agent not found in ElevenLabs or local DB",
+          });
         }
       }
     );
@@ -6951,12 +6792,10 @@ app.post("/api/test-email", async (req, res) => {
     // Test email configuration
     const isConfigValid = await testEmailConfig();
     if (!isConfigValid) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Email service configuration is invalid",
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Email service configuration is invalid",
+      });
     }
 
     // Send test email
@@ -6981,13 +6820,11 @@ app.post("/api/test-email", async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending test email:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to send test email",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to send test email",
+      error: error.message,
+    });
   }
 });
 
@@ -7011,13 +6848,11 @@ app.post("/api/clients/reset-monthly-usage", (req, res) => {
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Failed to reset monthly usage:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to reset monthly usage",
-          error: err,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to reset monthly usage",
+        error: err,
+      });
     }
     console.log(`✅ Monthly usage reset for ${result.affectedRows} clients`);
     res.json({
@@ -7056,13 +6891,11 @@ app.get("/api/sales-persons/me", authenticateJWT, (req, res) => {
   db.query(sql, [userEmail], (err, rows) => {
     if (err) {
       console.error("Error fetching current sales admin profile:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: err.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message,
+      });
     }
     if (!rows || rows.length === 0)
       return res.json({ success: true, data: null });
@@ -7113,13 +6946,11 @@ app.get("/api/sales-persons/me/referrals", authenticateJWT, (req, res) => {
   db.query(fbSql, [userEmail ? userEmail : userId], (fbErr, fbRows) => {
     if (fbErr) {
       console.error("Error fetching referral code for current admin:", fbErr);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: fbErr.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: fbErr.message,
+      });
     }
     const code = fbRows && fbRows[0] ? fbRows[0].referral_code : null;
     if (!code) return res.json({ success: true, data: [] });
@@ -7163,13 +6994,11 @@ app.get("/api/sales-persons/me/referrals", authenticateJWT, (req, res) => {
     db.query(sql, params, (e2, rs) => {
       if (e2) {
         console.error("Error fetching referrals:", e2);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: e2.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: e2.message,
+        });
       }
       if (String(req.query.debug || "") === "1") {
         return res.json({
@@ -7210,13 +7039,11 @@ app.get("/api/referrals/by-code/:code", authenticateJWT, (req, res) => {
   `;
   db.query(sql, [code], (err, rows) => {
     if (err)
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: err.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message,
+      });
     res.json({ success: true, data: rows });
   });
 });
@@ -7257,13 +7084,11 @@ app.put("/api/referrals/:id/commission", authenticateJWT, (req, res) => {
   db.query(sql, params, (err) => {
     if (err) {
       console.error("Failed updating commission:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: err.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message,
+      });
     }
     res.json({ success: true });
   });
@@ -7288,13 +7113,11 @@ app.post("/api/referrals/backfill", authenticateJWT, (req, res) => {
   db.query(findSql, (err, rows) => {
     if (err) {
       console.error("Backfill lookup failed:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: err.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message,
+      });
     }
     if (!rows || rows.length === 0) {
       return res.json({
@@ -7341,13 +7164,11 @@ app.post("/api/referrals/backfill", authenticateJWT, (req, res) => {
       })
       .catch((e) => {
         console.error("Backfill unexpected error:", e);
-        res
-          .status(500)
-          .json({
-            success: false,
-            message: "Backfill failed",
-            error: e.message,
-          });
+        res.status(500).json({
+          success: false,
+          message: "Backfill failed",
+          error: e.message,
+        });
       });
   });
 });
@@ -7369,13 +7190,11 @@ app.post("/api/referrals/normalize-admin", authenticateJWT, (req, res) => {
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Normalize admin_user_id failed:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database error",
-          error: err.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+        error: err.message,
+      });
     }
     res.json({ success: true, updated: result.affectedRows });
   });
@@ -7396,13 +7215,11 @@ app.get(
       "SELECT referral_code FROM sales_admin_referral_codes WHERE admin_user_id = ? LIMIT 1";
     db.query(findReferralCodeSql, [userId], (err, rows) => {
       if (err)
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Database error",
-            error: err.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: err.message,
+        });
       if (!rows || rows.length === 0)
         return res.json({ success: true, data: [] });
       const referralCode = rows[0].referral_code;
@@ -7454,13 +7271,11 @@ app.get(
 
       db.query(sql, params, (err2, rows2) => {
         if (err2)
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message: "Database error",
-              error: err2.message,
-            });
+          return res.status(500).json({
+            success: false,
+            message: "Database error",
+            error: err2.message,
+          });
         // Build CSV
         const headers = [
           "Referral Code",
