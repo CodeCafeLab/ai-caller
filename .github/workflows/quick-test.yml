@@ -1,0 +1,66 @@
+name: Quick Test
+
+on:
+  push:
+    branches: [ sandbox1, feature/* ]
+  pull_request:
+    branches: [ sandbox1, main ]
+
+jobs:
+  quick-check:
+    name: Quick Code Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Quick build check
+        run: npm run build
+
+      - name: Check for obvious issues
+        run: |
+          echo "🔍 Quick health check..."
+          
+          # Check if server.js exists and has content
+          if [ -f "server.js" ]; then
+            echo "✅ server.js found"
+            echo "📏 File size: $(wc -l < server.js) lines"
+          else
+            echo "❌ server.js not found"
+            exit 1
+          fi
+          
+          # Check if package.json has required scripts
+          if npm run | grep -q "build"; then
+            echo "✅ Build script found"
+          else
+            echo "❌ Build script not found"
+            exit 1
+          fi
+          
+          # Check if .env.local exists
+          if [ -f ".env.local" ]; then
+            echo "✅ .env.local found"
+          else
+            echo "⚠️  .env.local not found (will be created during deployment)"
+          fi
+          
+          echo "✅ Quick check completed successfully"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-build
+          path: .next/
+          retention-days: 1
