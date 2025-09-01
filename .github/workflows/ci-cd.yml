@@ -309,16 +309,20 @@ jobs:
           
           # Create deployment package with error handling
           if tar -czf ai-caller-deployment.tar.gz \
+            --exclude=node_modules \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=.next/cache \
+            --exclude=uploads \
+            --exclude=logs \
+            --exclude=*.log \
             .next/ \
             public/ \
             src/ \
             server.js \
             package.json \
             package-lock.json \
-            $ENV_FILE \
-            --exclude=node_modules \
-            --exclude=.git \
-            --exclude=.github; then
+            $ENV_FILE; then
             echo "✅ Deployment package created successfully"
             ls -la ai-caller-deployment.tar.gz
           else
