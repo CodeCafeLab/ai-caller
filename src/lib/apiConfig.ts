@@ -231,23 +231,28 @@ export const apiUtils = {
   },
 
   // File upload
-  upload: async (
-    endpoint: string,
-    formData: FormData,
-    options: RequestInit = {}
-  ) => {
-    const url = buildApiUrl(endpoint);
-    const response = await fetch(url, {
-      ...defaultFetchOptions,
-      ...options,
-      method: "POST",
-      body: formData,
-      headers: {
-        // Don't set Content-Type for FormData, let browser set it with boundary
-      },
-    });
-    return response;
-  },
+// ...existing code...
+upload: async (
+  endpoint: string,
+  formData: FormData,
+  options: RequestInit = {}
+) => {
+  const url = buildApiUrl(endpoint);
+  // Remove Content-Type header for FormData
+  const fetchOptions: RequestInit = {
+    ...defaultFetchOptions,
+    ...options,
+    method: "POST",
+    body: formData,
+  };
+  // Remove Content-Type if present
+  if (fetchOptions.headers && typeof fetchOptions.headers === "object") {
+    delete (fetchOptions.headers as Record<string, any>)["Content-Type"];
+  }
+  const response = await fetch(url, fetchOptions);
+  return response;
+},
+// ...existing code...
 
   // External API GET request
   externalGet: async (

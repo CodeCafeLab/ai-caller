@@ -10,7 +10,12 @@ interface ProfilePictureUploaderProps {
   onUpload?: (file: File) => Promise<void>;
 }
 
-export default function ProfilePictureUploader({ value, onChange, onDelete, onUpload }: ProfilePictureUploaderProps) {
+export default function ProfilePictureUploader({
+  value,
+  onChange,
+  onDelete,
+  onUpload,
+}: ProfilePictureUploaderProps) {
   const [showCrop, setShowCrop] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -23,8 +28,8 @@ export default function ProfilePictureUploader({ value, onChange, onDelete, onUp
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        console.log('Image loaded, showing cropper');
+      if (typeof reader.result === "string") {
+        console.log("Image loaded, showing cropper");
         setImageSrc(reader.result);
         setShowCrop(true);
       }
@@ -42,16 +47,16 @@ export default function ProfilePictureUploader({ value, onChange, onDelete, onUp
     if (!croppedBlob) return;
     const file = new File([croppedBlob], "profile.jpg", { type: "image/jpeg" });
     if (onUpload) {
-      console.log('Calling custom onUpload handler with file:', file);
+      console.log("Calling custom onUpload handler with file:", file);
       // The onUpload handler should return the new URL (or call onChange itself)
       const result = await onUpload(file);
       // If the handler returns a URL, call onChange
-      if (typeof result === 'string') {
+      if (typeof result === "string") {
         onChange(result);
       }
     } else {
       const formData = new FormData();
-      formData.append("profile_picture", file);
+      formData.append("avatar_url", file); // <-- use 'avatar_url' to match backend
       const res = await api.uploadFile(formData);
       const data = await res.json();
       if (data.success) {
@@ -62,13 +67,13 @@ export default function ProfilePictureUploader({ value, onChange, onDelete, onUp
   };
 
   // Before rendering the cropper modal
-  console.log('showCrop:', showCrop, 'imageSrc:', imageSrc);
+  console.log("showCrop:", showCrop, "imageSrc:", imageSrc);
   return (
     <div className="flex flex-col items-center">
       <img
         src={
           value
-            ? value.startsWith('http')
+            ? value.startsWith("http")
               ? value
               : `${API_BASE_URL}${value}`
             : "/default-avatar.png"
@@ -83,8 +88,22 @@ export default function ProfilePictureUploader({ value, onChange, onDelete, onUp
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
-      <button type="button" onClick={() => inputRef.current?.click()} className="text-xs underline">Change Picture</button>
-      {value && <button type="button" onClick={onDelete} className="text-xs text-red-500 underline">Delete Picture</button>}
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="text-xs underline"
+      >
+        Change Picture
+      </button>
+      {value && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-xs text-red-500 underline"
+        >
+          Delete Picture
+        </button>
+      )}
       {showCrop && imageSrc && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded">
@@ -100,8 +119,20 @@ export default function ProfilePictureUploader({ value, onChange, onDelete, onUp
               />
             </div>
             <div className="flex gap-2 mt-4">
-              <button type="button" onClick={handleCropSave} className="bg-black text-white px-4 py-1 rounded">Save</button>
-              <button type="button" onClick={() => setShowCrop(false)} className="bg-gray-200 px-4 py-1 rounded">Cancel</button>
+              <button
+                type="button"
+                onClick={handleCropSave}
+                className="bg-black text-white px-4 py-1 rounded"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCrop(false)}
+                className="bg-gray-200 px-4 py-1 rounded"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -111,7 +142,10 @@ export default function ProfilePictureUploader({ value, onChange, onDelete, onUp
 }
 
 // Utility to crop image to blob
-async function getCroppedImg(imageSrc: string, crop: Area): Promise<Blob | null> {
+async function getCroppedImg(
+  imageSrc: string,
+  crop: Area
+): Promise<Blob | null> {
   const createImage = (url: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
       const image = new window.Image();
@@ -142,4 +176,4 @@ async function getCroppedImg(imageSrc: string, crop: Area): Promise<Blob | null>
       resolve(blob || null);
     }, "image/jpeg");
   });
-} 
+}

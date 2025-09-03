@@ -5,7 +5,8 @@ const mysql = require("mysql2");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const path = require("path");
+const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const bcryptjs = require("bcryptjs");
 const cookieParser = require("cookie-parser");
@@ -13,6 +14,42 @@ const fetch = (...args) =>
   import("node-fetch").then((mod) => mod.default(...args));
 const axios = require("axios");
 const { execFile } = require("child_process");
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/profile-pictures/';
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept images only
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Make uploads directory accessible
+// app.use('/uploads', express.static('uploads'));
 
 console.log("🟡 Starting backend server...");
 
@@ -903,6 +940,16 @@ app.post("/api/elevenlabs/create-agent", authenticateJWT, async (req, res) => {
           console.error("Failed to insert agent into local DB:", err);
           // Still return success for ElevenLabs, but log error
         }
+        // Notify all connected clients about the new agent
+        db.query("SELECT * FROM agents WHERE agent_id = ?", [agentId], (err, results) => {
+          if (!err && results.length > 0) {
+            sendUpdateToClients({
+              type: 'agent_created',
+              agent: results[0],
+              timestamp: new Date().toISOString()
+            });
+          }
+        });
         res.status(200).json({ agent_id: agentId });
       });
     }
@@ -1097,15 +1144,27 @@ app.patch("/api/agents/:id/details", async (req, res) => {
       });
       const respData = await resp.json();
       console.log(
-        "[PATCH /api/agents/:id/details] ElevenLabs response:",
-        resp.status,
-        respData
+        `[PATCH /api/agents/:id/details] ElevenLabs response: ${resp.status} ${
+          resp.statusText
+        }`,
+        JSON.stringify(respData, null, 2)
       );
       if (!resp.ok) {
         throw new Error(
-          `Failed to update ElevenLabs: ${JSON.stringify(respData)}`
+          `ElevenLabs API error: ${resp.status} ${resp.statusText}`
         );
       }
+
+      // Notify all connected clients about the agent update
+      db.query("SELECT * FROM agents WHERE agent_id = ?", [agentId], (err, results) => {
+        if (!err && results.length > 0) {
+          sendUpdateToClients({
+            type: 'agent_updated',
+            agent: results[0],
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
 
       // After ElevenLabs update, persist mcp_server_ids locally (array)
       try {
@@ -1370,7 +1429,7 @@ app.patch("/api/elevenlabs/agent/:id/analysis", (req, res) => {
   });
 });
 
-// ElevenLabs Get All Agents Endpoint
+// ElevenLabs Get All Agents Endpoint with Pagination
 app.get("/api/elevenlabs/agents", async (req, res) => {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -1378,12 +1437,18 @@ app.get("/api/elevenlabs/agents", async (req, res) => {
       "xi-api-key": apiKey,
       "Content-Type": "application/json",
     };
-    // You can pass query params for pagination/filtering if needed
-    const query = req.query
-      ? "?" + new URLSearchParams(req.query).toString()
-      : "";
+    
+    // Support pagination parameters
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 100;
+    const query = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...req.query
+    });
+    
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/agents${query}`,
+      `https://api.elevenlabs.io/v1/convai/agents?${query}`,
       {
         method: "GET",
         headers,
@@ -1397,6 +1462,7 @@ app.get("/api/elevenlabs/agents", async (req, res) => {
     }
     res.status(200).json(data);
   } catch (err) {
+    console.error('ElevenLabs API error:', err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -2180,7 +2246,7 @@ app.get("/api/clients/:id/agents-analytics", async (req, res) => {
     const xiKey =
       process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY ||
       process.env.ELEVENLABS_API_KEY ||
-      sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317;
+      sk_27ead0939f4c51d9c0ea63ac442d5c2654dcb9ff6589f751;
     if (!xiKey) {
       return res
         .status(400)
@@ -2383,7 +2449,7 @@ app.get("/api/clients/:id/elevenlabs-usage", async (req, res) => {
     const xiKey =
       process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY ||
       process.env.ELEVENLABS_API_KEY ||
-      sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317;
+      sk_27ead0939f4c51d9c0ea63ac442d5c2654dcb9ff6589f751;
     if (!xiKey)
       return res
         .status(400)
@@ -3856,27 +3922,47 @@ app.patch("/api/admin_users/me", authenticateJWT, (req, res) => {
 app.post(
   "/api/admin_users/me/avatar_url",
   authenticateJWT,
-  upload.single("profile_picture"),
+  upload.single("avatar_url"),
   (req, res) => {
     const userId = req.user.id;
     if (!userId)
       return res
         .status(401)
         .json({ success: false, message: "Missing user ID" });
-    if (!req.file)
-      return res
-        .status(400)
-        .json({ success: false, message: "No file uploaded" });
-    const filePath = `/uploads/${req.file.filename}`;
-    db.query(
-      "UPDATE admin_users SET avatar_url = ? WHERE id = ?",
-      [filePath, userId],
-      (err) => {
-        if (err)
-          return res.status(500).json({ success: false, message: err.message });
-        res.json({ success: true, avatar_url: filePath });
-      }
-    );
+
+    // If file uploaded, use it
+    if (req.file) {
+      const filePath = `/uploads/${req.file.filename}`;
+      db.query(
+        "UPDATE admin_users SET avatar_url = ? WHERE id = ?",
+        [filePath, userId],
+        (err) => {
+          if (err)
+            return res.status(500).json({ success: false, message: err.message });
+          res.json({ success: true, avatar_url: filePath });
+        }
+      );
+      return;
+    }
+
+    // If avatar_url sent as text (URL), use it
+    if (req.body.avatar_url && typeof req.body.avatar_url === "string") {
+      db.query(
+        "UPDATE admin_users SET avatar_url = ? WHERE id = ?",
+        [req.body.avatar_url, userId],
+        (err) => {
+          if (err)
+            return res.status(500).json({ success: false, message: err.message });
+          res.json({ success: true, avatar_url: req.body.avatar_url });
+        }
+      );
+      return;
+    }
+
+    // Otherwise, error
+    return res
+      .status(400)
+      .json({ success: false, message: "No file or URL uploaded" });
   }
 );
 
@@ -4654,6 +4740,325 @@ function authenticateJWT(req, res, next) {
 // Serve uploads folder statically
 app.use("/uploads", express.static("uploads"));
 
+// Update admin user profile
+app.put("/api/admin_users/me", authenticateJWT, (req, res) => {
+  if (req.user.type !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+
+  const { name, email, bio, avatar_url } = req.body;
+  
+  // Validate required fields
+  if (!name || !email) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Name and email are required' 
+    });
+  }
+
+  // Build the update query dynamically based on provided fields
+  const updates = [];
+  const values = [];
+  
+  if (name) {
+    updates.push('name = ?');
+    values.push(name);
+  }
+  
+  if (email) {
+    updates.push('email = ?');
+    values.push(email);
+  }
+  
+  if (bio !== undefined) {
+    updates.push('bio = ?');
+    values.push(bio);
+  }
+  
+  if (avatar_url) {
+    updates.push('avatar_url = ?');
+    values.push(avatar_url);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'No valid fields to update' 
+    });
+  }
+
+  // Add the WHERE condition
+  values.push(req.user.id);
+  
+  const updateSql = `UPDATE admin_users SET ${updates.join(', ')} WHERE id = ?`;
+  
+  db.query(updateSql, values, (err, result) => {
+    if (err) {
+      console.error('Error updating profile:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update profile',
+        error: err.message 
+      });
+    }
+
+    // Fetch the updated user data
+    db.query('SELECT id, name, email, bio, avatar_url, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', 
+      [req.user.id], 
+      (err, results) => {
+        if (err || results.length === 0) {
+          console.error('Error fetching updated profile:', err);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Profile updated but failed to fetch updated data',
+            error: err?.message 
+          });
+        }
+
+        const user = results[0];
+        // Include permissions if they exist in the user object
+        if (req.user.permissions) {
+          user.permissions = req.user.permissions;
+        }
+
+        res.json({ 
+          success: true, 
+          message: 'Profile updated successfully',
+          data: user
+        });
+      }
+    );
+  });
+});
+
+// Upload profile picture for admin users
+app.post("/api/upload", (req, res, next) => {
+  // First authenticate the user
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+
+  // Verify token and attach user to request
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user;
+    
+    // Now handle the file upload
+    upload.any()(req, res, (err) => {
+      if (err) {
+        console.error('Upload error:', err);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Error uploading file',
+          error: err.message 
+        });
+      }
+
+      // Check if any files were uploaded
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No file uploaded' 
+        });
+      }
+      
+      // Get the first uploaded file
+      const file = req.files[0];
+      console.log('Uploaded file:', file);
+      
+      // Create profile-pictures directory if it doesn't exist
+      const uploadDir = path.join(__dirname, 'uploads', 'profile-pictures');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      // The file path relative to the uploads directory
+      const relativePath = `/uploads/profile-pictures/${file.filename}`;
+      const fullUrl = `${req.protocol}://${req.get('host')}${relativePath}`;
+
+      // Update the admin user's profile picture in the database
+      const updateSql = 'UPDATE admin_users SET avatar_url = ? WHERE id = ?';
+      db.query(updateSql, [relativePath, req.user.id], (err, result) => {
+        if (err) {
+          console.error('Error updating profile picture:', err);
+          // Clean up the uploaded file on error
+          fs.unlink(file.path, () => {});
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update profile picture',
+            error: err.message 
+          });
+        }
+
+        // Return the updated user data
+        db.query('SELECT id, name, email, bio, avatar_url, roleName, lastLogin, status, createdOn FROM admin_users WHERE id = ?', 
+          [req.user.id], 
+          (err, results) => {
+            if (err || results.length === 0) {
+              console.error('Error fetching updated profile:', err);
+              return res.json({ 
+                success: true, 
+                message: 'File uploaded but failed to fetch updated profile',
+                filePath: relativePath,
+                url: fullUrl
+              });
+            }
+
+            const user = results[0];
+            if (req.user.permissions) {
+              user.permissions = req.user.permissions;
+            }
+
+            res.json({ 
+              success: true, 
+              message: 'Profile picture uploaded successfully',
+              data: user,
+              filePath: relativePath,
+              url: fullUrl
+            });
+          }
+        );
+      });
+    });
+  });
+});
+
+// Upload profile picture for admin users (legacy endpoint)
+app.post("/api/admin_users/me/profile-picture", authenticateJWT, upload.any(), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+
+  if (req.user.type !== 'admin') {
+    // Clean up the uploaded file if not admin
+    fs.unlink(req.file.path, () => {});
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+
+  // The file path relative to the uploads directory
+  const filePath = `/uploads/profile-pictures/${path.basename(req.file.filename)}`;
+  const fullUrl = `${req.protocol}://${req.get('host')}${filePath}`;
+
+  // Update the admin user's profile picture in the database
+  const updateSql = 'UPDATE admin_users SET profile_picture = ? WHERE id = ?';
+  db.query(updateSql, [filePath, req.user.id], (err, result) => {
+    if (err) {
+      console.error('Error updating profile picture:', err);
+      // Clean up the uploaded file on error
+      fs.unlink(req.file.path, () => {});
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update profile picture',
+        error: err.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Profile picture uploaded successfully',
+      filePath: filePath,
+      url: fullUrl
+    });
+  });
+});
+
+// Delete profile picture for admin users
+app.delete('/api/admin_users/me/profile-picture', authenticateJWT, (req, res) => {
+  if (req.user.type !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+
+  // First, get the current profile picture path
+  db.query('SELECT profile_picture FROM admin_users WHERE id = ?', [req.user.id], (err, results) => {
+    if (err) {
+      console.error('Error fetching current profile picture:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to fetch current profile picture',
+        error: err.message 
+      });
+    }
+
+    const currentPicture = results[0]?.profile_picture;
+    
+    // Update the database to remove the profile picture
+    db.query('UPDATE admin_users SET profile_picture = NULL WHERE id = ?', [req.user.id], (err, result) => {
+      if (err) {
+        console.error('Error removing profile picture:', err);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to remove profile picture',
+          error: err.message 
+        });
+      }
+
+      // If there was a profile picture, delete the file
+      if (currentPicture) {
+        const fullPath = path.join(__dirname, currentPicture);
+        if (fs.existsSync(fullPath)) {
+          fs.unlink(fullPath, (err) => {
+            if (err) {
+              console.error('Error deleting profile picture file:', err);
+              // Don't fail the request if file deletion fails
+            }
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Profile picture removed successfully' 
+      });
+    });
+  });
+});
+
+// Store connected clients for SSE
+const clients = new Set();
+
+// SSE endpoint for real-time updates
+app.get('/api/updates', (req, res) => {
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Send initial connection message
+  const data = JSON.stringify({ type: 'connection', message: 'Connected to SSE' });
+  res.write(`data: ${data}\n\n`);
+
+  // Add client to the clients set
+  const clientId = Date.now();
+  const newClient = {
+    id: clientId,
+    res
+  };
+  clients.add(newClient);
+
+  // Remove client on connection close
+  req.on('close', () => {
+    console.log(`Client ${clientId} disconnected`);
+    clients.delete(newClient);
+  });
+});
+
+// Function to send updates to all connected clients
+function sendUpdateToClients(data) {
+  const message = JSON.stringify(data);
+  clients.forEach(client => {
+    try {
+      client.res.write(`data: ${message}\n\n`);
+    } catch (error) {
+      console.error('Error sending message to client:', error);
+      clients.delete(client);
+    }
+  });
+}
+
 // --- LANGUAGES API ---
 // Get all languages
 app.get("/api/languages", (req, res) => {
@@ -4902,13 +5307,16 @@ app.get("/api/knowledge-base", authenticateJWT, (req, res) => {
 });
 
 // File upload endpoint
-app.post("/api/upload", authenticateJWT, upload.single("file"), (req, res) => {
-  if (!req.file)
-    return res
-      .status(400)
-      .json({ success: false, message: "No file uploaded" });
-  res.json({ success: true, file_path: `/uploads/${req.file.filename}` });
-});
+app.post(
+  "/api/upload",
+  upload.single("file"), // expects field name 'file'
+  (req, res) => {
+    if (!req.file)
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    const filePath = `/uploads/${req.file.filename}`;
+    res.json({ success: true, url: filePath });
+  }
+);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -5139,7 +5547,7 @@ app.put("/api/clients/:id/profile", authenticateJWT, async (req, res) => {
 app.post(
   "/api/clients/:id/avatar",
   authenticateJWT,
-  upload.single("profile_picture"),
+  upload.single("avatar_url"),
   (req, res) => {
     const clientId = req.params.id;
 
@@ -5331,7 +5739,7 @@ app.patch("/api/agents/:agentId/widget-settings", async (req, res) => {
 
 app.post(
   "/api/elevenlabs/pronunciation-dictionary",
-  upload.single("file"),
+  upload.single("avatar_url"),
   (req, res) => {
     const filePath = req.file.path;
     const name = req.body.name || req.file.originalname;

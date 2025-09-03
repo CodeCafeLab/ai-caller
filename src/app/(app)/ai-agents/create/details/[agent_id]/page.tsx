@@ -804,7 +804,7 @@ interface EnableOverrides {
 export default function AgentDetailsPage() {
   const { toast } = useToast();
   const params = useParams();
-  const agentId = params.agent_id;
+  const agentId = params?.agent_id;
   const [localAgent, setLocalAgent] = useState<any>({});
   const [elevenLabsAgent, setElevenLabsAgent] = useState<any>({});
   const [languages, setLanguages] = useState<any[]>([]);
