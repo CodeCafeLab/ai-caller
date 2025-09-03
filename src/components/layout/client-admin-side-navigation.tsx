@@ -81,7 +81,7 @@ export function ClientAdminSideNavigation() {
 
   useEffect(() => {
     // Automatically open the submenu if the current path matches a subitem's parent
-    const activeParent = clientAdminNavItems.find(item => item.subItems && item.basePath && pathname.startsWith(item.basePath));
+    const activeParent = clientAdminNavItems.find(item => item.subItems && item.basePath && pathname?.startsWith(item.basePath));
     if (activeParent) {
       setOpenSubmenus(prev => ({ ...prev, [activeParent.label]: true }));
     }
@@ -104,8 +104,8 @@ export function ClientAdminSideNavigation() {
                 asChild={!item.subItems}
                 onClick={item.subItems ? () => toggleSubmenu(item.label) : undefined}
                 isActive={item.subItems
-                  ? !!(item.basePath && pathname.startsWith(item.basePath))
-                  : !!(item.href && (pathname === item.href || (item.basePath && pathname.startsWith(item.basePath))))}
+                  ? !!(item.basePath && pathname?.startsWith(item.basePath))
+                  : !!(item.href && (pathname === item.href || (item.basePath && pathname?.startsWith(item.basePath))))}
                 tooltip={{ children: item.label, className: "bg-popover text-popover-foreground border-border" }}
                 className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
               >

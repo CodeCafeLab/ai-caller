@@ -35,7 +35,7 @@ import { elevenLabsApi } from '@/lib/elevenlabsApi';
 function ClientDetailsUsagePageInner() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const clientId = searchParams.get("clientId");
+  const clientId = searchParams?.get("clientId");
   const [client, setClient] = React.useState<any | null>(null);
   const [monthlyCalls, setMonthlyCalls] = React.useState<number>(0);
   const [assignedPlans, setAssignedPlans] = React.useState<any[]>([]);

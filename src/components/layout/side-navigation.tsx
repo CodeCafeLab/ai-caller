@@ -162,7 +162,7 @@ export function SideNavigation() {
   const router = useRouter();
   const { toast } = useToast();
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>(() => {
-    const activeParent = initialNavItems.find(item => item.basePath && pathname.startsWith(item.basePath));
+    const activeParent = initialNavItems.find(item => item.basePath && pathname?.startsWith(item.basePath));
     if (activeParent) {
       return { [activeParent.label]: true };
     }
@@ -224,7 +224,7 @@ export function SideNavigation() {
               <SidebarMenuButton
                 asChild={!item.subItems} 
                 onClick={item.subItems ? () => toggleSubmenu(item.label) : undefined}
-                isActive={item.subItems ? (item.basePath ? pathname.startsWith(item.basePath) : false) : (item.href ? (pathname === item.href || (item.basePath && pathname.startsWith(item.basePath) && item.href !=='/dashboard')) : false) || false}
+                isActive={item.subItems ? (item.basePath ? pathname?.startsWith(item.basePath) : false) : (item.href ? (pathname === item.href || (item.basePath && pathname?.startsWith(item.basePath) && item.href !=='/dashboard')) : false) || false}
                 tooltip={{ children: item.label, className: "bg-popover text-popover-foreground border-border" }}
                 className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
               >

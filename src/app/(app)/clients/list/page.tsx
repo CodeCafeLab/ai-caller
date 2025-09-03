@@ -242,14 +242,14 @@ function AllClientsListPageInner() {
   }, [managePlansForClient]);
 
   React.useEffect(() => {
-    if (searchParams.get('addClient') === '1') {
+    if (searchParams?.get('addClient') === '1') {
       setIsAddClientSheetOpen(true);
     }
   }, [searchParams]);
 
   // Open Edit Sheet if ?editClient=ID is in the URL
   React.useEffect(() => {
-    const editId = searchParams.get("editClient");
+    const editId = searchParams?.get("editClient");
     if (editId) {
       api.getClient(editId)
         .then(res => res.json())

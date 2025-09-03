@@ -13,7 +13,7 @@ import { Suspense } from "react";
 function EditClientSheetPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const clientId = searchParams.get("clientId");
+  const clientId = searchParams?.get("clientId");
   const { toast } = useToast();
 
   const [loading, setLoading] = React.useState(true);

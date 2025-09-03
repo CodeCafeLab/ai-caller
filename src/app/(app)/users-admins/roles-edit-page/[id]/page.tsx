@@ -40,7 +40,7 @@ export default function RolesEditPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const roleId = params.id;
+  const roleId = params?.id;
 
   React.useEffect(() => {
     async function fetchRole() {
