@@ -58,9 +58,9 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { useRouter } from 'next/navigation';
 
 // export const metadata: Metadata = {
-//   title: 'AI Script Agents - AI Caller',
+//   title: 'AI Script Agents - Avyukta AI Caller',
 //   description: 'Manage global AI conversation agents for various use cases and languages.',
-//   keywords: ['ai agents', 'script agents', 'conversation flow', 'bot scripts', 'AI Caller'],
+//   keywords: ['ai agents', 'script agents', 'conversation flow', 'bot scripts', 'Avyukta AI Caller'],
 // };
 
 export type AIAgentStatus = "Draft" | "Published" | "Archived";
@@ -147,18 +147,18 @@ export default function AiAgentsPage() {
     setLoading(true);
     Promise.all([
       fetch('/api/agents').then(res => res.json()),
-      fetch('/api/elevenlabs/agents').then(res => res.json()), // Use backend endpoint
+      fetch('https://api.elevenlabs.io/v1/convai/agents', {
+        headers: {
+          'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
+          'Content-Type': 'application/json',
+        }
+      }).then(res => res.json()),
       api.getClients().then(res => res.json())
     ])
       .then(([localData, elevenData, clientsData]) => {
-        console.log('Local agents data:', localData);
-        console.log('ElevenLabs agents data:', elevenData);
-        console.log('Clients data:', clientsData);
         let localAgents: AIAgent[] = [];
         let allClients: any[] = Array.isArray(clientsData.data) ? clientsData.data : [];
         setClients(allClients);
-        
-        // Process local agents
         if (Array.isArray(localData.data)) {
           localAgents = localData.data.map((agent: any) => {
             const client = allClients.find((c: any) => String(c.id) === String(agent.client_id));
@@ -169,61 +169,37 @@ export default function AiAgentsPage() {
               tags: agent.tags ? JSON.parse(agent.tags) : [],
               createdBy: agent.creator_name || user?.name || user?.fullName || user?.email || 'Unknown',
               clientName: client ? client.companyName : '-',
-              language: agent.language_name || agent.language || '',
+              language: '',
               lastModified: agent.updated_at,
-              status: agent.status || 'Published',
+              status: 'Published',
               version: agent.model || '1.0',
               source: 'local',
-              client_id: agent.client_id,
             };
           });
         }
-        
-        // Process ElevenLabs agents with better data mapping
         let elevenLabsAgents: AIAgent[] = [];
         let agentsArr = [];
         if (Array.isArray(elevenData.agents)) agentsArr = elevenData.agents;
         else if (Array.isArray(elevenData.items)) agentsArr = elevenData.items;
         else if (Array.isArray(elevenData.data)) agentsArr = elevenData.data;
         else if (Array.isArray(elevenData)) agentsArr = elevenData;
-        
-        elevenLabsAgents = agentsArr.map((agent: any) => {
-          const client = allClients.find((c: any) => String(c.id) === String(agent.client_id));
-          return {
-            id: agent.agent_id || agent.id,
-            name: agent.name || agent.agent_name || 'Unnamed Agent',
-            useCase: agent.description || agent.use_case || 'Other',
-            tags: agent.tags || agent.tag_list || [],
-            createdBy: agent.created_by || agent.creator_name || 'ElevenLabs',
-            clientName: client ? client.companyName : (agent.client_name || '-'),
-            language: agent.language || agent.language_code || 'English (US)',
-            lastModified: agent.updated_at || agent.last_modified || agent.created_at,
-            status: agent.status || agent.agent_status || 'Published',
-            version: agent.model || agent.version || '1.0',
-            source: 'elevenlabs',
-            client_id: agent.client_id,
-            // Additional fields for better data
-            voice_id: agent.voice_id,
-            conversation_config: agent.conversation_config,
-            knowledge_base: agent.knowledge_base,
-          };
-        });
-        
-        // Merge agents, avoiding duplicates
-        const merged = [
-          ...localAgents, 
-          ...elevenLabsAgents.filter(ea => 
-            !localAgents.some(la => la.id === ea.id)
-          )
-        ];
-        
-        console.log(`Loaded ${localAgents.length} local agents and ${elevenLabsAgents.length} ElevenLabs agents`);
+        elevenLabsAgents = agentsArr.map((agent: any) => ({
+          id: agent.agent_id || agent.id,
+          name: agent.name,
+          useCase: agent.description || 'Other',
+          tags: agent.tags || [],
+          createdBy: 'ElevenLabs',
+          clientName: '-',
+          language: '',
+          lastModified: agent.updated_at || agent.last_modified,
+          status: 'Published',
+          version: agent.model || '1.0',
+          source: 'elevenlabs',
+        }));
+        const merged = [...localAgents, ...elevenLabsAgents.filter(ea => !localAgents.some(la => la.id === ea.id))];
         setAgents(merged);
       })
-      .catch((error) => {
-        console.error('Error fetching agents:', error);
-        setAgents([]);
-      })
+      .catch(() => setAgents([]))
       .finally(() => setLoading(false));
   }, [user]);
 

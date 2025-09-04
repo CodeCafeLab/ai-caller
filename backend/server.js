@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const multer = require('multer');
 const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
 // Import routes
@@ -75,6 +74,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Set-Cookie']
 }));
+
 
 app.use(express.json());
 app.use(cookieParser());
