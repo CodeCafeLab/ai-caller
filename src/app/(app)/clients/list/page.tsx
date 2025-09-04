@@ -214,15 +214,15 @@ function AllClientsListPageInner() {
         if (data.success) setPlans(data.data.map((p: any) => ({ id: p.id, name: p.name })));
       });
     
-    // Near real-time usage refresh every 10 seconds
+    // Near real-time usage refresh every 30 seconds (reduced frequency)
     const usageIntervalId = setInterval(() => {
       fetchUsageData();
-    }, 10000);
+    }, 30000);
 
-    // Full client refresh every 30 seconds (keeps plan/limit/etc. fresh)
+    // Full client refresh every 60 seconds (reduced frequency)
     const fullRefreshIntervalId = setInterval(() => {
       fetchClients();
-    }, 30000);
+    }, 60000);
 
     return () => {
       clearInterval(usageIntervalId);
@@ -242,14 +242,14 @@ function AllClientsListPageInner() {
   }, [managePlansForClient]);
 
   React.useEffect(() => {
-    if (searchParams.get('addClient') === '1') {
+    if (searchParams?.get('addClient') === '1') {
       setIsAddClientSheetOpen(true);
     }
   }, [searchParams]);
 
   // Open Edit Sheet if ?editClient=ID is in the URL
   React.useEffect(() => {
-    const editId = searchParams.get("editClient");
+    const editId = searchParams?.get("editClient");
     if (editId) {
       api.getClient(editId)
         .then(res => res.json())
@@ -614,7 +614,15 @@ function AllClientsListPageInner() {
                 <TableHead>
                   <div className="flex items-center gap-2">
                     <span>Usage</span>
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Real-time data"></div>
+                    <div className="flex items-center gap-1">
+                      <span 
+                        className="text-xs text-blue-500 cursor-help hover:text-blue-700 transition-colors" 
+                        title="Shows monthly calls vs monthly limit"
+                      >
+                        ⓘ
+                      </span>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Real-time data"></div>
+                    </div>
                   </div>
                 </TableHead>
                 <TableHead>Joined</TableHead>
@@ -872,4 +880,3 @@ export default function AllClientsListPage() {
     </Suspense>
   );
 }
-

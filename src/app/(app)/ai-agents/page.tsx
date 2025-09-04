@@ -58,9 +58,9 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { useRouter } from 'next/navigation';
 
 // export const metadata: Metadata = {
-//   title: 'AI Script Agents - AI Caller',
+//   title: 'AI Script Agents - Avyukta AI Caller',
 //   description: 'Manage global AI conversation agents for various use cases and languages.',
-//   keywords: ['ai agents', 'script agents', 'conversation flow', 'bot scripts', 'AI Caller'],
+//   keywords: ['ai agents', 'script agents', 'conversation flow', 'bot scripts', 'Avyukta AI Caller'],
 // };
 
 export type AIAgentStatus = "Draft" | "Published" | "Archived";
