@@ -48,16 +48,20 @@ router.post('/login', async (req, res) => {
           maxAge: 24*60*60*1000
         });
 
+        const userData = { 
+          id: user.id, 
+          name: user.name, 
+          email: user.email, 
+          role: user.roleName,
+          type: 'admin'
+        };
+
+        // Return both the token and user data
         return res.json({ 
           success: true, 
-          user: { 
-            id: user.id, 
-            name: user.name, 
-            email: user.email, 
-            role: user.roleName,
-            type: 'admin'
-          },
-          token: token  // Include the token in the response
+          user: userData,
+          token: token,  // Include the token in the response body
+          expiresIn: 24 * 60 * 60 * 1000  // Token expiration time in milliseconds (1 day)
         });
       } catch (err) {
         console.error('Error in admin authentication:', err);
@@ -178,16 +182,20 @@ router.post('/login', async (req, res) => {
           });
         }
 
+        const userData = { 
+          id: client.id, 
+          name: client.companyName, 
+          email: client.companyEmail, 
+          type: 'client',
+          role: 'client_admin'
+        };
+
+        // Return both the token and user data
         return res.json({ 
           success: true, 
-          user: { 
-            id: client.id, 
-            name: client.companyName, 
-            email: client.companyEmail, 
-            role: 'client_admin',
-            type: 'client'
-          },
-          token: token  // Include the token in the response
+          user: userData,
+          token: token,  // Include the token in the response body
+          expiresIn: 24 * 60 * 60 * 1000  // Token expiration time in milliseconds (1 day)
         });
       } catch (err) {
         console.error('Error in client authentication:', err);
@@ -270,7 +278,9 @@ router.post('/client-admin/login', async (req, res) => {
           email: client.companyEmail, 
           role: 'client_admin',
           companyName: client.companyName 
-        } 
+        },
+        token: token,
+        expiresIn: 24 * 60 * 60 * 1000
       });
     } catch (err) {
       console.error('Error in authentication:', err);
