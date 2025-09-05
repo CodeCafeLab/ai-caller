@@ -56,7 +56,8 @@ router.post('/login', async (req, res) => {
             email: user.email, 
             role: user.roleName,
             type: 'admin'
-          } 
+          },
+          token: token  // Include the token in the response
         });
       } catch (err) {
         console.error('Error in admin authentication:', err);
@@ -181,11 +182,12 @@ router.post('/login', async (req, res) => {
           success: true, 
           user: { 
             id: client.id, 
+            name: client.companyName, 
             email: client.companyEmail, 
             role: 'client_admin',
-            type: 'client',
-            companyName: client.companyName 
-          } 
+            type: 'client'
+          },
+          token: token  // Include the token in the response
         });
       } catch (err) {
         console.error('Error in client authentication:', err);
