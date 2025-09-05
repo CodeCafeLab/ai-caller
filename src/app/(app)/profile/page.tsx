@@ -65,6 +65,7 @@ export default function ProfilePage() {
     api.getCurrentUser()
       .then((res) => res.json())
       .then((data: any) => {
+        console.log('Fetched profile:', data.data);
         if (data.success) {
           setUser({
             userId: data.data.id ? data.data.id.toString() : '',
@@ -132,6 +133,7 @@ export default function ProfilePage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -184,6 +186,7 @@ export default function ProfilePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
         },
         credentials: 'include',
         body: JSON.stringify({

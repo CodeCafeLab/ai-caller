@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { tokenStorage } from "@/lib/tokenStorage";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,13 @@ export default function SignInPage() {
         }
 
         if (loginData.success) {
+          // Store the token in localStorage
+          if (loginData.token) {
+            tokenStorage.setToken(loginData.token);
+            console.log("Token stored successfully");
+          } else {
+            console.warn("No token received in login response");
+          }
           // Fetch user profile using cookie
           const profileRes = await api.getCurrentUser();
           const profileData = await profileRes.json();
