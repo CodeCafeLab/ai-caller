@@ -96,8 +96,13 @@ app.get("/", (req, res) => {
 
 // Database is already initialized in database.js
 
-// Use routes
+// Public routes (no authentication required)
 app.use("/api/auth", authRoutes);
+
+// Apply authentication middleware to all routes except public ones
+app.use(authenticateJWT);
+
+// Protected routes (require authentication)
 app.use("/api/agents", agentRoutes);
 app.use("/api/languages", languagesRoutes);
 app.use("/api/knowledge-base", knowledgeBaseRoutes);
@@ -117,8 +122,8 @@ app.use("/api/sales-persons", salesRoutes);
 app.use("/api/workspace-secrets", secretsRoutes);
 app.use("/api/mcp-servers", mcpRoutes);
 
-// ElevenLabs Voices Proxy Endpoint
-app.get("/api/voices", async (req, res) => {
+// ElevenLabs Voices Proxy Endpoint (protected by authentication)
+app.get("/api/voices", authenticateJWT, async (req, res) => {
   try {
     console.log("ELEVENLABS_API_KEY:", process.env.ELEVENLABS_API_KEY);
     const response = await fetch("https://api.elevenlabs.io/v1/voices", {
