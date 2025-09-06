@@ -125,6 +125,9 @@ export default function ClientAdminProfilePage() {
       const res = await fetch(`/api/clients/${user.userId}/avatar`, {
         method: "POST",
         body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       const data = await res.json();
       if (data.success) {
@@ -143,6 +146,9 @@ export default function ClientAdminProfilePage() {
     try {
       const res = await fetch(`/api/clients/${user.userId}/avatar`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       if (res.ok) {
         setProfile({ ...profile, avatar_url: '' });
@@ -161,7 +167,11 @@ export default function ClientAdminProfilePage() {
     try {
       const res = await fetch(`/api/clients/${user.userId}/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+         
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+         
+         },
         body: JSON.stringify({
           name: profile.name,
           bio: profile.bio,
@@ -198,7 +208,10 @@ export default function ClientAdminProfilePage() {
     try {
       const res = await fetch(`/api/clients/${user.userId}/reset-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+
+        },
         body: JSON.stringify({
           oldPassword: data.currentPassword,
           newPassword: data.newPassword,
@@ -246,6 +259,9 @@ export default function ClientAdminProfilePage() {
                 const res = await fetch(`/api/clients/${user.userId}/avatar`, {
                   method: 'POST',
                   body: formData,
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                  }
                 });
                 const data = await res.json();
                 if (data.success) {

@@ -34,7 +34,7 @@ export default function CreateAgentPage() {
     console.log("User object:", user);
     console.log("client_id being sent:", (user as any)?.id ?? (user as any)?.clientId);
     try {
-      const res = await fetch("http://localhost:5000/api/elevenlabs/create-agent", {
+      const res = await fetch("/api/elevenlabs/create-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

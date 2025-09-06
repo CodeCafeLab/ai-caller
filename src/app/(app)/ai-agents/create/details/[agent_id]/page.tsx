@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -724,6 +725,7 @@ async function addKnowledgeBaseItem(type: 'url' | 'text' | 'file', payload: any,
     headers: {
       'xi-api-key': apiKey,
       'Content-Type': 'application/json',
+       'Authorization': `Bearer ${tokenStorage.getToken()}`,
     },
     body: JSON.stringify(payload),
   });
@@ -1673,6 +1675,7 @@ export default function AgentDetailsPage() {
           headers: {
             'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${tokenStorage.getToken()}`,
           },
         });
         if (!res.ok) throw new Error('Failed to fetch documents');
@@ -1714,6 +1717,8 @@ export default function AgentDetailsPage() {
           headers: {
             'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenStorage.getToken()}`,
+
           },
         });
         if (response.ok) {
@@ -1879,6 +1884,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+
         },
       });
       if (res.ok) {
@@ -1923,6 +1930,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+
         },
       });
       if (res.ok) {

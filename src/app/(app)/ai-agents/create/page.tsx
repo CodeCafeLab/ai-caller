@@ -45,7 +45,7 @@ export default function CreateAgentPage() {
     setError("");
     setSuccess(false);
     try {
-      const res = await fetch("http://localhost:5000/api/elevenlabs/create-agent", {
+      const res = await fetch("/api/elevenlabs/create-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

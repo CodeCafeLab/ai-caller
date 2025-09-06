@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -716,6 +717,8 @@ async function addKnowledgeBaseItem(type: 'url' | 'text' | 'file', payload: any,
     headers: {
       'xi-api-key': apiKey,
       'Content-Type': 'application/json',
+                   'Authorization': `Bearer ${tokenStorage.getToken()}`,
+      
     },
     body: JSON.stringify(payload),
   });
@@ -762,6 +765,8 @@ async function updateAgentKnowledgeBaseInElevenLabs(agentId: string, docIds: str
     headers: {
       'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
       'Content-Type': 'application/json',
+                   'Authorization': `Bearer ${tokenStorage.getToken()}`,
+      
     },
     body: JSON.stringify({ knowledge_base: docIds }),
   });
@@ -1608,6 +1613,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
       });
         if (response.ok) {
@@ -1653,6 +1660,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({ url: addUrlInput, name: addUrlInput }),
       });
@@ -1696,6 +1705,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({ name: addTextName, text: addTextContent }),
       });
@@ -1840,6 +1851,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
       });
       if (res.ok) {
@@ -1886,6 +1899,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
       });
       if (res.ok) {
@@ -1968,6 +1983,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify(ttsPayload),
       });
@@ -2179,7 +2196,7 @@ export default function AgentDetailsPage() {
     setCriteriaPrompt("");
     // PATCH to ElevenLabs (optional)
     try {
-      await fetch(`http://localhost:5000/v1/convai/agents/${agentId}`, {
+      await fetch(`/v1/convai/agents/${agentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform_settings: { evaluation: { criteria: updatedList } } })
@@ -2219,7 +2236,7 @@ export default function AgentDetailsPage() {
     setDataDescription("");
     // PATCH to ElevenLabs (optional)
     try {
-      await fetch(`http://localhost:5000/v1/convai/agents/${agentId}`, {
+      await fetch(`/v1/convai/agents/${agentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform_settings: { data_collection: updatedList } })
@@ -2393,6 +2410,8 @@ export default function AgentDetailsPage() {
                   headers: {
                     'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
                     'Content-Type': 'application/json',
+                                 'Authorization': `Bearer ${tokenStorage.getToken()}`,
+                    
                   },
                   body: JSON.stringify(payload),
                 });
@@ -2445,7 +2464,10 @@ export default function AgentDetailsPage() {
       headers: {
         'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
         'Content-Type': 'application/json',
+                     'Authorization': `Bearer ${tokenStorage.getToken()}`,
+        
       },
+      
     })
       .then(res => res.json())
       .then(data => {
@@ -2525,6 +2547,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify(payload),
       });
@@ -2571,6 +2595,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
       })
         .then(res => res.json())
@@ -2587,6 +2613,8 @@ export default function AgentDetailsPage() {
               headers: {
                 'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
                 'Content-Type': 'application/json',
+                             'Authorization': `Bearer ${tokenStorage.getToken()}`,
+                
               },
             }).then(webhookRes => webhookRes.json()).then(webhookData => {
               console.log('[DEBUG] Webhooks data:', webhookData);
@@ -2619,6 +2647,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify(payload),
       });
@@ -2632,6 +2662,8 @@ export default function AgentDetailsPage() {
           headers: {
             'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
             'Content-Type': 'application/json',
+                         'Authorization': `Bearer ${tokenStorage.getToken()}`,
+            
           },
         });
         const webhookData = await webhookRes.json();
@@ -2655,6 +2687,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({
           webhooks: {
@@ -2681,6 +2715,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({
           webhooks: {
@@ -2709,6 +2745,8 @@ export default function AgentDetailsPage() {
         headers: {
           'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({
           name: newAgentName.trim()
@@ -2775,6 +2813,8 @@ export default function AgentDetailsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({
           name: secretName.trim(),

@@ -5,7 +5,7 @@ const mysql = require("mysql2");
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "Antu@2252",
+  password: process.env.DB_PASSWORD || "Antu@2252",
   database: process.env.DB_NAME || "ai-caller",
   multipleStatements: true
 });
@@ -18,7 +18,7 @@ db.connect(err => {
     const tempDb = mysql.createConnection({
       host: process.env.DB_HOST || "localhost",
       user: process.env.DB_USER || "root",
-      password: process.env.DB_PASS || "Antu@2252"
+      password: process.env.DB_PASSWORD || "Antu@2252"
     });
 
     tempDb.connect(err => {
@@ -105,105 +105,109 @@ db.on('error', function(err) {
 });
 
 function initializeTables() {
+  // Create clients table
   const createClientsTable = `
-  CREATE TABLE IF NOT EXISTS clients (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    companyName VARCHAR(255) NOT NULL,
-    companyEmail VARCHAR(255) NOT NULL,
-    phoneNumber VARCHAR(32) NOT NULL,
-    address TEXT,
-    contactPersonName VARCHAR(255) NOT NULL,
-    domainSubdomain VARCHAR(255),
-    referralCode VARCHAR(64) NULL,
-    plan_id INT NOT NULL,
-    apiAccess BOOLEAN NOT NULL DEFAULT FALSE,
-    trialMode BOOLEAN NOT NULL DEFAULT FALSE,
-    trialDuration INT,
-    trialCallLimit INT,
-    trialEndsAt DATETIME NULL,
-    totalCallsMade INT NOT NULL DEFAULT 0,
-    monthlyCallsMade INT NOT NULL DEFAULT 0,
-    monthlyCallLimit INT,
-    lastMonthlyReset DATE DEFAULT (CURDATE()),
-    adminPassword VARCHAR(255) NOT NULL,
-    autoSendLoginEmail BOOLEAN NOT NULL DEFAULT TRUE,
-    avatar_url VARCHAR(255) NULL,
-    bio TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    status ENUM('Active','Suspended','Trial') DEFAULT 'Trial',
-    suspensionReason TEXT,
-    internalNotes TEXT
-  );
+    CREATE TABLE IF NOT EXISTS clients (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      companyName VARCHAR(255) NOT NULL,
+      companyEmail VARCHAR(255) NOT NULL,
+      phoneNumber VARCHAR(32) NOT NULL,
+      address TEXT,
+      contactPersonName VARCHAR(255) NOT NULL,
+      domainSubdomain VARCHAR(255),
+      referralCode VARCHAR(64) NULL,
+      plan_id INT NOT NULL,
+      apiAccess BOOLEAN NOT NULL DEFAULT FALSE,
+      trialMode BOOLEAN NOT NULL DEFAULT FALSE,
+      trialDuration INT,
+      trialCallLimit INT,
+      trialEndsAt DATETIME NULL,
+      totalCallsMade INT NOT NULL DEFAULT 0,
+      monthlyCallsMade INT NOT NULL DEFAULT 0,
+      monthlyCallLimit INT,
+      lastMonthlyReset DATE DEFAULT (CURDATE()),
+      adminPassword VARCHAR(255) NOT NULL,
+      autoSendLoginEmail BOOLEAN NOT NULL DEFAULT TRUE,
+      avatar_url VARCHAR(255) NULL,
+      bio TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
   `;
-  
+
   db.query(createClientsTable, (err) => {
     if (err) {
       console.error("Failed to create clients table:", err);
       return;
     }
     console.log("✅ Clients table created successfully");
-    
-    // Since all columns are already in CREATE TABLE, we don't need to add them
-    // But if you want to ensure for existing tables, use this approach:
-    ensureClientsColumns(db);
   });
-  
-  // Function to ensure clients table columns (for existing tables)
-  function ensureClientsColumns(db) {
-    const columnsToAdd = [
-      {
-        name: 'totalCallsMade',
-        definition: 'INT NOT NULL DEFAULT 0 AFTER trialEndsAt'
-      },
-      {
-        name: 'monthlyCallsMade', 
-        definition: 'INT NOT NULL DEFAULT 0 AFTER totalCallsMade'
-      },
-      {
-        name: 'monthlyCallLimit',
-        definition: 'INT AFTER monthlyCallsMade'
-      },
-      {
-        name: 'lastMonthlyReset',
-        definition: 'DATE DEFAULT (CURDATE()) AFTER monthlyCallLimit'
-      }
-    ];
-  
-    // Check if each column exists and add if not
-    columnsToAdd.forEach(column => {
-      const checkColumnQuery = `
-        SELECT COUNT(*) as exists_flag 
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_SCHEMA = DATABASE() 
-        AND TABLE_NAME = 'clients' 
-        AND COLUMN_NAME = '${column.name}'
-      `;
-  
-      db.query(checkColumnQuery, (err, results) => {
-        if (err) {
-          console.error(`Error checking column ${column.name}:`, err);
-          return;
-        }
-  
-        if (results[0].exists_flag === 0) {
-          // Column doesn't exist, add it
-          const addColumnQuery = `
-            ALTER TABLE clients 
-            ADD COLUMN ${column.name} ${column.definition}
-          `;
-  
-          db.query(addColumnQuery, (err) => {
-            if (err) {
-              console.error(`Failed to add column ${column.name}:`, err);
-            } else {
-              console.log(`✅ Added column ${column.name} to clients table`);
-            }
-          });
+
+  // Check and add columns if they don't exist
+  const checkAndAddColumns = `
+    SELECT 
+      COUNT(*) AS column_exists
+    FROM 
+      information_schema.COLUMNS 
+    WHERE 
+      TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'clients' 
+      AND COLUMN_NAME = 'totalCallsMade';
+  `;
+
+  db.query(checkAndAddColumns, (err, results) => {
+    if (err) {
+      console.error("Error checking for columns:", err);
+      return;
+    }
+
+    const columnsToAdd = [];
+    
+    if (results[0].column_exists === 0) {
+      columnsToAdd.push("ADD COLUMN totalCallsMade INT NOT NULL DEFAULT 0 AFTER trialEndsAt");
+      columnsToAdd.push("ADD COLUMN monthlyCallsMade INT NOT NULL DEFAULT 0 AFTER totalCallsMade");
+      columnsToAdd.push("ADD COLUMN monthlyCallLimit INT AFTER monthlyCallsMade");
+      columnsToAdd.push("ADD COLUMN lastMonthlyReset DATE DEFAULT (CURDATE()) AFTER monthlyCallLimit");
+    }
+
+    if (columnsToAdd.length > 0) {
+      const alterTableQuery = `ALTER TABLE clients ${columnsToAdd.join(', ')}`;
+      db.query(alterTableQuery, (alterErr) => {
+        if (alterErr) {
+          console.error("Failed to add columns:", alterErr);
+        } else {
+          console.log("✅ Added missing columns to clients table");
         }
       });
-    });
-  }
+    } else {
+      console.log("✅ All required columns exist in clients table");
+    }
+  });
+
+  // Create admin_users table
+  const createAdminUsersTable = `
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      roleName VARCHAR(100) NOT NULL,
+      lastLogin DATETIME,
+      status ENUM('Active', 'Inactive', 'Suspended') DEFAULT 'Active',
+      avatar_url VARCHAR(255) NULL,
+      bio TEXT NULL,
+      phone VARCHAR(32) NULL,
+      createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  db.query(createAdminUsersTable, (err) => {
+    if (err) {
+      console.error("Failed to create admin_users table:", err);
+    } else {
+      console.log("✅ Admin users table ready");
+    }
+  });
 
   // Create assigned_plans table
   const createAssignedPlansTable = `
@@ -580,6 +584,122 @@ function initializeTables() {
       console.error("Failed to create agent_advanced_settings table:", err);
     } else {
       console.log("✅ Agent advanced settings table ready");
+    }
+  });
+
+  // Create campaigns table (batch calling mirror)
+  const createCampaignsTable = `
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      external_id VARCHAR(255) NULL,
+      name VARCHAR(255) NOT NULL,
+      clientName VARCHAR(255) NOT NULL,
+      agentName VARCHAR(255) NULL,
+      type VARCHAR(100) NOT NULL,
+      callsAttempted INT NOT NULL DEFAULT 0,
+      callsTargeted INT NOT NULL DEFAULT 0,
+      startDate DATETIME NULL,
+      endDate DATETIME NULL,
+      status ENUM('Active','Paused','Completed') NOT NULL DEFAULT 'Active',
+      successRate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_external (external_id),
+      INDEX idx_status (status),
+      INDEX idx_dates (startDate, endDate)
+    );
+  `;
+
+  db.query(createCampaignsTable, (err) => {
+    if (err) {
+      console.error('Failed to create campaigns table:', err);
+    } else {
+      console.log('✅ Campaigns table ready');
+      
+      // Check if external_id column exists and add it if not
+      checkAndAddColumn('campaigns', 'external_id', 'VARCHAR(255) NULL');
+      
+      // Check if agentName column exists and add it if not
+      checkAndAddColumn('campaigns', 'agentName', 'VARCHAR(255) NULL');
+    }
+  });
+
+  // Create calls table
+  const createCallsTable = `
+    CREATE TABLE IF NOT EXISTS calls (
+      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      campaignId INT NOT NULL,
+      callerId VARCHAR(255) NOT NULL,
+      status VARCHAR(50) NOT NULL,
+      duration INT NULL,
+      agent VARCHAR(255) NULL,
+      transcriptionSnippet TEXT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_calls_campaign FOREIGN KEY (campaignId) REFERENCES campaigns(id) ON DELETE CASCADE,
+      INDEX idx_campaign_status (campaignId, status),
+      INDEX idx_timestamp (timestamp)
+    );
+  `;
+
+  db.query(createCallsTable, (err) => {
+    if (err) {
+      console.error('Failed to create calls table:', err);
+    } else {
+      console.log('✅ Calls table ready');
+    }
+  });
+
+  // Indices for performance on campaigns
+  db.query(`CREATE INDEX IF NOT EXISTS idx_campaigns_updatedAt ON campaigns(updatedAt)`, () => {});
+
+  // Create agents_calls table (live agents status for monitoring)
+  const createAgentsCallsTable = `
+    CREATE TABLE IF NOT EXISTS agents_calls (
+      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      status ENUM('Available','Busy','Offline') NOT NULL DEFAULT 'Available',
+      activeCalls INT NOT NULL DEFAULT 0,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_agent_status (status)
+    );
+  `;
+
+  db.query(createAgentsCallsTable, (err) => {
+    if (err) {
+      console.error('Failed to create agents_calls table:', err);
+    } else {
+      console.log('✅ Agents_calls table ready');
+    }
+  });
+}
+
+// Helper function to check if a column exists and add it if not
+function checkAndAddColumn(tableName, columnName, columnDefinition) {
+  const checkColumnQuery = `
+    SELECT COUNT(*) AS column_exists 
+    FROM information_schema.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = '${tableName}' 
+    AND COLUMN_NAME = '${columnName}';
+  `;
+
+  db.query(checkColumnQuery, (err, results) => {
+    if (err) {
+      console.error(`Error checking for ${columnName} column:`, err);
+      return;
+    }
+
+    if (results[0].column_exists === 0) {
+      const alterTableQuery = `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`;
+      db.query(alterTableQuery, (alterErr) => {
+        if (alterErr) {
+          console.error(`Failed to add ${columnName} column:`, alterErr);
+        } else {
+          console.log(`✅ ${tableName} table ${columnName} column added`);
+        }
+      });
+    } else {
+      console.log(`✅ ${tableName} table ${columnName} column already exists`);
     }
   });
 }
