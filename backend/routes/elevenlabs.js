@@ -38,6 +38,7 @@ router.post('/create-agent', authenticateJWT, async (req, res) => {
     const headers = {
       'xi-api-key': apiKey,
       'Content-Type': 'application/json',
+      
     };
     const payload = req.body;
 

@@ -34,6 +34,8 @@ export default function CreateAgentForm({ onSuccess }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          
         },
         body: JSON.stringify({
           local: formData,

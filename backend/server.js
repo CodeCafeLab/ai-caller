@@ -26,6 +26,7 @@ const clientUsersRoutes = require("./routes/clientUsers");
 const assignedPlansRoutes = require("./routes/assignedPlans");
 const secretsRoutes = require("./routes/secrets");
 const mcpRoutes = require("./routes/mcp");
+const campaignsRoutes = require("./routes/campaigns");
 
 // Import middleware
 const { authenticateJWT } = require("./middleware/auth");
@@ -49,7 +50,9 @@ app.use(
 
       const allowedOrigins = [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
         "https://aidial.in",
         "https://2nq68jpg-3000.inc1.devtunnels.ms",
       ];
@@ -122,6 +125,38 @@ app.use("/api/sales-persons", salesRoutes);
 app.use("/api/workspace-secrets", secretsRoutes);
 app.use("/api/mcp-servers", mcpRoutes);
 
+app.use("/api/campaigns", campaignsRoutes);
+
+// Fallback direct route for agents under campaigns (ensures availability even if sub-router order changes)
+app.get("/api/campaigns/agents", (req, res) => {
+  try {
+    const clientId = req.query.client_id;
+    // Select agent_id (ElevenLabs ID) instead of local id
+    const sql = clientId
+      ? "SELECT agent_id as id, name, client_id FROM agents WHERE client_id = ?"
+      : "SELECT agent_id as id, name, client_id FROM agents";
+    db.query(sql, clientId ? [clientId] : [], (err, rows) => {
+      if (err)
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to fetch agents",
+            error: err.message,
+          });
+      res.json({ success: true, data: rows });
+    });
+  } catch (e) {
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to fetch agents",
+        error: e.message,
+      });
+  }
+});
+
 // ElevenLabs Voices Proxy Endpoint (protected by authentication)
 app.get("/api/voices", authenticateJWT, async (req, res) => {
   try {
@@ -137,12 +172,10 @@ app.get("/api/voices", authenticateJWT, async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
-      return res
-        .status(response.status)
-        .json({
-          error: "Failed to fetch voices from ElevenLabs",
-          details: errorText,
-        });
+      return res.status(response.status).json({
+        error: "Failed to fetch voices from ElevenLabs",
+        details: errorText,
+      });
     }
     const data = await response.json();
     res.json(data);

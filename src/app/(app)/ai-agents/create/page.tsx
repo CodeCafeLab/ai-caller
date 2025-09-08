@@ -11,6 +11,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { cn } from "@/lib/cn";
 import { ChevronsUpDown } from "lucide-react";
 import { api } from "@/lib/apiConfig";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 const MAX_LENGTH = 50;
 
@@ -45,9 +46,11 @@ export default function CreateAgentPage() {
     setError("");
     setSuccess(false);
     try {
-      const res = await fetch("http://localhost:5000/api/elevenlabs/create-agent", {
+      const res = await fetch("/api/elevenlabs/create-agent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+         },
         credentials: "include",
         body: JSON.stringify({
           conversation_config: { agent: {} },

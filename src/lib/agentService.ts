@@ -1,5 +1,7 @@
+import { tokenStorage } from "./tokenStorage";
+
 // src/lib/agentService.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
 export const agentService = {
   async getAllAgents() {
@@ -17,13 +19,14 @@ export const agentService = {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-          }
+              }
         }),
         fetch(`${API_BASE}/api/clients`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
+            'Authorization': `Bearer ${tokenStorage.getToken()}`
           }
         })
       ]);
