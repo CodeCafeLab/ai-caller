@@ -177,7 +177,13 @@ export default function AiAgentsPage() {
   const refreshAgents = React.useCallback(() => {
     setLoading(true);
     Promise.all([
-      fetch("/api/agents").then((res) => res.json()),
+      fetch("/api/agents", {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          Authorization: `Bearer ${tokenStorage.getToken()}`,
+        },
+      }).then((res) => res.json()),
       fetch("https://api.elevenlabs.io/v1/convai/agents", {
         headers: {
           "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
@@ -277,7 +283,7 @@ export default function AiAgentsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${tokenStorage.getToken()}`
+          Authorization: `Bearer ${tokenStorage.getToken()}`,
         },
         body: JSON.stringify({
           client_id: user?.clientId || null,
