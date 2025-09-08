@@ -73,7 +73,7 @@ router.get("/:id", (req, res) => {
     row.monthlyCallLimit = row.totalMonthlyLimit
       ? parseInt(row.totalMonthlyLimit)
       : 0;
-    res.json({ success: true, data: row, token: token, });
+    res.json({ success: true, data: row, });
   });
 });
 
@@ -124,27 +124,6 @@ router.post("/", async (req, res) => {
           }
 
           const clientId = result.insertId;
-          const token = jwt.sign(
-            {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.roleName,
-              type: "admin",
-            },
-            JWT_SECRET,
-            { expiresIn: "1d" }
-          );
-          const isDev = process.env.NODE_ENV !== "production";
-          const useLax = isDev; // Always lax/ insecure in development for localhost workflows
-          res.cookie("token", token, {
-            httpOnly: true,
-            sameSite: useLax ? "lax" : "none",
-            secure: useLax ? false : true,
-            domain: useLax ? "localhost" : undefined,
-            path: "/",
-            maxAge: 24 * 60 * 60 * 1000,
-          });
 
           // Handle referral code if provided
           if (client.referralCode) {
@@ -320,7 +299,6 @@ router.post("/", async (req, res) => {
                     success: true,
                     message: "Client created",
                     data: results[0],
-                    token: token,
                   });
                 }
               );
@@ -452,7 +430,6 @@ router.put("/:id", (req, res) => {
             }
             res.json({
               success: true,
-              token: token,
               message: "Client updated successfully",
               data: results[0],
             });
@@ -481,7 +458,7 @@ router.delete("/:id", (req, res) => {
           .status(404)
           .json({ success: false, message: "Client not found" });
       }
-      res.json({ success: true, token: token, message: "Client deleted" });
+      res.json({ success: true,  message: "Client deleted" });
     }
   );
 });
@@ -589,7 +566,6 @@ router.get("/:id/agents-analytics", async (req, res) => {
     if (agentList.length === 0) {
       return res.json({
         success: true,
-        token: token,
         data: {
           agents: [],
           totals: {
@@ -682,7 +658,6 @@ router.get("/:id/agents-analytics", async (req, res) => {
 
     res.json({
       success: true,
-      token: token,
       data: {
         agents: agentAnalytics,
         totals: {
@@ -720,7 +695,6 @@ router.get("/:clientId/elevenlabs-usage", async (req, res) => {
     if (!xiKey) {
       return res.json({
         success: true,
-        token: token,
         data: {
           monthlyCalls: 0,
           monthlyLimit: 0,

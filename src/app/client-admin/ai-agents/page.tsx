@@ -287,7 +287,12 @@ export default function AiAgentsPage() {
 
   const handleView = async (agent: AIAgent) => {
     try {
-      const response = await fetch(`/api/agents/${agent.id}/details`);
+      const response = await fetch(`/api/agents/${agent.id}/details`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         // Merge local and ElevenLabs data, prioritizing ElevenLabs
@@ -691,7 +696,7 @@ export default function AiAgentsPage() {
                             onValueChange={async (newStatus) => {
                               await fetch(`/api/agents/${agent.id}/status`, {
                                 method: "PATCH",
-                                headers: { "Content-Type": "application/json" },
+                                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
                                 body: JSON.stringify({ status: newStatus }),
                               });
                               setAgents((prev) =>

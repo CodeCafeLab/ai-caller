@@ -996,7 +996,12 @@ export default function AgentDetailsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/mcp-servers', { credentials: 'include' })
+    fetch('/api/mcp-servers', { credentials: 'include',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
+     })
       .then(r => r.json())
       .then(j => {
         console.log('[DEBUG] Client Admin MCP Servers API response:', j);
@@ -1049,7 +1054,7 @@ export default function AgentDetailsPage() {
   // Fetch agent details from backend (which fetches from ElevenLabs and local DB)
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/agents/${agentId}/details`, { cache: 'no-store' })
+    fetch(`/api/agents/${agentId}/details`, { cache: 'no-store', headers: { "Authorization": `Bearer ${tokenStorage.getToken()}` } })
       .then(res => res.json())
       .then(data => {
         setLocalAgent(data.local || {});
@@ -1264,7 +1269,12 @@ export default function AgentDetailsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
     // Fetch languages from backend
-    fetch('/api/languages')
+    fetch('/api/languages', { credentials: 'include',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
+     })
       .then(res => res.json())
       .then(data => {
         console.log('Languages API response:', data);
@@ -1431,7 +1441,7 @@ export default function AgentDetailsPage() {
       console.log('PATCH payload to backend:', payload); // Debug log
       const res = await fetch(`/api/agents/${agentId}/details`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -1446,7 +1456,7 @@ export default function AgentDetailsPage() {
         try {
           const dbResponse = await fetch(`/api/agents/${agentId}/knowledge-base-db`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenStorage.getToken()}` },
             body: JSON.stringify({
               knowledgeBaseItems: selectedDocs
             })
@@ -1478,7 +1488,7 @@ export default function AgentDetailsPage() {
         // Also save advanced settings to local DB
         await fetch(`/api/agents/${agentId}/advanced-settings`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenStorage.getToken()}` },
           body: JSON.stringify({
             turn_timeout: advancedConfig.turn_timeout,
             silence_end_call_timeout: advancedConfig.silence_end_call_timeout,
@@ -1924,7 +1934,12 @@ export default function AgentDetailsPage() {
 
   async function fetchVoiceSettingsFromBackend() {
     try {
-      const res = await fetch(`/api/agents/${agentId}/voice-settings`);
+      const res = await fetch(`/api/agents/${agentId}/voice-settings`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) {
@@ -1984,7 +1999,7 @@ export default function AgentDetailsPage() {
       // Save to backend DB
       await fetch(`/api/agents/${agentId}/voice-settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({
           model_id: voiceConfig.model_id,
           voice_id: voiceConfig.voice,
@@ -2104,7 +2119,12 @@ export default function AgentDetailsPage() {
     setDataItemLoading(true);
     setCriteriaError("");
     setDataItemError("");
-    fetch(`/api/agents/${agentId}/analysis`)
+    fetch(`/api/agents/${agentId}/analysis`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenStorage.getToken()}`,
+      },
+    })
       .then(res => res.json())
       .then(data => {
         console.log('Fetched analysis:', data);
@@ -2144,6 +2164,10 @@ export default function AgentDetailsPage() {
     if (!window.confirm('Are you sure you want to delete this criteria?')) return;
     fetch(`/api/agents/${agentId}/analysis/criteria?name=${encodeURIComponent(name)}`, {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenStorage.getToken()}`,
+      },
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to delete');
@@ -2156,6 +2180,10 @@ export default function AgentDetailsPage() {
     if (!window.confirm('Are you sure you want to delete this data item?')) return;
     fetch(`/api/agents/${agentId}/analysis/data-item?identifier=${encodeURIComponent(identifier)}`, {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenStorage.getToken()}`,
+      },
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to delete');
@@ -2199,7 +2227,7 @@ export default function AgentDetailsPage() {
     try {
       await fetch(`/api/agents/${agentId}/analysis`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({ criteria: updatedList, data_collection: dataItemList })
       });
       alert('Criteria added successfully!');
@@ -2239,7 +2267,7 @@ export default function AgentDetailsPage() {
     try {
       await fetch(`/api/agents/${agentId}/analysis`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({ criteria: criteriaList, data_collection: updatedList })
       });
       alert('Data item added successfully!');
@@ -2743,7 +2771,7 @@ export default function AgentDetailsPage() {
       // Update in local database
       const localResponse = await fetch(`/api/agents/${agentId}/details`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({
           local: {
             name: newAgentName.trim()
@@ -3795,7 +3823,12 @@ export default function AgentDetailsPage() {
                         open={showMcpDrawer}
                         onClose={() => setShowMcpDrawer(false)}
                         onCreated={(created) => {
-                          fetch('/api/mcp-servers', { credentials: 'include' })
+                          fetch('/api/mcp-servers', { credentials: 'include',
+                            headers: {
+                              "Content-Type": "application/json",
+                              "Authorization": `Bearer ${tokenStorage.getToken()}`,
+                            },
+                           })
                             .then(r => r.json())
                             .then(j => setMcpServers(j?.data || []))
                             .catch((error) => console.error('[DEBUG] Client Admin Error refreshing MCP servers:', error));
@@ -4594,6 +4627,7 @@ export default function AgentDetailsPage() {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${tokenStorage.getToken()}`,
                       },
                       body: JSON.stringify({
                         feedback_mode: widgetConfig.feedback_collection,

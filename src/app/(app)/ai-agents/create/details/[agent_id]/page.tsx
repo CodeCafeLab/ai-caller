@@ -1245,7 +1245,12 @@ export default function AgentDetailsPage() {
   };
 
   useEffect(() => {
-    fetch("/api/mcp-servers", { credentials: "include" })
+    fetch("/api/mcp-servers", { credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
+     })
       .then((r) => r.json())
       .then((j) => {
         console.log("[DEBUG] MCP Servers API response:", j);
@@ -1286,7 +1291,12 @@ export default function AgentDetailsPage() {
   // Fetch agent details from backend (which fetches from ElevenLabs and local DB)
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/agents/${agentId}/details`, { cache: "no-store" })
+    fetch(`/api/agents/${agentId}/details`, { cache: "no-store", credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
+     })
       .then((res) => res.json())
       .then((data) => {
         setLocalAgent(data.local || {});
@@ -1719,7 +1729,12 @@ export default function AgentDetailsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
     // Fetch languages from backend
-    fetch("/api/languages")
+    fetch("/api/languages", { credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
+     })
       .then((res) => res.json())
       .then((data) => {
         console.log("Languages API response:", data);
@@ -1919,7 +1934,7 @@ export default function AgentDetailsPage() {
       console.log("PATCH payload to backend:", payload); // Debug log
       const res = await fetch(`/api/agents/${agentId}/details`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -1939,7 +1954,7 @@ export default function AgentDetailsPage() {
             `/api/agents/${agentId}/knowledge-base-db`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
               body: JSON.stringify({
                 knowledgeBaseItems: selectedDocs,
               }),
@@ -1981,7 +1996,7 @@ export default function AgentDetailsPage() {
         // Also save advanced settings to local DB
         await fetch(`/api/agents/${agentId}/advanced-settings`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
           body: JSON.stringify({
             turn_timeout: advancedConfig.turn_timeout,
             silence_end_call_timeout: advancedConfig.silence_end_call_timeout,
@@ -2331,7 +2346,13 @@ export default function AgentDetailsPage() {
   // 3. Fetch backend voice settings
   async function fetchVoiceSettingsFromBackend() {
     try {
-      const res = await fetch(`/api/agents/${agentId}/voice-settings`);
+      const res = await fetch(`/api/agents/${agentId}/voice-settings`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) {
@@ -2509,7 +2530,7 @@ export default function AgentDetailsPage() {
       // Save to backend DB
       await fetch(`/api/agents/${agentId}/voice-settings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({
           model_id: voiceConfig.model_id,
           voice_id: voiceConfig.voice,
@@ -2606,7 +2627,13 @@ export default function AgentDetailsPage() {
     setDataItemLoading(true);
     setCriteriaError("");
     setDataItemError("");
-    fetch(`/api/agents/${agentId}/analysis`)
+    fetch(`/api/agents/${agentId}/analysis`, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         console.log("[Frontend] Analysis API response:", data);
@@ -2677,7 +2704,7 @@ export default function AgentDetailsPage() {
     try {
       await fetch(`/api/agents/${agentId}/analysis`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({
           criteria: updatedList,
           data_collection: dataItemList,
@@ -2726,7 +2753,7 @@ export default function AgentDetailsPage() {
     try {
       await fetch(`/api/agents/${agentId}/analysis`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify({
           criteria: criteriaList,
           data_collection: updatedList,
@@ -2747,6 +2774,7 @@ export default function AgentDetailsPage() {
       )}`,
       {
         method: "DELETE",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
       }
     )
       .then((res) => {
@@ -2765,6 +2793,7 @@ export default function AgentDetailsPage() {
       )}`,
       {
         method: "DELETE",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
       }
     )
       .then((res) => {
@@ -3168,6 +3197,7 @@ export default function AgentDetailsPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
         },
         body: JSON.stringify({
           local: {
@@ -3235,6 +3265,7 @@ export default function AgentDetailsPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
         },
         body: JSON.stringify({
           local: {
@@ -4909,7 +4940,12 @@ export default function AgentDetailsPage() {
                         onClose={() => setShowMcpDrawer(false)}
                         onCreated={(created) => {
                           // Refresh MCP servers list after creation
-                          fetch("/api/mcp-servers", { credentials: "include" })
+                          fetch("/api/mcp-servers", { credentials: "include",
+                            headers: {
+                              "Content-Type": "application/json",
+                              "Authorization": `Bearer ${tokenStorage.getToken()}`,
+                            },
+                           })
                             .then((r) => r.json())
                             .then((j) => {
                               console.log(
@@ -5626,6 +5662,7 @@ export default function AgentDetailsPage() {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
+                          "Authorization": `Bearer ${tokenStorage.getToken()}`,
                         },
                         body: JSON.stringify({
                           feedback_mode: widgetConfig.feedback_collection,
@@ -5655,7 +5692,7 @@ export default function AgentDetailsPage() {
                           "xi-api-key":
                             process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
                           "Content-Type": "application/json",
-                        },
+                            },
                         body: JSON.stringify(elevenLabsPayload),
                       }
                     );

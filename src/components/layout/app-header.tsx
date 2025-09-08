@@ -77,30 +77,35 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 shadow-sm transition-all duration-200">
         <div className="flex items-center gap-2 md:gap-4">
-          <SidebarTrigger className="md:hidden shrink-0" />
+          <SidebarTrigger className="md:hidden shrink-0 hover:bg-accent/50 rounded-md p-1.5 transition-colors" />
           {isDashboard && (
-            <h2 className="text-lg font-medium text-foreground truncate hidden md:block">
-              Dashboard
+            <h2 className="text-lg font-semibold text-foreground truncate hidden md:block bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Dashboard Overview
             </h2>
           )}
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-3">
           <form className="relative ml-auto flex-1 sm:flex-initial hidden md:block max-w-xs md:max-w-sm lg:max-w-md">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search..."
-              className="pl-8 w-full bg-muted"
+              placeholder="Search anything..."
+              className="pl-9 pr-4 h-9 w-full bg-muted/50 border-muted-foreground/20 hover:bg-muted/70 transition-colors focus-visible:ring-1 focus-visible:ring-ring"
             />
           </form>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full shrink-0" aria-label="Quick Actions">
-                <PlusCircle className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="rounded-full shrink-0 hover:bg-accent/50 transition-colors" aria-label="Quick Actions">
+                <div className="relative">
+                  <PlusCircle className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
+                  </span>
+                </div>
                 <span className="sr-only">Quick Actions</span>
               </Button>
             </DropdownMenuTrigger>
@@ -121,15 +126,16 @@ export function AppHeader() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full shrink-0 relative">
-                <Bell className={`h-5 w-5 ${totalNotifications > 0 ? 'animate-subtle-pulse-glow' : ''}`} />
+              <Button variant="ghost" size="icon" className="rounded-full shrink-0 relative hover:bg-accent/50 transition-colors" aria-label="Notifications">
+                <div className="relative">
+                  <Bell className={`h-5 w-5 ${totalNotifications > 0 ? 'text-primary' : ''}`} />
+                  {totalNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                      {totalNotifications > 9 ? '9+' : totalNotifications}
+                    </span>
+                  )}
+                </div>
                 <span className="sr-only">Toggle notifications</span>
-                {totalNotifications > 0 && (
-                  <span className="absolute top-0 right-0 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                  </span>
-                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
@@ -160,7 +166,7 @@ export function AppHeader() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full shrink-0" aria-label="Select Language">
+              <Button variant="ghost" size="icon" className="rounded-full shrink-0 hover:bg-accent/50 transition-colors" aria-label="Select Language">
                 <Languages className="h-5 w-5" />
                 <span className="sr-only">Select Language</span>
               </Button>
@@ -179,8 +185,10 @@ export function AppHeader() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full shrink-0" aria-label="User Profile">
-                <UserProfileIcon className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="rounded-full shrink-0 hover:bg-accent/50 transition-colors" aria-label="User Profile">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/60 text-primary-foreground">
+                  <span className="text-sm font-medium">U</span>
+                </div>
                 <span className="sr-only">User Profile Menu</span>
               </Button>
             </DropdownMenuTrigger>

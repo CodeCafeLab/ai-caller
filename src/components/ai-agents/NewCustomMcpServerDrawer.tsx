@@ -1,3 +1,4 @@
+import { tokenStorage } from "@/lib/tokenStorage";
 import React, { useEffect, useState } from "react";
 
 const SERVER_TYPES = [
@@ -133,7 +134,7 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
       const res = await fetch("/api/mcp-servers", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
         body: JSON.stringify(payload),
       });
       
