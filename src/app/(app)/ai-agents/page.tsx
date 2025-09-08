@@ -263,7 +263,13 @@ export default function AiAgentsPage() {
     // Fetch full details from backend
     setLoading(true);
     try {
-      const res = await fetch(`/api/agents/${agent.id}/details`);
+      const res = await fetch(`/api/agents/${agent.id}/details`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       const data = await res.json();
       setViewAgent({ ...agent, details: data });
       setViewModalOpen(true);
@@ -312,6 +318,10 @@ export default function AiAgentsPage() {
       const res = await fetch(`/api/agents/${agent.id}`, {
         method: "DELETE",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+        },
       });
       if (res.ok) {
         toast({ title: "Agent deleted!" });
@@ -582,7 +592,7 @@ export default function AiAgentsPage() {
                             onValueChange={async (newStatus) => {
                               await fetch(`/api/agents/${agent.id}/status`, {
                                 method: "PATCH",
-                                headers: { "Content-Type": "application/json" },
+                                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenStorage.getToken()}` },
                                 body: JSON.stringify({ status: newStatus }),
                               });
                               setAgents((prev) =>
