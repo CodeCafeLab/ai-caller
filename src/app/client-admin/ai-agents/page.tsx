@@ -187,7 +187,15 @@ export default function AiAgentsPage() {
     setLoading(true);
     try {
       const [localRes, elevenRes, clientsRes] = await Promise.all([
-        fetch("/api/agents"),
+        fetch("/api/agents",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache",
+              Authorization: `Bearer ${tokenStorage.getToken()}`,
+            },
+          }
+        ),
         fetch("https://api.elevenlabs.io/v1/convai/agents", {
           headers: {
             "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
