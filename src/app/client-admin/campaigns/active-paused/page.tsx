@@ -22,6 +22,7 @@ import { useUser } from "@/lib/utils";
 import { urls } from "@/lib/config/urls";
 import { addDays } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 // Campaign interface
 interface Campaign {
@@ -66,7 +67,20 @@ export default function ClientActivePausedCampaignsPage() {
       const clientId = user.clientId || user.userId;
       console.log('[ClientActivePaused] Fetching campaigns for client:', clientId);
       
-      const res = await fetch(urls.backend.campaigns.listForClient(clientId));
+      const token = tokenStorage.getToken();
+      if (!token) {
+        console.error('No authentication token found');
+        setError('Please log in again');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(urls.backend.campaigns.listForClient(clientId), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const json = await res.json();
       
       if (!res.ok) {

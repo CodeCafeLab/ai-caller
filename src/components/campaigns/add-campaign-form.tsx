@@ -129,12 +129,12 @@ export function AddCampaignForm({
         );
         let agentsJson: any = null;
         try {
-          const r1 = await fetch(agentsUrl, {
-            cache: "no-store",
+          const r1 = await fetch(agentsUrl, { cache: "no-store", 
             headers: {
-               "Authorization": `Bearer ${tokenStorage.getToken()}`,
+              'Authorization': `Bearer ${tokenStorage.getToken()}`,
+              'Content-Type': 'application/json',
             },
-          });
+           });
           if (r1.ok) agentsJson = await r1.json();
         } catch {}
         if (!agentsJson) {
@@ -144,10 +144,10 @@ export function AddCampaignForm({
                   String(Number(currentClientId))
                 )}`
               : "/api/campaigns/agents";
-            const r2 = await fetch(rel, {
-              cache: "no-store",
+            const r2 = await fetch(rel, { cache: "no-store" ,
               headers: {
-                 "Authorization": `Bearer ${tokenStorage.getToken()}`,
+                'Authorization': `Bearer ${tokenStorage.getToken()}`,
+                'Content-Type': 'application/json',
               },
             });
             if (r2.ok) agentsJson = await r2.json();
@@ -157,7 +157,8 @@ export function AddCampaignForm({
         const phonesRes = await fetch(urls.backend.campaigns.phoneNumbers(), {
           cache: "no-store",
           headers: {
-             "Authorization": `Bearer ${tokenStorage.getToken()}`,
+            'Authorization': `Bearer ${tokenStorage.getToken()}`,
+            'Content-Type': 'application/json',
           },
         });
         const phonesJson = await phonesRes.json();
@@ -233,13 +234,30 @@ export function AddCampaignForm({
       form.append("agent_id", data.agentId);
       form.append("phone_number_id", data.phoneNumberId);
       form.append("sheet", sheetFile);
-      await fetch(urls.backend.campaigns.submit(), {
+      const response = await fetch(urls.backend.campaigns.submit(), {
         method: "POST",
         body: form,
         headers: {
-          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          // Let the browser set the correct Content-Type with boundary for FormData
         },
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.error === 'Batch Calling Terms & Conditions Required') {
+          // Show a more user-friendly error message
+          alert('Batch Calling Terms & Conditions Required\n\n' +
+                'To create campaigns, you need to accept the Batch Calling Terms & Conditions in your ElevenLabs account.\n\n' +
+                'Please follow these steps:\n' +
+                '1. Go to https://beta.elevenlabs.io/batch-calling\n' +
+                '2. Click on "Get Started"\n' +
+                '3. Read and accept the terms and conditions\n' +
+                '4. Try creating the campaign again');
+          return;
+        }
+        throw new Error(errorData.message || 'Failed to create campaign');
+      }
       onSuccess({
         name: data.name,
         clientName: selectedClient.name,
@@ -284,13 +302,30 @@ export function AddCampaignForm({
       form.append("agent_id", data.agentId);
       form.append("phone_number_id", data.phoneNumberId);
       // Submit empty form to trigger backend validation
-      await fetch(urls.backend.campaigns.submit(), {
+      const response = await fetch(urls.backend.campaigns.submit(), {
         method: "POST",
         body: form,
         headers: {
-          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+          // Let the browser set the correct Content-Type with boundary for FormData
         },
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.error === 'Batch Calling Terms & Conditions Required') {
+          // Show a more user-friendly error message
+          alert('Batch Calling Terms & Conditions Required\n\n' +
+                'To create campaigns, you need to accept the Batch Calling Terms & Conditions in your ElevenLabs account.\n\n' +
+                'Please follow these steps:\n' +
+                '1. Go to https://beta.elevenlabs.io/batch-calling\n' +
+                '2. Click on "Get Started"\n' +
+                '3. Read and accept the terms and conditions\n' +
+                '4. Try creating the campaign again');
+          return;
+        }
+        throw new Error(errorData.message || 'Failed to create campaign');
+      }
       onSuccess({
         name: data.name,
         clientName: selectedClient.name,

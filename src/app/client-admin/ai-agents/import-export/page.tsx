@@ -381,7 +381,6 @@ export default function AiAgentImportExportPage() {
               headers: {
                 "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY,
                 "Content-Type": "application/json",
-                 "Authorization": `Bearer ${tokenStorage.getToken()}`,
               },
             }
           );
@@ -736,7 +735,6 @@ export default function AiAgentImportExportPage() {
               headers: {
                 "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
                 "Content-Type": "application/json",
-                 "Authorization": `Bearer ${tokenStorage.getToken()}`,
               },
             }
           );
@@ -1256,7 +1254,6 @@ export default function AiAgentImportExportPage() {
           headers: {
             "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
             "Content-Type": "application/json",
-             "Authorization": `Bearer ${tokenStorage.getToken()}`,
           },
           body: JSON.stringify(updatePayload),
         }

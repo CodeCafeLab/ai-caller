@@ -5,7 +5,13 @@ import * as React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -13,14 +19,25 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { UserCircle, BarChart3, FileBadge, NotebookText, Edit3, Phone, Mail, CalendarDays, Briefcase, Building } from "lucide-react";
-import Image from "next/image"; 
-import type { Metadata } from 'next';
+import {
+  UserCircle,
+  BarChart3,
+  FileBadge,
+  NotebookText,
+  Edit3,
+  Phone,
+  Mail,
+  CalendarDays,
+  Briefcase,
+  Building,
+} from "lucide-react";
+import Image from "next/image";
+import type { Metadata } from "next";
 import { useSearchParams } from "next/navigation";
-import { api } from '@/lib/apiConfig';
+import { api } from "@/lib/apiConfig";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
-import { elevenLabsApi } from '@/lib/elevenlabsApi';
+import { elevenLabsApi } from "@/lib/elevenlabsApi";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Metadata should be defined in a server component or route handler if possible.
@@ -40,12 +57,25 @@ function ClientDetailsUsagePageInner() {
   const [client, setClient] = React.useState<any | null>(null);
   const [monthlyCalls, setMonthlyCalls] = React.useState<number>(0);
   const [assignedPlans, setAssignedPlans] = React.useState<any[]>([]);
-  const [analyticsTotals, setAnalyticsTotals] = React.useState<{ totalCalls: number; successRate: number; totalDurationSecs: number; usedAgents: number; totalAgents: number } | null>(null);
+  const [analyticsTotals, setAnalyticsTotals] = React.useState<{
+    totalCalls: number;
+    successRate: number;
+    totalDurationSecs: number;
+    usedAgents: number;
+    totalAgents: number;
+  } | null>(null);
   const aggregatedEnabledLimit = React.useMemo(() => {
     try {
       return assignedPlans
-        .filter((ap: any) => (ap.isEnabled === 1 || ap.isEnabled === true) && (ap.isActive === 1 || ap.isActive === true))
-        .reduce((sum: number, ap: any) => sum + (parseInt(ap.monthlyLimit, 10) || 0), 0);
+        .filter(
+          (ap: any) =>
+            (ap.isEnabled === 1 || ap.isEnabled === true) &&
+            (ap.isActive === 1 || ap.isActive === true)
+        )
+        .reduce(
+          (sum: number, ap: any) => sum + (parseInt(ap.monthlyLimit, 10) || 0),
+          0
+        );
     } catch {
       return 0;
     }
@@ -57,28 +87,31 @@ function ClientDetailsUsagePageInner() {
   const router = useRouter();
 
   // Stable handler to update KPI cards only when values actually change
-  const handleTotalsChange = React.useCallback((totals: any, totalAgents: number) => {
-    const newVals = {
-      totalCalls: totals?.totalCalls || 0,
-      successRate: totals?.successRate || 0,
-      totalDurationSecs: totals?.totalDurationSecs || 0,
-      usedAgents: totals?.usedAgents || 0,
-      totalAgents: totalAgents || 0,
-    };
-    setAnalyticsTotals((prev) => {
-      if (
-        !prev ||
-        prev.totalCalls !== newVals.totalCalls ||
-        prev.successRate !== newVals.successRate ||
-        prev.totalDurationSecs !== newVals.totalDurationSecs ||
-        prev.usedAgents !== newVals.usedAgents ||
-        prev.totalAgents !== newVals.totalAgents
-      ) {
-        return newVals;
-      }
-      return prev;
-    });
-  }, []);
+  const handleTotalsChange = React.useCallback(
+    (totals: any, totalAgents: number) => {
+      const newVals = {
+        totalCalls: totals?.totalCalls || 0,
+        successRate: totals?.successRate || 0,
+        totalDurationSecs: totals?.totalDurationSecs || 0,
+        usedAgents: totals?.usedAgents || 0,
+        totalAgents: totalAgents || 0,
+      };
+      setAnalyticsTotals((prev) => {
+        if (
+          !prev ||
+          prev.totalCalls !== newVals.totalCalls ||
+          prev.successRate !== newVals.successRate ||
+          prev.totalDurationSecs !== newVals.totalDurationSecs ||
+          prev.usedAgents !== newVals.usedAgents ||
+          prev.totalAgents !== newVals.totalAgents
+        ) {
+          return newVals;
+        }
+        return prev;
+      });
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (!clientId) {
@@ -89,8 +122,14 @@ function ClientDetailsUsagePageInner() {
     setLoading(true);
     Promise.all([
       api.getClient(clientId).then((r) => r.json()),
-      api.getAgentsAnalytics(clientId, 30).then((r) => r.json()).catch(() => null),
-      api.getAssignedPlansForClient(clientId).then((r) => r.json()).catch(() => ({ data: [] })),
+      api
+        .getAgentsAnalytics(clientId, 30)
+        .then((r) => r.json())
+        .catch(() => null),
+      api
+        .getAssignedPlansForClient(clientId)
+        .then((r) => r.json())
+        .catch(() => ({ data: [] })),
     ])
       .then(([clientResp, analyticsResp, plansResp]) => {
         if (clientResp?.success) {
@@ -101,11 +140,25 @@ function ClientDetailsUsagePageInner() {
           setError(clientResp?.message || "Failed to fetch client data.");
         }
         if (analyticsResp?.success && analyticsResp?.data) {
-          const totals = analyticsResp.data.totals || { totalCalls: 0, successRate: 0, totalDurationSecs: 0 };
-          const agents = Array.isArray(analyticsResp.data.agents) ? analyticsResp.data.agents : [];
-          const usedAgents = agents.filter((a: any) => (a.totalCalls || 0) > 0).length;
+          const totals = analyticsResp.data.totals || {
+            totalCalls: 0,
+            successRate: 0,
+            totalDurationSecs: 0,
+          };
+          const agents = Array.isArray(analyticsResp.data.agents)
+            ? analyticsResp.data.agents
+            : [];
+          const usedAgents = agents.filter(
+            (a: any) => (a.totalCalls || 0) > 0
+          ).length;
           const totalAgents = agents.length;
-          setAnalyticsTotals({ totalCalls: totals.totalCalls || 0, successRate: totals.successRate || 0, totalDurationSecs: totals.totalDurationSecs || 0, usedAgents, totalAgents });
+          setAnalyticsTotals({
+            totalCalls: totals.totalCalls || 0,
+            successRate: totals.successRate || 0,
+            totalDurationSecs: totals.totalDurationSecs || 0,
+            usedAgents,
+            totalAgents,
+          });
           setMonthlyCalls(Number(totals.totalCalls || 0));
         }
         if (Array.isArray(plansResp?.data)) {
@@ -124,23 +177,30 @@ function ClientDetailsUsagePageInner() {
     const newStatus = checked ? "Active" : "Suspended";
     // Sanitize payload: remove computed/aggregated fields not present in DB
     const blacklist = [
-      'planName',
-      'planNames',
-      'totalMonthlyLimit',
-      'monthlyCallLimit',
-      'monthlyCallsMade',
-      'totalCallsMade',
-      'created_at',
-      'updated_at'
+      "planName",
+      "planNames",
+      "totalMonthlyLimit",
+      "monthlyCallLimit",
+      "monthlyCallsMade",
+      "totalCallsMade",
+      "created_at",
+      "updated_at",
     ];
-    const clientData: any = Object.fromEntries(Object.entries(client).filter(([k]) => !blacklist.includes(String(k))));
+    const clientData: any = Object.fromEntries(
+      Object.entries(client).filter(([k]) => !blacklist.includes(String(k)))
+    );
     try {
       // Send update to backend
-      const res = await api.updateClient(client.id.toString(), { ...clientData, status: newStatus });
+      const res = await api.updateClient(client.id.toString(), {
+        ...clientData,
+        status: newStatus,
+      });
       const data = await res.json();
       if (data.success) {
         setClientStatus(checked);
-        setClient((prev: any) => prev ? { ...prev, status: newStatus } : prev);
+        setClient((prev: any) =>
+          prev ? { ...prev, status: newStatus } : prev
+        );
         toast({
           title: "Account Status Updated",
           description: `${client.companyName}'s account is now ${newStatus}.`,
@@ -166,17 +226,25 @@ function ClientDetailsUsagePageInner() {
       toast({ title: "Note cannot be empty", variant: "destructive" });
       return;
     }
-    toast({ title: "Note Saved", description: "Your internal note has been added." });
+    toast({
+      title: "Note Saved",
+      description: "Your internal note has been added.",
+    });
     setNewNote("");
     // In a real app, you would call an API to save the note
   };
 
   const handleChangePlan = () => {
-    toast({ title: "Change Plan Clicked", description: "Plan change functionality to be implemented." });
+    toast({
+      title: "Change Plan Clicked",
+      description: "Plan change functionality to be implemented.",
+    });
   };
 
   if (loading) {
-    return <div className="container mx-auto py-8">Loading client details...</div>;
+    return (
+      <div className="container mx-auto py-8">Loading client details...</div>
+    );
   }
   if (error) {
     return <div className="container mx-auto py-8 text-red-500">{error}</div>;
@@ -208,7 +276,9 @@ function ClientDetailsUsagePageInner() {
     renewalDate: client.renewalDate || new Date().toISOString(),
     billingCycle: client.billingCycle || "Monthly",
     topCampaigns: Array.isArray(client.topCampaigns) ? client.topCampaigns : [],
-    internalNotes: Array.isArray(client.internalNotes) ? client.internalNotes : [],
+    internalNotes: Array.isArray(client.internalNotes)
+      ? client.internalNotes
+      : [],
     systemLogs: Array.isArray(client.systemLogs) ? client.systemLogs : [],
   };
 
@@ -217,11 +287,19 @@ function ClientDetailsUsagePageInner() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src={displayClient.avatarUrl} alt={displayClient.name} data-ai-hint="company logo" />
-            <AvatarFallback>{displayClient.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarImage
+              src={displayClient.avatarUrl}
+              alt={displayClient.name}
+              data-ai-hint="company logo"
+            />
+            <AvatarFallback>
+              {displayClient.name.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-3xl font-bold font-headline">{displayClient.name}</h1>
+            <h1 className="text-3xl font-bold font-headline">
+              {displayClient.name}
+            </h1>
             <p className="text-muted-foreground flex items-center gap-2">
               <Mail className="h-4 w-4" /> {displayClient.email}
             </p>
@@ -231,7 +309,13 @@ function ClientDetailsUsagePageInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="lg" onClick={() => router.push(`/clients/edit?clientId=${displayClient.id}`)}>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() =>
+              router.push(`/clients/edit?clientId=${displayClient.id}`)
+            }
+          >
             <Edit3 className="mr-2 h-4 w-4" /> Edit Client
           </Button>
         </div>
@@ -239,40 +323,98 @@ function ClientDetailsUsagePageInner() {
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="overview"><UserCircle className="mr-2 h-4 w-4" />Overview</TabsTrigger>
-          <TabsTrigger value="usage"><BarChart3 className="mr-2 h-4 w-4" />Usage</TabsTrigger>
-          <TabsTrigger value="plan-info"><FileBadge className="mr-2 h-4 w-4" />Plan Info</TabsTrigger>
-          <TabsTrigger value="notes-logs"><NotebookText className="mr-2 h-4 w-4" />Notes & Logs</TabsTrigger>
+          <TabsTrigger value="overview">
+            <UserCircle className="mr-2 h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="usage">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Usage
+          </TabsTrigger>
+          <TabsTrigger value="plan-info">
+            <FileBadge className="mr-2 h-4 w-4" />
+            Plan Info
+          </TabsTrigger>
+          <TabsTrigger value="notes-logs">
+            <NotebookText className="mr-2 h-4 w-4" />
+            Notes & Logs
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Client Overview</CardTitle>
-              <CardDescription>General information and status for {displayClient.name}.</CardDescription>
+              <CardDescription>
+                General information and status for {displayClient.name}.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <div><Building className="inline mr-2 h-4 w-4 text-muted-foreground" /><strong>Company Name:</strong> {displayClient.name}</div>
-                <div><Briefcase className="inline mr-2 h-4 w-4 text-muted-foreground" /><strong>Contact Person:</strong> {displayClient.contactPerson}</div>
-                <div><Mail className="inline mr-2 h-4 w-4 text-muted-foreground" /><strong>Email:</strong> {displayClient.email}</div>
-                <div><Phone className="inline mr-2 h-4 w-4 text-muted-foreground" /><strong>Phone:</strong> {displayClient.phone}</div>
-                <div><CalendarDays className="inline mr-2 h-4 w-4 text-muted-foreground" /><strong>Joined Date:</strong> {new Date(displayClient.joinedDate).toLocaleDateString()}</div>
-                <div><FileBadge className="inline mr-2 h-4 w-4 text-muted-foreground" /><strong>Client ID:</strong> {displayClient.clientId}</div>
+                <div>
+                  <Building className="inline mr-2 h-4 w-4 text-muted-foreground" />
+                  <strong>Company Name:</strong> {displayClient.name}
+                </div>
+                <div>
+                  <Briefcase className="inline mr-2 h-4 w-4 text-muted-foreground" />
+                  <strong>Contact Person:</strong> {displayClient.contactPerson}
+                </div>
+                <div>
+                  <Mail className="inline mr-2 h-4 w-4 text-muted-foreground" />
+                  <strong>Email:</strong> {displayClient.email}
+                </div>
+                <div>
+                  <Phone className="inline mr-2 h-4 w-4 text-muted-foreground" />
+                  <strong>Phone:</strong> {displayClient.phone}
+                </div>
+                <div>
+                  <CalendarDays className="inline mr-2 h-4 w-4 text-muted-foreground" />
+                  <strong>Joined Date:</strong>{" "}
+                  {new Date(displayClient.joinedDate).toLocaleDateString()}
+                </div>
+                <div>
+                  <FileBadge className="inline mr-2 h-4 w-4 text-muted-foreground" />
+                  <strong>Client ID:</strong> {displayClient.clientId}
+                </div>
               </div>
               <Separator className="my-4" />
               <div className="grid md:grid-cols-2 gap-4 items-center">
-                 <div><strong>Current Plan:</strong> <Badge variant={displayClient.plan === "Premium" ? "default" : "secondary"}>{displayClient.plan}</Badge></div>
+                <div>
+                  <strong>Current Plan:</strong>{" "}
+                  <Badge
+                    variant={
+                      displayClient.plan === "Premium" ? "default" : "secondary"
+                    }
+                  >
+                    {displayClient.plan}
+                  </Badge>
+                </div>
                 <div className="flex items-center space-x-3">
-                  <Switch id="account-status" checked={clientStatus} onCheckedChange={handleStatusChange} />
+                  <Switch
+                    id="account-status"
+                    checked={clientStatus}
+                    onCheckedChange={handleStatusChange}
+                  />
                   <Label htmlFor="account-status" className="text-sm">
-                    Account Status: <Badge variant={clientStatus ? "default" : "destructive"} className={clientStatus ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}>{clientStatus ? "Active" : "Suspended"}</Badge>
+                    Account Status:{" "}
+                    <Badge
+                      variant={clientStatus ? "default" : "destructive"}
+                      className={
+                        clientStatus
+                          ? "bg-green-500 hover:bg-green-600"
+                          : "bg-red-500 hover:bg-red-600"
+                      }
+                    >
+                      {clientStatus ? "Active" : "Suspended"}
+                    </Badge>
                   </Label>
                 </div>
               </div>
-               <div className="mt-2">
+              <div className="mt-2">
                 <strong>Address:</strong>
-                <p className="text-sm text-muted-foreground">{displayClient.address}</p>
+                <p className="text-sm text-muted-foreground">
+                  {displayClient.address}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -281,39 +423,74 @@ function ClientDetailsUsagePageInner() {
         <TabsContent value="usage" className="mt-6 space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
-              <CardHeader><CardTitle>Total Calls</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Total Calls</CardTitle>
+              </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{analyticsTotals?.totalCalls ?? 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Conversations across all agents (last 30 days)</p>
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader><CardTitle>Voice Minutes</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{Math.round(((analyticsTotals?.totalDurationSecs || 0) / 60))}</p>
-                <p className="text-xs text-muted-foreground mt-1">Total minutes spoken (last 30 days)</p>
+                <p className="text-3xl font-bold">
+                  {analyticsTotals?.totalCalls ?? 0}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Conversations across all agents (last 30 days)
+                </p>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Call Success Rate</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Voice Minutes</CardTitle>
+              </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{analyticsTotals?.successRate ?? 0}%</p>
-                 <p className="text-xs text-muted-foreground mt-1">Successful / All conversations</p>
+                <p className="text-3xl font-bold">
+                  {Math.round((analyticsTotals?.totalDurationSecs || 0) / 60)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total minutes spoken (last 30 days)
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Call Success Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">
+                  {analyticsTotals?.successRate ?? 0}%
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Successful / All conversations
+                </p>
               </CardContent>
             </Card>
           </div>
           <Card>
             <CardHeader>
-                <CardTitle>Agents Used</CardTitle>
+              <CardTitle>Agents Used</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">{analyticsTotals ? `${analyticsTotals.usedAgents} / ${analyticsTotals.totalAgents}` : '0 / 0'}</p>
-                <Progress value={(analyticsTotals && analyticsTotals.totalAgents > 0) ? (analyticsTotals.usedAgents / analyticsTotals.totalAgents) * 100 : 0} className="mt-2 h-2" />
-                <p className="text-xs text-muted-foreground mt-1">Agents that had at least one conversation</p>
+              <p className="text-2xl font-bold">
+                {analyticsTotals
+                  ? `${analyticsTotals.usedAgents} / ${analyticsTotals.totalAgents}`
+                  : "0 / 0"}
+              </p>
+              <Progress
+                value={
+                  analyticsTotals && analyticsTotals.totalAgents > 0
+                    ? (analyticsTotals.usedAgents /
+                        analyticsTotals.totalAgents) *
+                      100
+                    : 0
+                }
+                className="mt-2 h-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Agents that had at least one conversation
+              </p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Agent Analytics (last 30 days)</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Agent Analytics (last 30 days)</CardTitle>
+            </CardHeader>
             <CardContent>
               <ErrorBoundary>
                 <AgentAnalytics
@@ -329,40 +506,71 @@ function ClientDetailsUsagePageInner() {
           <Card>
             <CardHeader>
               <CardTitle>Current Plans</CardTitle>
-              <CardDescription>Active plans contribute to the monthly call limit.</CardDescription>
+              <CardDescription>
+                Active plans contribute to the monthly call limit.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {assignedPlans.length > 0 ? (
                 <div className="space-y-3">
                   {assignedPlans.map((ap: any, index: number) => {
-                    const isEnabled = ap.isEnabled === 1 || ap.isEnabled === true;
+                    const isEnabled =
+                      ap.isEnabled === 1 || ap.isEnabled === true;
                     const isActive = ap.isActive === 1 || ap.isActive === true;
                     return (
-                      <div key={ap.assignmentId || `plan-${index}`} className="flex items-center justify-between p-3 border rounded-md">
+                      <div
+                        key={ap.assignmentId || `plan-${index}`}
+                        className="flex items-center justify-between p-3 border rounded-md"
+                      >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{ap.planName}</span>
                             {isEnabled && isActive ? (
-                              <Badge className="bg-green-600 text-white">Active</Badge>
+                              <Badge className="bg-green-600 text-white">
+                                Active
+                              </Badge>
                             ) : (
                               <Badge variant="secondary">Inactive</Badge>
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground">Monthly Limit: {ap.monthlyLimit || 0}</div>
-                          <div className="text-xs text-muted-foreground">Start: {ap.startDate ? new Date(ap.startDate).toLocaleDateString() : 'N/A'}{ap.durationDays ? ` • Duration: ${ap.durationDays} days` : ''}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Monthly Limit: {ap.monthlyLimit || 0}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Start:{" "}
+                            {ap.startDate
+                              ? new Date(ap.startDate).toLocaleDateString()
+                              : "N/A"}
+                            {ap.durationDays
+                              ? ` • Duration: ${ap.durationDays} days`
+                              : ""}
+                          </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <Label htmlFor={`enable-${ap.assignmentId}`} className="text-xs">Enable</Label>
+                          <Label
+                            htmlFor={`enable-${ap.assignmentId}`}
+                            className="text-xs"
+                          >
+                            Enable
+                          </Label>
                           <Switch
                             id={`enable-${ap.assignmentId}`}
                             checked={!!isEnabled}
                             onCheckedChange={async (checked) => {
                               try {
-                                await api.toggleAssignedPlanEnabled(String(ap.assignmentId), !!checked);
+                                await api.toggleAssignedPlanEnabled(
+                                  String(ap.assignmentId),
+                                  !!checked
+                                );
                                 // refresh assigned plans
-                                const resp = await api.getAssignedPlansForClient(String(displayClient.clientId));
+                                const resp =
+                                  await api.getAssignedPlansForClient(
+                                    String(displayClient.clientId)
+                                  );
                                 const j = await resp.json();
-                                setAssignedPlans(Array.isArray(j.data) ? j.data : []);
+                                setAssignedPlans(
+                                  Array.isArray(j.data) ? j.data : []
+                                );
                               } catch {}
                             }}
                           />
@@ -372,17 +580,23 @@ function ClientDetailsUsagePageInner() {
                   })}
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No plans assigned yet.</div>
+                <div className="text-sm text-muted-foreground">
+                  No plans assigned yet.
+                </div>
               )}
               <Separator className="my-2" />
               <div>
                 <h3 className="font-semibold mb-1">Aggregated Limits:</h3>
                 <ul className="list-disc list-inside pl-4 space-y-1 text-sm text-muted-foreground">
-                  <li>Monthly Calls Total (enabled & active): {aggregatedEnabledLimit}</li>
+                  <li>
+                    Monthly Calls Total (enabled & active):{" "}
+                    {aggregatedEnabledLimit}
+                  </li>
                 </ul>
               </div>
               <div>
-                <strong>Renewal Date:</strong> {new Date(displayClient.renewalDate).toLocaleDateString()}
+                <strong>Renewal Date:</strong>{" "}
+                {new Date(displayClient.renewalDate).toLocaleDateString()}
               </div>
               <div>
                 <strong>Billing Cycle:</strong> {displayClient.billingCycle}
@@ -396,7 +610,9 @@ function ClientDetailsUsagePageInner() {
 
         <TabsContent value="notes-logs" className="mt-6 space-y-6">
           <Card>
-            <CardHeader><CardTitle>Internal Notes</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Internal Notes</CardTitle>
+            </CardHeader>
             <CardContent>
               <Textarea
                 placeholder="Add internal notes about this client..."
@@ -404,34 +620,69 @@ function ClientDetailsUsagePageInner() {
                 onChange={(e) => setNewNote(e.target.value)}
                 className="min-h-[100px]"
               />
-              <Button onClick={handleSaveNote} className="mt-3">Save Note</Button>
+              <Button onClick={handleSaveNote} className="mt-3">
+                Save Note
+              </Button>
               <div className="mt-4 space-y-3">
-                {Array.isArray(displayClient.internalNotes) && displayClient.internalNotes.length > 0 ? (
-                  (Array.isArray(displayClient.internalNotes) ? displayClient.internalNotes : []).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((note: any, index: number) => (
-                    <div key={note.id || `note-${index}`} className="p-3 border rounded-md bg-muted/50">
-                      <p className="text-sm">{note.text}</p>
-                      <p className="text-xs text-muted-foreground mt-1">By {note.user} on {new Date(note.date).toLocaleDateString()}</p>
-                    </div>
-                  ))
+                {Array.isArray(displayClient.internalNotes) &&
+                displayClient.internalNotes.length > 0 ? (
+                  (Array.isArray(displayClient.internalNotes)
+                    ? displayClient.internalNotes
+                    : []
+                  )
+                    .sort(
+                      (a: any, b: any) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                    )
+                    .map((note: any, index: number) => (
+                      <div
+                        key={note.id || `note-${index}`}
+                        className="p-3 border rounded-md bg-muted/50"
+                      >
+                        <p className="text-sm">{note.text}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          By {note.user} on{" "}
+                          {new Date(note.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))
                 ) : (
-                  <p className="text-muted-foreground">No internal notes available for this client.</p>
+                  <p className="text-muted-foreground">
+                    No internal notes available for this client.
+                  </p>
                 )}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>System Logs</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>System Logs</CardTitle>
+            </CardHeader>
             <CardContent>
-              {Array.isArray(displayClient.systemLogs) && displayClient.systemLogs.length > 0 ? (
+              {Array.isArray(displayClient.systemLogs) &&
+              displayClient.systemLogs.length > 0 ? (
                 <ul className="space-y-2 text-sm">
-                  {displayClient.systemLogs.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log: any, index: number) => (
-                    <li key={log.id || `log-${index}`} className="p-2 border rounded-md">
-                      <span className="font-medium">{new Date(log.date).toLocaleString()}:</span> {log.event}
-                    </li>
-                  ))}
+                  {displayClient.systemLogs
+                    .sort(
+                      (a: any, b: any) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                    )
+                    .map((log: any, index: number) => (
+                      <li
+                        key={log.id || `log-${index}`}
+                        className="p-2 border rounded-md"
+                      >
+                        <span className="font-medium">
+                          {new Date(log.date).toLocaleString()}:
+                        </span>{" "}
+                        {log.event}
+                      </li>
+                    ))}
                 </ul>
               ) : (
-                 <p className="text-muted-foreground">No system logs available for this client.</p>
+                <p className="text-muted-foreground">
+                  No system logs available for this client.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -449,10 +700,18 @@ export default function ClientDetailsUsagePage() {
   );
 }
 
-function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTotalsChange?: (totals: any, totalAgents: number) => void }) {
+function AgentAnalytics({
+  clientId,
+  onTotalsChange,
+}: {
+  clientId: string;
+  onTotalsChange?: (totals: any, totalAgents: number) => void;
+}) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [data, setData] = React.useState<{ agents: any[]; totals: any } | null>(null);
+  const [data, setData] = React.useState<{ agents: any[]; totals: any } | null>(
+    null
+  );
   const [allClientAgents, setAllClientAgents] = React.useState<any[]>([]);
 
   React.useEffect(() => {
@@ -470,17 +729,22 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
             // Ensure the data structure is properly initialized
             const safeData = {
               agents: Array.isArray(j.data.agents) ? j.data.agents : [],
-              totals: j.data.totals || { totalCalls: 0, successCount: 0, successRate: 0, totalDurationSecs: 0 }
+              totals: j.data.totals || {
+                totalCalls: 0,
+                successCount: 0,
+                successRate: 0,
+                totalDurationSecs: 0,
+              },
             };
             setData(safeData);
           } else {
-            setError(j?.message || 'Failed to fetch analytics data');
+            setError(j?.message || "Failed to fetch analytics data");
           }
         }
       } catch (e: any) {
         if (mounted) {
-          console.error('Error loading agents analytics:', e);
-          setError(String(e?.message || e || 'Failed to load analytics'));
+          console.error("Error loading agents analytics:", e);
+          setError(String(e?.message || e || "Failed to load analytics"));
         }
       } finally {
         if (mounted) setLoading(false);
@@ -488,8 +752,13 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
     }
     load();
     // Poll every 30s, but only if mounted
-    const interval = setInterval(() => { if (mounted) load(); }, 30000);
-    return () => { mounted = false; clearInterval(interval); };
+    const interval = setInterval(() => {
+      if (mounted) load();
+    }, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [clientId]);
 
   // Always load the complete agent list for this client (to include zero-activity agents)
@@ -499,17 +768,24 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
       try {
         const agentsRes = await api.getAgents();
         const agentsJson = await agentsRes.json();
-        const allAgents = Array.isArray(agentsJson?.data) ? agentsJson.data : [];
+        const allAgents = Array.isArray(agentsJson?.data)
+          ? agentsJson.data
+          : [];
         // Base filter: owned by client, created by client, or linked via client_ids
         const prelim = allAgents.filter((a: any) => {
-          const owned = String(a.client_id || '') === String(clientId);
-          const created = a.created_by_type === 'client' && String(a.created_by) === String(clientId);
+          const owned = String(a.client_id || "") === String(clientId);
+          const created =
+            a.created_by_type === "client" &&
+            String(a.created_by) === String(clientId);
           const linkedRaw = a.client_ids;
           const linkedIds: string[] = Array.isArray(linkedRaw)
             ? linkedRaw.map((x: any) => String(x))
-            : typeof linkedRaw === 'string'
-              ? linkedRaw.split(',').map((x: string) => x.trim()).filter(Boolean)
-              : [];
+            : typeof linkedRaw === "string"
+            ? linkedRaw
+                .split(",")
+                .map((x: string) => x.trim())
+                .filter(Boolean)
+            : [];
           const linked = linkedIds.includes(String(clientId));
           return owned || created || linked;
         });
@@ -521,20 +797,32 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
           const rawIds = clientJson?.data?.elevenlabs_agent_ids;
           let ids: string[] = [];
           if (Array.isArray(rawIds)) ids = rawIds.map((x: any) => String(x));
-          else if (typeof rawIds === 'string') {
+          else if (typeof rawIds === "string") {
             try {
               const parsed = JSON.parse(rawIds);
-              if (Array.isArray(parsed)) ids = parsed.map((x: any) => String(x));
-              else ids = rawIds.split(',').map((x: string) => x.trim()).filter(Boolean);
+              if (Array.isArray(parsed))
+                ids = parsed.map((x: any) => String(x));
+              else
+                ids = rawIds
+                  .split(",")
+                  .map((x: string) => x.trim())
+                  .filter(Boolean);
             } catch {
-              ids = rawIds.split(',').map((x: string) => x.trim()).filter(Boolean);
+              ids = rawIds
+                .split(",")
+                .map((x: string) => x.trim())
+                .filter(Boolean);
             }
           }
           const byId = new Map<string, any>();
           for (const a of prelim) byId.set(String(a.agent_id || a.id), a);
           for (const id of ids) {
             if (!byId.has(String(id))) {
-              byId.set(String(id), { agent_id: String(id), name: `Agent ${id}`, client_id: clientId });
+              byId.set(String(id), {
+                agent_id: String(id),
+                name: `Agent ${id}`,
+                client_id: clientId,
+              });
             }
           }
           const merged = Array.from(byId.values());
@@ -547,7 +835,9 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
       }
     }
     loadAgents();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [clientId]);
 
   // Frontend fallback and normalization to include ALL client agents (0-activity too) and correct success logic
@@ -556,37 +846,61 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
       if (data && (data.totals?.totalCalls ?? 0) > 0) {
         // even if backend has data, ensure zero-activity agents are present
         try {
-          const agentIdSet = new Set((data.agents || []).map((a: any) => String(a.agentId || a.agent_id)));
-          const missing = allClientAgents.filter((a: any) => !agentIdSet.has(String(a.agent_id))).map((a: any) => ({ 
-          agentId: String(a.agent_id), 
-          agentName: a.name || a.agent_name || String(a.agent_id), 
-          totalCalls: 0, 
-          successCount: 0, 
-          successRate: 0, 
-          totalDurationSecs: 0, 
-          avgDurationSecs: 0 
-        }));
+          const agentIdSet = new Set(
+            (data.agents || []).map((a: any) => String(a.agentId || a.agent_id))
+          );
+          const missing = allClientAgents
+            .filter((a: any) => !agentIdSet.has(String(a.agent_id)))
+            .map((a: any) => ({
+              agentId: String(a.agent_id),
+              agentName: a.name || a.agent_name || String(a.agent_id),
+              totalCalls: 0,
+              successCount: 0,
+              successRate: 0,
+              totalDurationSecs: 0,
+              avgDurationSecs: 0,
+            }));
           if (missing.length > 0) {
             const mergedAgents = [...(data.agents || []), ...missing];
-                    const totals = mergedAgents.reduce((acc: any, x: any) => { 
-          acc.totalCalls += (x.totalCalls || 0); 
-          acc.successCount += (x.successCount || 0); 
-          acc.totalDurationSecs += (x.totalDurationSecs || 0); 
-          return acc; 
-        }, { totalCalls: 0, successCount: 0, totalDurationSecs: 0 });
-        totals.successRate = (totals.totalCalls || 0) > 0 ? Math.round(((totals.successCount || 0) / (totals.totalCalls || 0)) * 100) : 0;
-            const usedAgents = mergedAgents.filter((a: any) => (a.totalCalls || 0) > 0).length;
+            const totals = mergedAgents.reduce(
+              (acc: any, x: any) => {
+                acc.totalCalls += x.totalCalls || 0;
+                acc.successCount += x.successCount || 0;
+                acc.totalDurationSecs += x.totalDurationSecs || 0;
+                return acc;
+              },
+              { totalCalls: 0, successCount: 0, totalDurationSecs: 0 }
+            );
+            totals.successRate =
+              (totals.totalCalls || 0) > 0
+                ? Math.round(
+                    ((totals.successCount || 0) / (totals.totalCalls || 0)) *
+                      100
+                  )
+                : 0;
+            const usedAgents = mergedAgents.filter(
+              (a: any) => (a.totalCalls || 0) > 0
+            ).length;
             setData({ agents: mergedAgents, totals });
             onTotalsChange?.({ ...totals, usedAgents }, mergedAgents.length);
           } else {
-                    const usedAgents = (data.agents || []).filter((a: any) => (a.totalCalls || 0) > 0).length;
-        onTotalsChange?.({ 
-          ...(data.totals || { totalCalls: 0, successRate: 0, totalDurationSecs: 0 }), 
-          usedAgents 
-        }, (data.agents || []).length);
+            const usedAgents = (data.agents || []).filter(
+              (a: any) => (a.totalCalls || 0) > 0
+            ).length;
+            onTotalsChange?.(
+              {
+                ...(data.totals || {
+                  totalCalls: 0,
+                  successRate: 0,
+                  totalDurationSecs: 0,
+                }),
+                usedAgents,
+              },
+              (data.agents || []).length
+            );
           }
         } catch (error) {
-          console.warn('Error processing existing analytics data:', error);
+          console.warn("Error processing existing analytics data:", error);
         }
         return;
       }
@@ -594,90 +908,167 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
         // 1) get all agents and filter by client
         const agentsRes = await api.getAgents();
         const agentsJson = await agentsRes.json();
-        const allAgents = Array.isArray(agentsJson?.data) ? agentsJson.data : [];
-        const clientAgents = allAgents.filter((a: any) => String(a.client_id || '') === String(clientId) || (a.created_by_type === 'client' && String(a.created_by) === String(clientId)));
+        const allAgents = Array.isArray(agentsJson?.data)
+          ? agentsJson.data
+          : [];
+        const clientAgents = allAgents.filter(
+          (a: any) =>
+            String(a.client_id || "") === String(clientId) ||
+            (a.created_by_type === "client" &&
+              String(a.created_by) === String(clientId))
+        );
         if (clientAgents.length === 0) return;
 
         // 2) Fetch ALL conversations for the last 30 days (no agent filter), then filter for client's agents
-        const clientAgentIdSet = new Set(clientAgents.map((a: any) => String(a.agent_id || a.id)));
+        const clientAgentIdSet = new Set(
+          clientAgents.map((a: any) => String(a.agent_id || a.id))
+        );
         const end = Math.floor(Date.now() / 1000);
         const start = end - 30 * 24 * 60 * 60;
         let cursor: string | undefined = undefined;
         let loops = 0;
         const convs: any[] = [];
         do {
-          const resp = await elevenLabsApi.listConversations({ call_start_after_unix: start, call_start_before_unix: end, page_size: 100, summary_mode: 'include', ...(cursor ? { cursor } : {}) } as any);
+          const resp = await elevenLabsApi.listConversations({
+            call_start_after_unix: start,
+            call_start_before_unix: end,
+            page_size: 100,
+            summary_mode: "include",
+            ...(cursor ? { cursor } : {}),
+          } as any);
           if (!resp.ok) break;
           const json = await resp.json();
-          const list = Array.isArray(json.conversations) ? json.conversations : [];
+          const list = Array.isArray(json.conversations)
+            ? json.conversations
+            : [];
           convs.push(...list);
           cursor = json.next_cursor || json.cursor || undefined;
           loops += 1;
         } while (cursor && loops < 100);
 
-        const filtered = convs.filter((c: any) => clientAgentIdSet.has(String(c.agent_id || c.agent?.id || c.agentId)));
+        const filtered = convs.filter((c: any) =>
+          clientAgentIdSet.has(String(c.agent_id || c.agent?.id || c.agentId))
+        );
         const perAgentMap = new Map<string, any>();
         for (const c of filtered) {
           const id = String(c.agent_id || c.agent?.id || c.agentId);
           const name = c.agent_name || c.agent?.name || id;
-                  const e = perAgentMap.get(id) || { agentId: id, agentName: name, totalCalls: 0, successCount: 0, totalDurationSecs: 0 };
-        e.totalCalls = (e.totalCalls || 0) + 1;
-        // Normalize success using Reports page mapping
-        const candidates = [c.call_successful, c.status, c.call_status, c.analysis?.call_successful, c.metadata?.call_successful].filter(Boolean);
-        const normalized = String((candidates.length ? candidates[0] : 'unknown')).toLowerCase().trim();
-        const successValues = ['successful', 'success', 'true', '1', 'completed'];
-        if (successValues.includes(normalized)) e.successCount = (e.successCount || 0) + 1;
-        e.totalDurationSecs = (e.totalDurationSecs || 0) + (c.call_duration_secs || 0);
+          const e = perAgentMap.get(id) || {
+            agentId: id,
+            agentName: name,
+            totalCalls: 0,
+            successCount: 0,
+            totalDurationSecs: 0,
+          };
+          e.totalCalls = (e.totalCalls || 0) + 1;
+          // Normalize success using Reports page mapping
+          const candidates = [
+            c.call_successful,
+            c.status,
+            c.call_status,
+            c.analysis?.call_successful,
+            c.metadata?.call_successful,
+          ].filter(Boolean);
+          const normalized = String(
+            candidates.length ? candidates[0] : "unknown"
+          )
+            .toLowerCase()
+            .trim();
+          const successValues = [
+            "successful",
+            "success",
+            "true",
+            "1",
+            "completed",
+          ];
+          if (successValues.includes(normalized))
+            e.successCount = (e.successCount || 0) + 1;
+          e.totalDurationSecs =
+            (e.totalDurationSecs || 0) + (c.call_duration_secs || 0);
           perAgentMap.set(id, e);
         }
         // Ensure zero-activity agents are present
         for (const a of clientAgents) {
           const id = String(a.agent_id || a.id);
           if (!perAgentMap.has(id)) {
-            perAgentMap.set(id, { 
-              agentId: id, 
-              agentName: a.name || a.agent_name || id, 
-              totalCalls: 0, 
-              successCount: 0, 
-              totalDurationSecs: 0 
+            perAgentMap.set(id, {
+              agentId: id,
+              agentName: a.name || a.agent_name || id,
+              totalCalls: 0,
+              successCount: 0,
+              totalDurationSecs: 0,
             });
           }
         }
-        const perAgent = Array.from(perAgentMap.values()).map(a => ({ 
-          ...a, 
-          successRate: (a.totalCalls || 0) > 0 ? Math.round(((a.successCount || 0) / (a.totalCalls || 0)) * 100) : 0, 
-          avgDurationSecs: (a.totalCalls || 0) > 0 ? Math.round((a.totalDurationSecs || 0) / (a.totalCalls || 0)) : 0 
+        const perAgent = Array.from(perAgentMap.values()).map((a) => ({
+          ...a,
+          successRate:
+            (a.totalCalls || 0) > 0
+              ? Math.round(((a.successCount || 0) / (a.totalCalls || 0)) * 100)
+              : 0,
+          avgDurationSecs:
+            (a.totalCalls || 0) > 0
+              ? Math.round((a.totalDurationSecs || 0) / (a.totalCalls || 0))
+              : 0,
         }));
-        const totals = perAgent.reduce((acc: any, x: any) => { 
-          acc.totalCalls += (x.totalCalls || 0); 
-          acc.successCount += (x.successCount || 0); 
-          acc.totalDurationSecs += (x.totalDurationSecs || 0); 
-          return acc; 
-        }, { totalCalls: 0, successCount: 0, totalDurationSecs: 0 });
-        totals.successRate = (totals.totalCalls || 0) > 0 ? Math.round(((totals.successCount || 0) / (totals.totalCalls || 0)) * 100) : 0;
-        const usedAgents = perAgent.filter((a: any) => (a.totalCalls || 0) > 0).length;
+        const totals = perAgent.reduce(
+          (acc: any, x: any) => {
+            acc.totalCalls += x.totalCalls || 0;
+            acc.successCount += x.successCount || 0;
+            acc.totalDurationSecs += x.totalDurationSecs || 0;
+            return acc;
+          },
+          { totalCalls: 0, successCount: 0, totalDurationSecs: 0 }
+        );
+        totals.successRate =
+          (totals.totalCalls || 0) > 0
+            ? Math.round(
+                ((totals.successCount || 0) / (totals.totalCalls || 0)) * 100
+              )
+            : 0;
+        const usedAgents = perAgent.filter(
+          (a: any) => (a.totalCalls || 0) > 0
+        ).length;
         setData({ agents: perAgent, totals });
         onTotalsChange?.({ ...totals, usedAgents }, perAgent.length);
       } catch (error) {
-        console.error('Error in fallback analytics processing:', error);
+        console.error("Error in fallback analytics processing:", error);
         // Set minimal data to prevent crashes
         setData({
           agents: [],
-          totals: { totalCalls: 0, successCount: 0, successRate: 0, totalDurationSecs: 0 }
+          totals: {
+            totalCalls: 0,
+            successCount: 0,
+            successRate: 0,
+            totalDurationSecs: 0,
+          },
         });
       }
     }
     fallbackIfEmpty();
   }, [clientId, data, allClientAgents, onTotalsChange]);
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading analytics…</div>;
+  if (loading)
+    return (
+      <div className="text-sm text-muted-foreground">Loading analytics…</div>
+    );
   if (error) return <div className="text-sm text-red-600">{error}</div>;
-  if (!data || !data.totals || !data.agents) return <div className="text-sm text-muted-foreground">No analytics data available</div>;
+  if (!data || !data.totals || !data.agents)
+    return (
+      <div className="text-sm text-muted-foreground">
+        No analytics data available
+      </div>
+    );
 
   return (
     <div className="space-y-4">
       <div className="text-sm text-muted-foreground">
-        Total Calls: <strong>{data.totals?.totalCalls || 0}</strong> • Success Rate: <strong>{data.totals?.successRate || 0}%</strong> • Total Duration: <strong>{Math.round((data.totals?.totalDurationSecs || 0)/60)} min</strong>
+        Total Calls: <strong>{data.totals?.totalCalls || 0}</strong> • Success
+        Rate: <strong>{data.totals?.successRate || 0}%</strong> • Total
+        Duration:{" "}
+        <strong>
+          {Math.round((data.totals?.totalDurationSecs || 0) / 60)} min
+        </strong>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -692,12 +1083,35 @@ function AgentAnalytics({ clientId, onTotalsChange }: { clientId: string; onTota
           </thead>
           <tbody>
             {(data.agents || []).map((a, index) => (
-              <tr key={a.agentId || `agent-${index}`} className="border-b last:border-0">
-                <td className="py-2 pr-4">{a.agentName || 'Unknown'}</td>
+              <tr
+                key={a.agentId || `agent-${index}`}
+                className="border-b last:border-0"
+              >
+                <td className="py-2 pr-4">{a.agentName || "Unknown"}</td>
                 <td className="py-2 pr-4">{a.totalCalls || 0}</td>
                 <td className="py-2 pr-4">{a.successCount || 0}</td>
-                <td className="py-2 pr-4">{typeof a.successRate === 'number' ? a.successRate : ((a.totalCalls || 0) > 0 ? Math.round(((a.successCount || 0) / (a.totalCalls || 0)) * 100) : 0)}%</td>
-                <td className="py-2 pr-4">{Math.round(((typeof a.avgDurationSecs === 'number' ? a.avgDurationSecs : ((a.totalCalls || 0) > 0 ? Math.round((a.totalDurationSecs || 0) / (a.totalCalls || 0)) : 0)) || 0)/60)} min</td>
+                <td className="py-2 pr-4">
+                  {typeof a.successRate === "number"
+                    ? a.successRate
+                    : (a.totalCalls || 0) > 0
+                    ? Math.round(
+                        ((a.successCount || 0) / (a.totalCalls || 0)) * 100
+                      )
+                    : 0}
+                  %
+                </td>
+                <td className="py-2 pr-4">
+                  {Math.round(
+                    ((typeof a.avgDurationSecs === "number"
+                      ? a.avgDurationSecs
+                      : (a.totalCalls || 0) > 0
+                      ? Math.round(
+                          (a.totalDurationSecs || 0) / (a.totalCalls || 0)
+                        )
+                      : 0) || 0) / 60
+                  )}{" "}
+                  min
+                </td>
               </tr>
             ))}
           </tbody>

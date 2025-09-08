@@ -36,7 +36,7 @@ router.get("/", (req, res) => {
         : 0,
     }));
 
-    res.json({ success: true, token: token, data: processedResults });
+    res.json({ success: true, data: processedResults });
   });
 });
 

@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Award, ArrowUpDown, TrendingUp, ListChecks, BarChart2, RefreshCw, AlertCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
+import { tokenStorage } from "@/lib/tokenStorage";
 // Removed: import type { Metadata } from 'next';
 
 // export const metadata: Metadata = {
@@ -62,7 +63,12 @@ export default function TopPerformingCampaignsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(urls.backend.campaigns.list());
+      const res = await fetch(urls.backend.campaigns.list(),
+    {
+      headers: {
+        'Authorization': `Bearer ${tokenStorage.getToken()}`,
+      },
+    });
       const data = await res.json();
       
       console.log('[TopPerformingCampaigns] Raw data:', data);

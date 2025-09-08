@@ -192,7 +192,6 @@ export default function AiAgentsPage() {
           headers: {
             "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
             "Content-Type": "application/json",
-             "Authorization": `Bearer ${tokenStorage.getToken()}`,
           },
         }),
         api.getClients(),

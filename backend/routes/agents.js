@@ -43,6 +43,7 @@ router.post('/sync-from-elevenlabs', authenticateJWT, async (req, res) => {
     const headers = {
       'xi-api-key': apiKey,
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${tokenStorage.getToken()}`,
     };
     
     const response = await fetch('https://api.elevenlabs.io/v1/convai/agents', {

@@ -32,6 +32,7 @@ import { useUser } from "@/lib/utils";
 import { urls } from "@/lib/config/urls";
 import { addDays } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 // Campaign interface
 interface TopPerformingCampaign {
@@ -74,7 +75,17 @@ export default function ClientTopPerformingCampaignsPage() {
       const clientId = user.clientId || user.userId;
       console.log('[ClientTopPerforming] Fetching campaigns for client:', clientId);
       
-      const res = await fetch(urls.backend.campaigns.listForClient(clientId));
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const res = await fetch(urls.backend.campaigns.listForClient(clientId), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       const json = await res.json();
       
       console.log('[ClientTopPerforming] API Response:', json);

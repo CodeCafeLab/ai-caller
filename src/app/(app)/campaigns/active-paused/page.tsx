@@ -35,6 +35,7 @@ import {
 import { format, subDays, addDays } from "date-fns";
 import type { Metadata } from 'next';
 import { urls } from '@/lib/config/urls';
+import { tokenStorage } from "@/lib/tokenStorage";
 
 // export const metadata: Metadata = {
 //   title: 'Active & Paused Campaigns - AI Caller',
@@ -140,7 +141,25 @@ export default function ActivePausedCampaignsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(urls.backend.campaigns.list());
+      
+      const token = tokenStorage.getToken();;
+      if (!token) {
+        setError('Please log in to view campaigns');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(urls.backend.campaigns.list(), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const json = await res.json();
       setWorkspaceBatches(json);
     } catch (err) {
@@ -214,16 +233,37 @@ export default function ActivePausedCampaignsPage() {
     if (!target) return;
     
     try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        toast({
+          title: 'Authentication required',
+          description: 'Please log in again',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
       let response;
       let verb;
       
       if (target.status === 'Active') {
         // Cancel active campaign
-        response = await fetch(urls.backend.campaigns.cancel(campaignId), { method: 'POST' });
+        response = await fetch(urls.backend.campaigns.cancel(campaignId), { 
+          method: 'POST',
+          headers
+        });
         verb = 'Cancelled';
       } else if (target.status === 'Paused' || target.status === 'Completed') {
         // Retry paused/completed campaign
-        response = await fetch(urls.backend.campaigns.retry(campaignId), { method: 'POST' });
+        response = await fetch(urls.backend.campaigns.retry(campaignId), { 
+          method: 'POST',
+          headers
+        });
         verb = 'Retried';
       } else {
         throw new Error('Invalid campaign status for toggle');

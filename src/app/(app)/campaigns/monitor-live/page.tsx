@@ -252,7 +252,13 @@ export default function MonitorLiveCallsPage() {
       setError(null);
 
       console.log("[MonitorLiveCalls] Fetching live calls data...");
-      const response = await fetch(urls.backend.campaigns.liveCalls());
+      const response = await fetch(urls.backend.campaigns.liveCalls(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       const result = await response.json();
 
       if (!result.success) {

@@ -24,7 +24,7 @@ export const agentService = {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${tokenStorage.getToken();}`
           }
         })
       ]);
