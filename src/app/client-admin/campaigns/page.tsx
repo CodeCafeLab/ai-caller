@@ -46,6 +46,7 @@ import { useUser } from "@/lib/utils";
 import { urls } from "@/lib/config/urls";
 import { addDays, format } from "date-fns";
 import { cn } from "@/lib/cn";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 // Campaign interface matching the admin panel
 interface Campaign {
@@ -101,7 +102,13 @@ export default function ClientCampaignsPage() {
       const clientId = user.clientId || user.userId;
       console.log('[ClientCampaigns] Fetching campaigns for client:', clientId);
       
-      const res = await fetch(urls.backend.campaigns.listForClient(clientId));
+      const res = await fetch(urls.backend.campaigns.listForClient(clientId) ,{
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       const json = await res.json();
       
       console.log('[ClientCampaigns] API Response:', json);
