@@ -3364,6 +3364,7 @@ export default function AgentDetailsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
         },
         body: JSON.stringify({
           name: secretName.trim(),
@@ -3447,6 +3448,9 @@ export default function AgentDetailsPage() {
         `/api/elevenlabs/secrets/${encodeURIComponent(secretToDelete)}`,
         {
           method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${tokenStorage.getToken()}`,
+          },
         }
       );
 
@@ -3488,7 +3492,11 @@ export default function AgentDetailsPage() {
   const fetchWorkspaceSecrets = async () => {
     try {
       console.log("Fetching workspace secrets...");
-      const response = await fetch(`/api/elevenlabs/secrets`);
+      const response = await fetch(`/api/elevenlabs/secrets`, {
+        headers: {
+          "Authorization": `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       console.log("Secrets response status:", response.status);
 
       if (response.ok) {

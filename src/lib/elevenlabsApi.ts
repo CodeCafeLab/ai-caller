@@ -117,7 +117,7 @@ export const elevenLabsApi = {
    * @param params { agent_id?: string, user_id?: string, call_successful?: string, call_start_before_unix?: number, call_start_after_unix?: number, page_size?: number, cursor?: string, summary_mode?: string }
    */
   listConversations: (params: {
-    agent_id?: string,
+    agent_id?: string | string[],
     user_id?: string,
     call_successful?: string,
     call_start_before_unix?: number,
@@ -127,13 +127,35 @@ export const elevenLabsApi = {
     summary_mode?: string,
   } = {}): Promise<Response> => {
     const url = new URL(`${ELEVENLABS_BASE_URL}/convai/conversations`);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) url.searchParams.append(key, String(value));
+    
+    // Handle agent_id specially in case it's an array
+    const { agent_id, ...otherParams } = params;
+    
+    // Add agent_id to query params if it exists
+    if (agent_id) {
+      if (Array.isArray(agent_id)) {
+        agent_id.forEach(id => url.searchParams.append('agent_id', id));
+      } else if (typeof agent_id === 'string' && agent_id.includes(',')) {
+        // Handle comma-separated string of agent IDs
+        agent_id.split(',').forEach(id => url.searchParams.append('agent_id', id.trim()));
+      } else {
+        url.searchParams.append('agent_id', agent_id);
+      }
+    }
+    
+    // Add other parameters
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (value !== undefined) {
+        url.searchParams.append(key, String(value));
+      }
     });
+    
+    console.log(`[ElevenLabs API] Fetching conversations from: ${url.toString()}`);
+    
     return fetch(url.toString(), {
       headers: withApiKeyHeaders(),
     });
   },
 };
 
-export default elevenLabsApi; 
+export default elevenLabsApi;

@@ -38,6 +38,7 @@ import {
 import { useUser } from "@/lib/utils";
 import { urls } from "@/lib/config/urls";
 import { useToast } from "@/components/ui/use-toast";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 // Live call interface
 interface LiveCall {
@@ -89,7 +90,13 @@ export default function ClientMonitorLiveCallsPage() {
       console.log('[ClientMonitorLive] Fetching live calls for client:', clientId);
       
       // Fetch campaigns for this client first
-      const campaignsRes = await fetch(urls.backend.campaigns.listForClient(clientId));
+      const campaignsRes = await fetch(urls.backend.campaigns.listForClient(clientId),{
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       const campaignsData = await campaignsRes.json();
       
       if (!campaignsRes.ok) {
@@ -105,7 +112,13 @@ export default function ClientMonitorLiveCallsPage() {
       }
 
       // Fetch live calls data
-      const liveCallsRes = await fetch(urls.backend.campaigns.liveCalls());
+      const liveCallsRes = await fetch(urls.backend.campaigns.liveCalls() ,{
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStorage.getToken()}`,
+        },
+      });
       const liveCallsData = await liveCallsRes.json();
       
       if (!liveCallsRes.ok) {
