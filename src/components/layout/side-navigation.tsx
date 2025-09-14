@@ -16,7 +16,6 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
-import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -30,6 +29,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import React, { useState } from 'react';
 import { useUser } from '@/lib/utils';
+import { Logo } from '../logo';
 
 // Define types for navigation items
 type SubNavItem = {
@@ -99,7 +99,7 @@ const initialNavItems: NavItemType[] = [
     basePath: '/reports-analytics',
     subItems: [
       { href: '/reports-analytics/call-reports', label: 'Call Reports', icon: CalendarClock },
-      { href: '/reports-analytics/system-usage-trends', label: 'System Usage Trends', icon: TrendingUp },
+      // { href: '/reports-analytics/system-usage-trends', label: 'System Usage Trends', icon: TrendingUp },
       { href: '/reports-analytics/error-logs', label: 'Error & System Logs', icon: AlertTriangle }, // Renamed
       { href: '/reports-analytics/failed-call-reports', label: 'Failed Call Reports', icon: PhoneOff }, // New
       { href: '/reports-analytics/export-data', label: 'Export Data', icon: FileDown },
@@ -162,7 +162,7 @@ export function SideNavigation() {
   const router = useRouter();
   const { toast } = useToast();
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>(() => {
-    const activeParent = initialNavItems.find(item => item.basePath && pathname.startsWith(item.basePath));
+    const activeParent = initialNavItems.find(item => item.basePath && pathname?.startsWith(item.basePath));
     if (activeParent) {
       return { [activeParent.label]: true };
     }
@@ -212,7 +212,7 @@ export function SideNavigation() {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="py-4 px-2 border-b border-sidebar-border">
         <Logo iconClassName="text-sidebar-primary" textClassName="text-sidebar-foreground" />
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -224,7 +224,7 @@ export function SideNavigation() {
               <SidebarMenuButton
                 asChild={!item.subItems} 
                 onClick={item.subItems ? () => toggleSubmenu(item.label) : undefined}
-                isActive={item.subItems ? (item.basePath ? pathname.startsWith(item.basePath) : false) : (item.href ? (pathname === item.href || (item.basePath && pathname.startsWith(item.basePath) && item.href !=='/dashboard')) : false) || false}
+                isActive={item.subItems ? (item.basePath ? pathname?.startsWith(item.basePath) : false) : (item.href ? (pathname === item.href || (item.basePath && pathname?.startsWith(item.basePath) && item.href !=='/dashboard')) : false) || false}
                 tooltip={{ children: item.label, className: "bg-popover text-popover-foreground border-border" }}
                 className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
               >

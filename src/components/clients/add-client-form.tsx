@@ -19,48 +19,94 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { SheetFooter, SheetClose } from "@/components/ui/sheet";
 
-const addClientFormSchema = z.object({
-  companyName: z.string().min(2, { message: "Company name must be at least 2 characters." }),
-  companyEmail: z.string().email({ message: "Invalid company email address." }),
-  phoneNumber: z.string().min(10, { message: "Phone number must be at least 10 digits." }),
-  address: z.string().optional(),
-  contactPersonName: z.string().min(2, { message: "Contact person name must be at least 2 characters." }),
-  domainSubdomain: z.string().optional(),
-  // Optional referral code; kept flexible (alphanumeric and dashes/underscores) for dynamic referral admin mapping
-  referralCode: z.string().regex(/^[A-Za-z0-9-_]+$/, { message: "Referral code can contain letters, numbers, dashes and underscores only." }).optional().or(z.literal("")),
-  apiAccess: z.boolean().default(false),
-  trialMode: z.boolean().default(false),
-  trialDuration: z.coerce.number().optional(), 
-  trialCallLimit: z.coerce.number().optional(), 
-  adminPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
-  confirmAdminPassword: z.string(),
-  autoSendLoginEmail: z.boolean().default(true),
-}).refine(data => data.adminPassword === data.confirmAdminPassword, {
-  message: "Passwords don't match",
-  path: ["confirmAdminPassword"],
-}).refine(data => {
-  if (data.trialMode && (data.trialDuration === undefined || data.trialDuration <= 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Trial duration is required if trial mode is active.",
-  path: ["trialDuration"],
-}).refine(data => {
-  if (data.trialMode && (data.trialCallLimit === undefined || data.trialCallLimit <= 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Trial call limit is required if trial mode is active.",
-  path: ["trialCallLimit"],
-});
+const addClientFormSchema = z
+  .object({
+    companyName: z
+      .string()
+      .min(2, { message: "Company name must be at least 2 characters." }),
+    companyEmail: z
+      .string()
+      .email({ message: "Invalid company email address." }),
+    phoneNumber: z
+      .string()
+      .min(10, { message: "Phone number must be at least 10 digits." }),
+    address: z.string().optional(),
+    contactPersonName: z
+      .string()
+      .min(2, {
+        message: "Contact person name must be at least 2 characters.",
+      }),
+    domainSubdomain: z.string().optional(),
+    // Optional referral code; kept flexible (alphanumeric and dashes/underscores) for dynamic referral admin mapping
+    referralCode: z
+      .string()
+      .regex(/^[A-Za-z0-9-_]+$/, {
+        message:
+          "Referral code can contain letters, numbers, dashes and underscores only.",
+      })
+      .optional()
+      .or(z.literal("")),
+    apiAccess: z.boolean().default(false),
+    trialMode: z.boolean().default(false),
+    trialDuration: z.coerce.number().optional(),
+    trialCallLimit: z.coerce.number().optional(),
+    adminPassword: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters." }),
+    confirmAdminPassword: z.string(),
+    autoSendLoginEmail: z.boolean().default(true),
+  })
+  .refine((data) => data.adminPassword === data.confirmAdminPassword, {
+    message: "Passwords don't match",
+    path: ["confirmAdminPassword"],
+  })
+  .refine(
+    (data) => {
+      if (
+        data.trialMode &&
+        (data.trialDuration === undefined || data.trialDuration <= 0)
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Trial duration is required if trial mode is active.",
+      path: ["trialDuration"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (
+        data.trialMode &&
+        (data.trialCallLimit === undefined || data.trialCallLimit <= 0)
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Trial call limit is required if trial mode is active.",
+      path: ["trialCallLimit"],
+    }
+  );
 
 export type AddClientFormValues = z.infer<typeof addClientFormSchema>;
 
@@ -70,53 +116,78 @@ interface AddClientFormProps {
   client?: any; // for edit, optional
 }
 
-export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProps) {
+export function AddClientForm({
+  onSuccess,
+  onCancel,
+  client,
+}: AddClientFormProps) {
   const [planComboboxOpen, setPlanComboboxOpen] = React.useState(false);
+  const [hasChanges, setHasChanges] = React.useState(false);
+
   const form = useForm<AddClientFormValues>({
     resolver: zodResolver(addClientFormSchema),
-    defaultValues: client ? {
-      companyName: client.companyName || "",
-      companyEmail: client.companyEmail || "",
-      phoneNumber: client.phoneNumber || "",
-      address: client.address || "",
-      contactPersonName: client.contactPersonName || "",
-      domainSubdomain: client.domainSubdomain || "",
-      referralCode: client.referralCode || "",
-      apiAccess: client.apiAccess || false,
-      trialMode: client.trialMode || false,
-      trialDuration: client.trialDuration || undefined,
-      trialCallLimit: client.trialCallLimit || undefined,
-      adminPassword: "",
-      confirmAdminPassword: "",
-      autoSendLoginEmail: client.autoSendLoginEmail !== undefined ? client.autoSendLoginEmail : true,
-    } : {
-      companyName: "",
-      companyEmail: "",
-      phoneNumber: "",
-      address: "",
-      contactPersonName: "",
-      domainSubdomain: "",
-      referralCode: "",
-      apiAccess: false,
-      trialMode: false,
-      trialDuration: undefined,
-      trialCallLimit: undefined,
-      adminPassword: "",
-      confirmAdminPassword: "",
-      autoSendLoginEmail: true,
-    },
+    defaultValues: client
+      ? {
+          companyName: client.companyName || "",
+          companyEmail: client.companyEmail || "",
+          phoneNumber: client.phoneNumber || "",
+          address: client.address || "",
+          contactPersonName: client.contactPersonName || "",
+          domainSubdomain: client.domainSubdomain || "",
+          referralCode: client.referralCode || "",
+          apiAccess: client.apiAccess || false,
+          trialMode: client.trialMode || false,
+          trialDuration: client.trialDuration || undefined,
+          trialCallLimit: client.trialCallLimit || undefined,
+          adminPassword: "",
+          confirmAdminPassword: "",
+          autoSendLoginEmail:
+            client.autoSendLoginEmail !== undefined
+              ? client.autoSendLoginEmail
+              : true,
+        }
+      : {
+          companyName: "",
+          companyEmail: "",
+          phoneNumber: "",
+          address: "",
+          contactPersonName: "",
+          domainSubdomain: "",
+          referralCode: "",
+          apiAccess: false,
+          trialMode: false,
+          trialDuration: undefined,
+          trialCallLimit: undefined,
+          adminPassword: "",
+          confirmAdminPassword: "",
+          autoSendLoginEmail: true,
+        },
   });
 
   const trialModeEnabled = form.watch("trialMode");
 
+  // Track form changes
+  React.useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      if (type === "change") {
+        setHasChanges(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   function onSubmit(data: AddClientFormValues) {
     onSuccess(data);
-    form.reset();
+    form.reset(data);
+    setHasChanges(false);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col flex-1 min-h-0"
+      >
         <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-4 px-2 py-4">
             <FormField
@@ -126,7 +197,11 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Company Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Innovate Corp" {...field} className="h-9 text-sm" />
+                    <Input
+                      placeholder="Innovate Corp"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -140,7 +215,12 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Company Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="contact@innovatecorp.com" {...field} className="h-9 text-sm" />
+                    <Input
+                      type="email"
+                      placeholder="contact@innovatecorp.com"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -154,7 +234,12 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="555-0101" {...field} className="h-9 text-sm" />
+                    <Input
+                      type="tel"
+                      placeholder="555-0101"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -168,7 +253,10 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Address (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="123 Main St, Anytown, USA" {...field} />
+                    <Textarea
+                      placeholder="123 Main St, Anytown, USA"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,7 +270,11 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Contact Person Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Alice Wonderland" {...field} className="h-9 text-sm" />
+                    <Input
+                      placeholder="Alice Wonderland"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -196,7 +288,11 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Domain/Subdomain (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="innovate.AI Caller.com" {...field} className="h-9 text-sm" />
+                    <Input
+                      placeholder="innovate.AI Caller.com"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormDescription>
                     Relevant for multi-tenant setups.
@@ -213,10 +309,15 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Referral Code (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., PARTNER-123" {...field} className="h-9 text-sm" />
+                    <Input
+                      placeholder="e.g., PARTNER-123"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormDescription>
-                    If provided, credits/benefits may be applied automatically based on the referral admin.
+                    If provided, credits/benefits may be applied automatically
+                    based on the referral admin.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -274,7 +375,17 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                     <FormItem>
                       <FormLabel>Trial Duration (Days)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 14" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} className="h-9 text-sm" />
+                        <Input
+                          type="number"
+                          placeholder="e.g., 14"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              parseInt(e.target.value, 10) || undefined
+                            )
+                          }
+                          className="h-9 text-sm"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -287,7 +398,17 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                     <FormItem>
                       <FormLabel>Trial Call Limit</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} className="h-9 text-sm" />
+                        <Input
+                          type="number"
+                          placeholder="e.g., 100"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              parseInt(e.target.value, 10) || undefined
+                            )
+                          }
+                          className="h-9 text-sm"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -303,7 +424,12 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Admin Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} className="h-9 text-sm" />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -317,13 +443,18 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                 <FormItem>
                   <FormLabel>Confirm Admin Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} className="h-9 text-sm" />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      {...field}
+                      className="h-9 text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="autoSendLoginEmail"
@@ -336,9 +467,7 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Auto-send Login Email
-                    </FormLabel>
+                    <FormLabel>Auto-send Login Email</FormLabel>
                     <FormDescription>
                       Send login credentials to the client upon creation.
                     </FormDescription>
@@ -348,29 +477,22 @@ export function AddClientForm({ onSuccess, onCancel, client }: AddClientFormProp
             />
           </div>
         </ScrollArea>
-        <div className="pt-4 px-2 mt-auto border-t flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            onClick={async (e) => {
-              // Let the form handle validation and submission
-              // But also ensure we call the backend to save to DB
-              // Prevent double submit if already submitting
-              if (form.formState.isSubmitting) return;
-              // Let react-hook-form handle submit, but for clarity, you could also call form.handleSubmit here
-              // (the <form> element already handles submit, so this is just for explicitness)
-              // If you want to handle here, you could do:
-              // e.preventDefault();
-              // await form.handleSubmit(onSubmit)();
-              // But in this case, just let the form submit event handle it.
-            }}
-          >
-            {form.formState.isSubmitting ? "Saving..." : client ? "Save Changes" : "Add Client"}
-          </Button>
-        </div>
+        <SheetFooter className="pt-4">
+          <SheetClose asChild>
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          </SheetClose>
+          {form.formState.isDirty && (
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting
+                ? "Saving..."
+                : client
+                ? "Update Client"
+                : "Add Client"}
+            </Button>
+          )}
+        </SheetFooter>
       </form>
     </Form>
   );

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Megaphone, Users, CreditCard, UserCircle, ChevronDown, ChevronRight, ClipboardList, Bot, History, Languages, Volume2, BookOpen, Import, UserPlus, BarChart2, AlertTriangle, FileText, TrendingUp, FileDown } from 'lucide-react';
+import { LayoutDashboard, Megaphone, Users, CreditCard, UserCircle, ChevronDown, ChevronRight, ClipboardList, Bot, History, Languages, Volume2, BookOpen, Import, UserPlus, BarChart2, AlertTriangle, FileText, TrendingUp, FileDown, ListFilter, PhoneCall, Award } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -40,7 +40,9 @@ const clientAdminNavItems: ClientAdminNavItem[] = [
     basePath: '/client-admin/campaigns',
     subItems: [
       { href: '/client-admin/campaigns', label: 'Manage Campaigns', icon: Megaphone },
-      { href: '/client-admin/campaigns/call-history', label: 'Call History', icon: ClipboardList },
+      { href: '/client-admin/campaigns/active-paused', label: 'Active & Paused', icon: ListFilter },
+      { href: '/client-admin/campaigns/monitor-live', label: 'Monitor Live Calls', icon: PhoneCall },
+      { href: '/client-admin/campaigns/top-performing', label: 'Top Performing', icon: Award },
     ]
   },
   // --- AI Agents Section Start ---
@@ -64,7 +66,7 @@ const clientAdminNavItems: ClientAdminNavItem[] = [
     basePath: '/client-admin/reports-analytics',
     subItems: [
       { href: '/client-admin/reports-analytics/call-reports', label: 'Call Reports', icon: FileText },
-      { href: '/client-admin/reports-analytics/system-usage-trends', label: 'System Usage Trends', icon: TrendingUp },
+      // { href: '/client-admin/reports-analytics/system-usage-trends', label: 'System Usage Trends', icon: TrendingUp },
       { href: '/client-admin/reports-analytics/error-logs', label: 'Error & System Logs', icon: AlertTriangle },
       { href: '/client-admin/reports-analytics/failed-call-reports', label: 'Failed Call Reports', icon: FileText },
       { href: '/client-admin/reports-analytics/export-data', label: 'Export Data', icon: FileDown },
@@ -81,7 +83,7 @@ export function ClientAdminSideNavigation() {
 
   useEffect(() => {
     // Automatically open the submenu if the current path matches a subitem's parent
-    const activeParent = clientAdminNavItems.find(item => item.subItems && item.basePath && pathname.startsWith(item.basePath));
+    const activeParent = clientAdminNavItems.find(item => item.subItems && item.basePath && pathname?.startsWith(item.basePath));
     if (activeParent) {
       setOpenSubmenus(prev => ({ ...prev, [activeParent.label]: true }));
     }
@@ -104,8 +106,8 @@ export function ClientAdminSideNavigation() {
                 asChild={!item.subItems}
                 onClick={item.subItems ? () => toggleSubmenu(item.label) : undefined}
                 isActive={item.subItems
-                  ? !!(item.basePath && pathname.startsWith(item.basePath))
-                  : !!(item.href && (pathname === item.href || (item.basePath && pathname.startsWith(item.basePath))))}
+                  ? !!(item.basePath && pathname?.startsWith(item.basePath))
+                  : !!(item.href && (pathname === item.href || (item.basePath && pathname?.startsWith(item.basePath))))}
                 tooltip={{ children: item.label, className: "bg-popover text-popover-foreground border-border" }}
                 className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
               >

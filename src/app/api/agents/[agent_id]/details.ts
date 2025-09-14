@@ -28,7 +28,48 @@ async function fetchElevenLabsAgent(agentId: string) {
   return res.json();
 }
 
+function formatTransferTools(tools: any[]) {
+  if (!tools || !Array.isArray(tools)) return [];
+  
+  return tools.map(tool => {
+    if (tool.system_tool_type === 'transfer_to_agent' && tool.transfer_to_agent?.transfers) {
+      return {
+        system_tool_type: 'transfer_to_agent',
+        params: {
+          transfer_to_agent: {
+            transfers: tool.transfer_to_agent.transfers.map((t: any) => ({
+              agent_id: t.agent_id,
+              label: t.label || `Agent ${t.agent_id?.substring(0, 6) || ''}`
+            }))
+          }
+        }
+      };
+    }
+    
+    if (tool.system_tool_type === 'transfer_to_number' && tool.transfer_to_number?.transfers) {
+      return {
+        system_tool_type: 'transfer_to_number',
+        params: {
+          transfer_to_number: {
+            transfers: tool.transfer_to_number.transfers.map((t: any) => ({
+              phone_number: t.phone_number,
+              label: t.label || `Phone ${t.phone_number?.substring(0, 6) || ''}`
+            }))
+          }
+        }
+      };
+    }
+    
+    return tool;
+  });
+}
+
 async function updateElevenLabsAgent(agentId: string, data: any) {
+  // Format the tools array to ensure proper structure
+  if (data?.prompt?.built_in_tools) {
+    data.prompt.built_in_tools = formatTransferTools(data.prompt.built_in_tools);
+  }
+
   const res = await fetch(`${ELEVEN_BASE}/agents/${agentId}`, {
     method: 'PATCH',
     headers: {
@@ -37,6 +78,7 @@ async function updateElevenLabsAgent(agentId: string, data: any) {
     },
     body: JSON.stringify(data),
   });
+  
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`Failed to update ElevenLabs (${res.status}): ${text}`);
