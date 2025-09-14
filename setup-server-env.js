@@ -8,7 +8,7 @@ console.log("===========================================\n");
 
 const envContent = `# API Configuration for Server Deployment
 # Frontend on localhost, Backend on server
-NEXT_PUBLIC_API_BASE_URL=https://aidial.in
+NEXT_PUBLIC_API_BASE_URL=https://aicaller.codecafelab.in/
 FRONTEND_URL=http://localhost:3000
 
 # Additional configuration
@@ -25,7 +25,7 @@ try {
   console.log("");
   console.log("📋 Configuration:");
   console.log("- Frontend: http://localhost:3000");
-  console.log("- Backend: https://aidial.in");
+  console.log("- Backend: https://aicaller.codecafelab.in/");
   console.log("");
   console.log("🔄 Next Steps:");
   console.log("1. Restart your Next.js development server: npm run dev");

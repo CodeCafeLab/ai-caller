@@ -53,7 +53,7 @@ app.use(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-        "https://aidial.in",
+        "https://aicaller.codecafelab.in/",
         "https://2nq68jpg-3000.inc1.devtunnels.ms",
       ];
 
@@ -165,7 +165,7 @@ app.get("/api/voices", authenticateJWT, async (req, res) => {
       headers: {
         "xi-api-key":
           process.env.ELEVENLABS_API_KEY ||
-          "sk_27ead0939f4c51d9c0ea63ac442d5c2654dcb9ff6589f751",
+          "sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317",
         "Content-Type": "application/json",
       },
     });

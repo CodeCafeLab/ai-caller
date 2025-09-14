@@ -18,7 +18,7 @@ This guide explains how to set up the AI Caller project for different deployment
 ### 3. Server Deployment
 
 - **Frontend**: `http://localhost:3000` (or any domain)
-- **Backend**: `https://aidial.in`
+- **Backend**: `https://aicaller.codecafelab.in/`
 - **Use Case**: Production deployment with separate frontend and backend
 
 ## 📋 Setup Instructions
@@ -55,7 +55,7 @@ FRONTEND_URL=https://your-ngrok-url.ngrok-free.app
 
 ```env
 # API Configuration
-NEXT_PUBLIC_API_BASE_URL=https://aidial.in
+NEXT_PUBLIC_API_BASE_URL=https://aicaller.codecafelab.in/
 FRONTEND_URL=http://localhost:3000
 ```
 

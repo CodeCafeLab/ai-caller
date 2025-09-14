@@ -50,8 +50,8 @@ npm run dev
 
 ### Server Deployment
 
-- **Frontend**: `https://aidial.in`
-- **Backend**: `https://aidial.in`
+- **Frontend**: `https://aicaller.codecafelab.in/`
+- **Backend**: `https://aicaller.codecafelab.in/`
 - **Cookie Settings**: `sameSite: 'none', secure: true`
 - **CORS**: Same-origin requests
 
@@ -118,7 +118,7 @@ npm run dev
 
    - Ensure `NEXT_PUBLIC_API_BASE_URL` points to correct backend
    - For localhost: `http://localhost:5000`
-   - For server: `https://aidial.in`
+   - For server: `https://aicaller.codecafelab.in/`
 
 3. **Test Backend Health:**
    ```bash
@@ -213,8 +213,8 @@ npm run setup:ngrok
 ```bash
 npm run setup:server
 # This creates .env.local with:
-# NEXT_PUBLIC_API_BASE_URL=https://aidial.in
-# FRONTEND_URL=https://aidial.in
+# NEXT_PUBLIC_API_BASE_URL=https://aicaller.codecafelab.in/
+# FRONTEND_URL=https://aicaller.codecafelab.in/
 # NODE_ENV=production
 ```
 
