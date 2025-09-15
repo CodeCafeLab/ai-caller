@@ -186,7 +186,6 @@ export const defaultFetchOptions = {
 const getAuthHeaders = () => {
   const token = tokenStorage.getToken();
   const headers: Record<string, string> = {
-    "credentials": "include",
     "Content-Type": "application/json",
   };
 
@@ -218,7 +217,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "GET",
-      headers: getAuthHeaders()
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -230,7 +232,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
       body: data ? JSON.stringify(data) : undefined,
     });
     return response;
@@ -243,7 +248,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
       body: data ? JSON.stringify(data) : undefined,
     });
     return response;
@@ -256,7 +264,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "DELETE",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -291,7 +302,10 @@ export const apiUtils = {
     const response = await fetch(url, {
       ...options,
       method: "GET",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -307,7 +321,11 @@ export const apiUtils = {
     const response = await fetch(url, {
       ...options,
       method: "GET",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...headers,
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -319,7 +337,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "PATCH",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
       body: data ? JSON.stringify(data) : undefined,
     });
     return response;
@@ -332,15 +353,20 @@ export const api = {
   login: (data: any) =>
     apiUtils.post(API_ENDPOINTS.AUTH.LOGIN, data, {
       credentials: "include",
-      headers: getAuthHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
     }),
   logout: () => apiUtils.post(API_ENDPOINTS.AUTH.LOGOUT),
 
   // Admin Users
   getCurrentUser: () =>
     apiUtils.get(API_ENDPOINTS.ADMIN_USERS.ME, {
-      credentials: "include",
-      headers: getAuthHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenStorage.getToken()}`,
+      },
     }),
   getAdminUsers: () => apiUtils.get(API_ENDPOINTS.ADMIN_USERS.BASE),
   getAdminUser: (userId: string) =>
