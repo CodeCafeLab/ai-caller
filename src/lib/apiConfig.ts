@@ -175,10 +175,10 @@ export const buildExternalApiUrl = (
 import { tokenStorage } from "./tokenStorage";
 
 // Default fetch options
-export const defaultFetchOptions = {
-  credentials: "include" as const,
+const defaultOptions: RequestInit = {
+  credentials: 'include', // This ensures cookies are sent with requests
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 };
 
@@ -214,7 +214,7 @@ export const apiUtils = {
   get: async (endpoint: string, options: RequestInit = {}) => {
     const url = buildApiUrl(endpoint);
     const response = await fetch(url, {
-      ...defaultFetchOptions,
+      ...defaultOptions,
       ...options,
       method: "GET",
       headers: {
@@ -229,7 +229,7 @@ export const apiUtils = {
   post: async (endpoint: string, data?: any, options: RequestInit = {}) => {
     const url = buildApiUrl(endpoint);
     const response = await fetch(url, {
-      ...defaultFetchOptions,
+      ...defaultOptions,
       ...options,
       method: "POST",
       headers: {
@@ -245,7 +245,7 @@ export const apiUtils = {
   put: async (endpoint: string, data?: any, options: RequestInit = {}) => {
     const url = buildApiUrl(endpoint);
     const response = await fetch(url, {
-      ...defaultFetchOptions,
+      ...defaultOptions,
       ...options,
       method: "PUT",
       headers: {
@@ -261,7 +261,7 @@ export const apiUtils = {
   delete: async (endpoint: string, options: RequestInit = {}) => {
     const url = buildApiUrl(endpoint);
     const response = await fetch(url, {
-      ...defaultFetchOptions,
+      ...defaultOptions,
       ...options,
       method: "DELETE",
       headers: {
@@ -283,7 +283,7 @@ export const apiUtils = {
     delete authHeaders["Content-Type"]; // Remove Content-Type for FormData
 
     const response = await fetch(url, {
-      ...defaultFetchOptions,
+      ...defaultOptions,
       ...options,
       method: "POST",
       body: formData,
@@ -334,7 +334,7 @@ export const apiUtils = {
   patch: async (endpoint: string, data?: any, options: RequestInit = {}) => {
     const url = buildApiUrl(endpoint);
     const response = await fetch(url, {
-      ...defaultFetchOptions,
+      ...defaultOptions,
       ...options,
       method: "PATCH",
       headers: {

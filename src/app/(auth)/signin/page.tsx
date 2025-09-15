@@ -56,18 +56,23 @@ export default function SignInPage() {
     startTransition(async () => {
       try {
         console.log("Attempting login with:", values.email);
-        // Call backend login endpoint
-        const loginRes = await api.login(values);
+
+        // Call backend login endpoint with credentials
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Important for cookies
+          body: JSON.stringify(values),
+        });
 
         // Check if the response is ok
         if (!loginRes.ok) {
-          console.error(
-            "Login API error:",
-            loginRes.status,
-            loginRes.statusText
-          );
+          const errorData = await loginRes.json().catch(() => ({}));
+          console.error("Login API error:", loginRes.status, errorData);
           throw new Error(
-            `Server error: ${loginRes.status} ${loginRes.statusText}`
+            errorData.message || `Server error: ${loginRes.status} ${loginRes.statusText}`
           );
         }
 
@@ -75,70 +80,58 @@ export default function SignInPage() {
         console.log("Login response:", loginData);
 
         // Check if loginData is empty or invalid
-        if (!loginData || typeof loginData !== "object") {
+        if (!loginData || typeof loginData !== 'object') {
           console.error("Invalid login response:", loginData);
           throw new Error("Invalid response from server");
         }
 
         if (loginData.success) {
-          // Store the token in localStorage
+          // Store the token in both cookie and localStorage (for backward compatibility)
           if (loginData.token) {
             tokenStorage.setToken(loginData.token);
             console.log("Token stored successfully");
-          } else {
-            console.warn("No token received in login response");
           }
-          // Fetch user profile using cookie
-          const profileRes = await api.getCurrentUser();
-          const profileData = await profileRes.json();
-          console.log("Profile data:", profileData);
 
-          if (profileData.success) {
+          // Set user data in context
+          if (loginData.user) {
             const userData = {
-              userId: profileData.data.id ? profileData.data.id.toString() : "",
-              email: profileData.data.email,
-              name: profileData.data.name || profileData.data.companyName,
-              fullName: profileData.data.name || profileData.data.companyName,
-              role: loginData.user.role,
-              type: loginData.user.type,
-              avatarUrl: profileData.data.avatar_url,
-              companyName: loginData.user.companyName,
+              userId: loginData.user.id?.toString() || "",
+              email: loginData.user.email || values.email,
+              name: loginData.user.name || values.email,
+              role: loginData.user.role || 'user',
             };
+            
             console.log("Setting user data:", userData);
             setUser(userData);
 
+            // Show welcome message
             toast({
               title: "Sign In Successful",
-              description: `Welcome, ${
-                profileData.data.name || profileData.data.companyName
-              }!`,
+              description: `Welcome back, ${userData.name || userData.email}!`,
             });
 
             // Redirect based on user type
-            if (loginData.user.type === "admin") {
-              console.log(
-                "Admin user, redirecting based on role:",
-                loginData.user.role
-              );
-              if (loginData.user.role === "admin_users") {
-                router.push("/admin_users/dashboard");
-              } else {
+            const userType = loginData.user.type || 'user';
+            const userRole = loginData.user.role || 'user';
+            
+            console.log(`User type: ${userType}, Role: ${userRole}`);
+            
+            // Handle redirection based on user type and role
+            switch (userType) {
+              case 'admin':
+                if (userRole === 'admin_users') {
+                  router.push("/admin_users/dashboard");
+                } else {
+                  router.push("/dashboard");
+                }
+                break;
+              case 'client':
+                router.push("/client-admin/dashboard");
+                break;
+              default:
+                console.log("Unknown user type:", userType);
                 router.push("/dashboard");
-              }
-            } else if (loginData.user.type === "client") {
-              console.log("Client user, redirecting to client dashboard");
-              router.push("/client-admin/dashboard");
-            } else {
-              console.log("Unknown user type:", loginData.user.type);
-              router.push("/dashboard");
             }
-          } else {
-            console.error("Failed to fetch profile:", profileData);
-            toast({
-              title: "Failed to fetch profile",
-              description: profileData.message || "Could not load user profile",
-              variant: "destructive",
-            });
           }
         } else {
           console.error("Login failed:", loginData);

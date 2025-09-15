@@ -38,14 +38,16 @@ router.post('/login', async (req, res) => {
           { expiresIn: '1d' }
         );
         const isProduction = process.env.NODE_ENV === 'production';
-        res.cookie('token', token, {
-          httpOnly: true,
-          secure: isProduction, // true in production, false in development
-          sameSite: isProduction ? 'none' : 'lax',
-          domain: isProduction ? '.codecafelab.in' : 'localhost',
-          path: '/',
-          maxAge: 24*60*60*1000
-        });
+        const domain = isProduction ? '.codecafelab.in' : 'localhost';
+          // Also set a non-HTTP-only cookie for client-side access if needed
+          res.cookie('isAuthenticated', 'true', {
+            httpOnly: false,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            domain: domain,
+            path: '/',
+            maxAge: 24 * 60 * 60 * 1000
+          });
 
         const userData = { 
           id: user.id, 
