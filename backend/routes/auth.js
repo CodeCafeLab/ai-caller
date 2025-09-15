@@ -43,14 +43,15 @@ router.post('/login', async (req, res) => {
         const domain = isProduction ? '.codecafelab.in' : 'localhost';
         
         // Set HTTP-only cookie for authentication
-        res.cookie('auth_token', token, {
+        res.cookie('token', token, {
           httpOnly: true,
-          secure: isProduction,
-          sameSite: isProduction ? 'none' : 'lax',
-          domain: domain,
+          secure: true,       // must be true on HTTPS
+          sameSite: 'none',   // allow cross-site if needed
+          domain: '.codecafelab.in',
           path: '/',
-          maxAge: 24 * 60 * 60 * 1000  // 1 day
+          maxAge: 24*60*60*1000
         });
+        
         
         // Also set a non-HTTP-only flag for client-side access
         res.cookie('isAuthenticated', 'true', {

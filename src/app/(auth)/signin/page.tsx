@@ -57,40 +57,38 @@ export default function SignInPage() {
       try {
         console.log("Attempting login with:", values.email);
 
-        // Call backend login endpoint with credentials
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenStorage.getToken()}`,
-          },
-          credentials: 'include', // Important for cookies
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // ensures cookies are included
           body: JSON.stringify(values),
         });
 
-        console.log('[FRONTEND] Sending login request to /api/auth/login');
-
         const data = await response.json();
-        console.log('[FRONTEND] Login response:', {
+        console.log("[FRONTEND] Login response:", {
           status: response.status,
           ok: response.ok,
           statusText: response.statusText,
-          data
+          data,
         });
-        
+
         if (response.ok && data.token) {
-          console.log('[FRONTEND] Login successful, token received');
+          console.log("[FRONTEND] Login successful, token received");
           tokenStorage.setToken(data.token);
-          console.log('[FRONTEND] Token stored in storage:', !!tokenStorage.getToken());
+          console.log(
+            "[FRONTEND] Token stored in storage:",
+            !!tokenStorage.getToken()
+          );
         }
-        console.log('[FRONTEND] Login attempt with:', values);
+        console.log("[FRONTEND] Login attempt with:", values);
 
         // Check if the response is ok
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           console.error("Login API error:", response.status, errorData);
           throw new Error(
-            errorData.message || `Server error: ${response.status} ${response.statusText}`
+            errorData.message ||
+              `Server error: ${response.status} ${response.statusText}`
           );
         }
 
@@ -98,7 +96,7 @@ export default function SignInPage() {
         console.log("Login response:", loginData);
 
         // Check if loginData is empty or invalid
-        if (!loginData || typeof loginData !== 'object') {
+        if (!loginData || typeof loginData !== "object") {
           console.error("Invalid login response:", loginData);
           throw new Error("Invalid response from server");
         }
@@ -116,9 +114,9 @@ export default function SignInPage() {
               userId: loginData.user.id?.toString() || "",
               email: loginData.user.email || values.email,
               name: loginData.user.name || values.email,
-              role: loginData.user.role || 'user',
+              role: loginData.user.role || "user",
             };
-            
+
             console.log("Setting user data:", userData);
             setUser(userData);
 
@@ -129,21 +127,21 @@ export default function SignInPage() {
             });
 
             // Redirect based on user type
-            const userType = loginData.user.type || 'user';
-            const userRole = loginData.user.role || 'user';
-            
+            const userType = loginData.user.type || "user";
+            const userRole = loginData.user.role || "user";
+
             console.log(`User type: ${userType}, Role: ${userRole}`);
-            
+
             // Handle redirection based on user type and role
             switch (userType) {
-              case 'admin':
-                if (userRole === 'admin_users') {
+              case "admin":
+                if (userRole === "admin_users") {
                   router.push("/admin_users/dashboard");
                 } else {
                   router.push("/dashboard");
                 }
                 break;
-              case 'client':
+              case "client":
                 router.push("/client-admin/dashboard");
                 break;
               default:
@@ -161,7 +159,7 @@ export default function SignInPage() {
           });
         }
       } catch (error) {
-        console.error('[FRONTEND] Login error:', error);
+        console.error("[FRONTEND] Login error:", error);
         console.error("Error during login:", error);
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";
@@ -177,7 +175,9 @@ export default function SignInPage() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">
+          Sign In
+        </CardTitle>
         <CardDescription className="text-center">
           Enter your credentials to access your account
         </CardDescription>
@@ -225,7 +225,10 @@ export default function SignInPage() {
               {isPending ? "Signing In..." : "Sign In"}
             </Button>
             <div className="text-center mt-4">
-              <Link href="/" className="text-sm text-muted-foreground hover:underline">
+              <Link
+                href="/"
+                className="text-sm text-muted-foreground hover:underline"
+              >
                 ← Back to Home
               </Link>
             </div>
