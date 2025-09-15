@@ -32,11 +32,13 @@ router.post('/login', async (req, res) => {
         // Update lastLogin to now
         db.query('UPDATE admin_users SET lastLogin = NOW() WHERE id = ?', [user.id]);
 
+        console.log('[AUTH] Generating JWT token for user:', { id: user.id, email: user.email, role: user.roleName });
         const token = jwt.sign(
           { id: user.id, name: user.name, email: user.email, role: user.roleName, type: 'admin' },
           JWT_SECRET,
           { expiresIn: '1d' }
         );
+        console.log('[AUTH] Token generated successfully');
         const isProduction = process.env.NODE_ENV === 'production';
         const domain = isProduction ? '.codecafelab.in' : 'localhost';
         
@@ -67,6 +69,8 @@ router.post('/login', async (req, res) => {
           role: user.roleName,
           type: 'admin'
         };
+        
+        console.log('[AUTH] Generated Token:', token);
 
         // Return both the token and user data
         return res.json({ 

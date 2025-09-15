@@ -58,25 +58,43 @@ export default function SignInPage() {
         console.log("Attempting login with:", values.email);
 
         // Call backend login endpoint with credentials
-        const loginRes = await fetch('/api/auth/login', {
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenStorage.getToken()}`,
           },
           credentials: 'include', // Important for cookies
           body: JSON.stringify(values),
         });
 
+        console.log('[FRONTEND] Sending login request to /api/auth/login');
+
+        const data = await response.json();
+        console.log('[FRONTEND] Login response:', {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText,
+          data
+        });
+        
+        if (response.ok && data.token) {
+          console.log('[FRONTEND] Login successful, token received');
+          tokenStorage.setToken(data.token);
+          console.log('[FRONTEND] Token stored in storage:', !!tokenStorage.getToken());
+        }
+        console.log('[FRONTEND] Login attempt with:', values);
+
         // Check if the response is ok
-        if (!loginRes.ok) {
-          const errorData = await loginRes.json().catch(() => ({}));
-          console.error("Login API error:", loginRes.status, errorData);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Login API error:", response.status, errorData);
           throw new Error(
-            errorData.message || `Server error: ${loginRes.status} ${loginRes.statusText}`
+            errorData.message || `Server error: ${response.status} ${response.statusText}`
           );
         }
 
-        const loginData = await loginRes.json();
+        const loginData = data;
         console.log("Login response:", loginData);
 
         // Check if loginData is empty or invalid
@@ -143,6 +161,7 @@ export default function SignInPage() {
           });
         }
       } catch (error) {
+        console.error('[FRONTEND] Login error:', error);
         console.error("Error during login:", error);
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";
