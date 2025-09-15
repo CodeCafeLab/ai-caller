@@ -39,15 +39,26 @@ router.post('/login', async (req, res) => {
         );
         const isProduction = process.env.NODE_ENV === 'production';
         const domain = isProduction ? '.codecafelab.in' : 'localhost';
-          // Also set a non-HTTP-only cookie for client-side access if needed
-          res.cookie('isAuthenticated', 'true', {
-            httpOnly: false,
-            secure: isProduction,
-            sameSite: isProduction ? 'none' : 'lax',
-            domain: domain,
-            path: '/',
-            maxAge: 24 * 60 * 60 * 1000
-          });
+        
+        // Set HTTP-only cookie for authentication
+        res.cookie('auth_token', token, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          domain: domain,
+          path: '/',
+          maxAge: 24 * 60 * 60 * 1000  // 1 day
+        });
+        
+        // Also set a non-HTTP-only flag for client-side access
+        res.cookie('isAuthenticated', 'true', {
+          httpOnly: false,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          domain: domain,
+          path: '/',
+          maxAge: 24 * 60 * 60 * 1000
+        });
 
         const userData = { 
           id: user.id, 
