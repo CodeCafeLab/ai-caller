@@ -19,7 +19,7 @@ export const EXTERNAL_APIS = {
       USER_SUBSCRIPTION: "/user/subscription",
       USER: "/user",
       VOICES: "/voices",
-    },
+    },  
   },
 };
 
@@ -217,7 +217,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "GET",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -229,7 +232,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
       body: data ? JSON.stringify(data) : undefined,
     });
     return response;
@@ -242,7 +248,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
       body: data ? JSON.stringify(data) : undefined,
     });
     return response;
@@ -255,7 +264,10 @@ export const apiUtils = {
       ...defaultFetchOptions,
       ...options,
       method: "DELETE",
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -290,6 +302,10 @@ export const apiUtils = {
     const response = await fetch(url, {
       ...options,
       method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
     });
     return response;
   },
@@ -305,17 +321,26 @@ export const apiUtils = {
     const response = await fetch(url, {
       ...options,
       method: "GET",
-      headers,
+      headers: {
+        ...getAuthHeaders(),
+        ...headers,
+        ...options.headers,
+      },
     });
     return response;
   },
 
+  // PATCH request
   patch: async (endpoint: string, data?: any, options: RequestInit = {}) => {
     const url = buildApiUrl(endpoint);
     const response = await fetch(url, {
       ...defaultFetchOptions,
       ...options,
       method: "PATCH",
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
       body: data ? JSON.stringify(data) : undefined,
     });
     return response;
@@ -325,11 +350,23 @@ export const apiUtils = {
 // Export commonly used API functions
 export const api = {
   // Auth
-  login: (data: any) => apiUtils.post(API_ENDPOINTS.AUTH.LOGIN, data),
+  login: (data: any) =>
+    apiUtils.post(API_ENDPOINTS.AUTH.LOGIN, data, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
   logout: () => apiUtils.post(API_ENDPOINTS.AUTH.LOGOUT),
 
   // Admin Users
-  getCurrentUser: () => apiUtils.get(API_ENDPOINTS.ADMIN_USERS.ME),
+  getCurrentUser: () =>
+    apiUtils.get(API_ENDPOINTS.ADMIN_USERS.ME, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
   getAdminUsers: () => apiUtils.get(API_ENDPOINTS.ADMIN_USERS.BASE),
   getAdminUser: (userId: string) =>
     apiUtils.get(API_ENDPOINTS.ADMIN_USERS.BY_ID(userId)),

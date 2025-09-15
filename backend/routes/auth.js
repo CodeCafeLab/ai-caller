@@ -37,13 +37,12 @@ router.post('/login', async (req, res) => {
           JWT_SECRET,
           { expiresIn: '1d' }
         );
-        const isDev = process.env.NODE_ENV !== 'production';
-        const useLax = isDev; // Always lax/ insecure in development for localhost workflows
+        const isProduction = process.env.NODE_ENV === 'production';
         res.cookie('token', token, {
           httpOnly: true,
-          sameSite: useLax ? 'lax' : 'none',
-          secure: useLax ? false : true,
-          domain: useLax ? 'localhost' : undefined,
+          secure: isProduction, // true in production, false in development
+          sameSite: isProduction ? 'none' : 'lax',
+          domain: isProduction ? '.codecafelab.in' : 'localhost',
           path: '/',
           maxAge: 24*60*60*1000
         });
@@ -160,27 +159,16 @@ router.post('/login', async (req, res) => {
           { expiresIn: '1d' }
         );
 
-        // Set cookie for both same-origin and cross-origin scenarios
-        const isLocalhost = req.headers.origin && req.headers.origin.includes('localhost');
-        
-        if (isLocalhost) {
-          // For localhost, use lax sameSite
+        // Set cookie with proper configuration for both environments
+        const isProduction = process.env.NODE_ENV === 'production';
         res.cookie('token', token, {
           httpOnly: true,
-          sameSite: 'lax',
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          domain: isProduction ? '.codecafelab.in' : undefined,
           path: '/',
           maxAge: 24*60*60*1000
         });
-        } else {
-          // For cross-origin (ngrok, server), use none sameSite with secure
-          res.cookie('token', token, {
-            httpOnly: true,
-            sameSite: 'none',
-            secure: true,
-            path: '/',
-            maxAge: 24*60*60*1000
-          });
-        }
 
         const userData = { 
           id: client.id, 
@@ -259,14 +247,13 @@ router.post('/client-admin/login', async (req, res) => {
         { expiresIn: '1d' }
       );
 
-      // Set cookie for both same-origin and cross-origin scenarios
-      const isDev = process.env.NODE_ENV !== 'production';
-      const useLax = isDev; // Always lax/ insecure in development for localhost workflows
+      // Set cookie with proper configuration for both environments
+      const isProduction = process.env.NODE_ENV === 'production';
       res.cookie('token', token, {
         httpOnly: true,
-        sameSite: useLax ? 'lax' : 'none',
-        secure: useLax ? false : true,
-        domain: useLax ? 'localhost' : undefined,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        domain: isProduction ? '.codecafelab.in' : undefined,
         path: '/',
         maxAge: 24*60*60*1000
       });
@@ -277,9 +264,10 @@ router.post('/client-admin/login', async (req, res) => {
           id: client.id, 
           email: client.companyEmail, 
           role: 'client_admin',
+          type: 'client',
           companyName: client.companyName 
         },
-        token: token,
+        token: token,  // Also include token in response body
         expiresIn: 24 * 60 * 60 * 1000
       });
     } catch (err) {
