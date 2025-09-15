@@ -29,11 +29,11 @@ async function sendEmail(to, template, data) {
 
   switch (template) {
     case 'welcomeEmail':
-      subject = `Welcome to Avyukta AI Caller - ${data.companyName}`;
+      subject = `Welcome to AI Caller - ${data.companyName}`;
       html = `
-        <h2>Welcome to Avyukta AI Caller!</h2>
+        <h2>Welcome to AI Caller!</h2>
         <p>Dear ${data.contactPersonName},</p>
-        <p>Thank you for choosing Avyukta AI Caller for your business. Your account has been successfully created.</p>
+        <p>Thank you for choosing AI Caller for your business. Your account has been successfully created.</p>
         <h3>Account Details:</h3>
         <ul>
           <li><strong>Company:</strong> ${data.companyName}</li>
@@ -42,7 +42,7 @@ async function sendEmail(to, template, data) {
         </ul>
         <p>You can now log in to your dashboard and start creating AI agents for your business.</p>
         <p>If you have any questions, please don't hesitate to contact our support team.</p>
-        <p>Best regards,<br>The Avyukta AI Caller Team</p>
+        <p>Best regards,<br>The AI Caller Team</p>
       `;
       break;
 
@@ -60,7 +60,7 @@ async function sendEmail(to, template, data) {
           ${data.discountType ? `<li><strong>Discount:</strong> ${data.discountType} - ${data.discountValue}</li>` : ''}
         </ul>
         <p>You can now access all the features included in your plan.</p>
-        <p>Best regards,<br>The Avyukta AI Caller Team</p>
+        <p>Best regards,<br>The AI Caller Team</p>
       `;
       break;
 

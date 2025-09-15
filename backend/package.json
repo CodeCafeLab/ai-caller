@@ -1,7 +1,7 @@
 {
   "name": "ai-caller-backend",
   "version": "1.0.0",
-  "description": "Backend API for Avyukta AI Caller application",
+  "description": "Backend API for AI Caller application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -17,7 +17,7 @@
     "express",
     "mysql"
   ],
-  "author": "Avyukta AI Caller Team",
+  "author": "AI Caller Team",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.2",

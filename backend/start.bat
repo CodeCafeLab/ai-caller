@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo    Avyukta AI Caller Backend Startup Script
+echo    AI Caller Backend Startup Script
 echo ========================================
 echo.
 
@@ -51,7 +51,7 @@ if not exist "node_modules" (
 )
 
 REM Start the server
-echo Starting Avyukta AI Caller Backend Server...
+echo Starting AI Caller Backend Server...
 echo.
 echo Server will be available at: http://localhost:5000
 echo Health check: http://localhost:5000/api/health

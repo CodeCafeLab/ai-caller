@@ -5,8 +5,8 @@ import { SidebarInset } from '@/components/ui/sidebar';
 import { AppHeader } from '@/components/layout/app-header';
 
 export const metadata: Metadata = {
-  title: 'Avyukta AI Caller Dashboard',
-  description: 'Admin panel for Avyukta AI Caller',
+  title: 'AI Caller Dashboard',
+  description: 'Admin panel for AI Caller',
 };
 
 export default function AppLayout({

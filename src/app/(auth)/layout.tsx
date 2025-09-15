@@ -3,8 +3,8 @@ import { Logo } from "@/components/logo";
 import { Mail, Phone } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Authenticate - Avyukta AI Caller",
-  description: "Sign in or sign up to Avyukta AI Caller",
+  title: "Authenticate - AI Caller",
+  description: "Sign in or sign up to AI Caller",
 };
 
 export default function AuthLayout({
@@ -18,9 +18,9 @@ export default function AuthLayout({
       <div className="hidden lg:flex flex-col justify-center p-12 w-1/2">
         <div className="max-w-md mx-auto w-full">
           <h1 className="text-4xl font-bold mb-4">
-            Welcome to Avyukta AI Caller
+            Welcome to AI Caller
           </h1>
-          <p className="text-lg">Login to Avyukta AI Caller Dashboard</p>
+          <p className="text-lg">Login to AI Caller Dashboard</p>
           <div className="mt-16 space-y-6">
             <h2 className="text-2xl font-semibold text-gray-900">Support</h2>
             <div className="space-y-4">

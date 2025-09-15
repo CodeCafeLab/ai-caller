@@ -1,6 +1,6 @@
-# Avyukta AI Caller Backend
+# AI Caller Backend
 
-A modular Node.js backend API for the Avyukta AI Caller application, built with Express.js and MySQL.
+A modular Node.js backend API for the AI Caller application, built with Express.js and MySQL.
 
 ## 🏗️ Project Structure
 

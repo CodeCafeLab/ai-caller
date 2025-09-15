@@ -53,7 +53,7 @@ app.use(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-        "https://aicaller.codecafelab.in/",
+        "https://aicaller.codecafelab.in",
         "https://2nq68jpg-3000.inc1.devtunnels.ms",
       ];
 
