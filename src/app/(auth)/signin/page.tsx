@@ -212,6 +212,11 @@ export default function SignInPage() {
             <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? "Signing In..." : "Sign In"}
             </Button>
+            <div className="text-center mt-4">
+              <Link href="/" className="text-sm text-muted-foreground hover:underline">
+                ← Back to Home
+              </Link>
+            </div>
           </form>
         </Form>
       </CardContent>
