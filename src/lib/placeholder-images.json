@@ -1,0 +1,22 @@
+{
+  "placeholderImages": [
+    {
+      "id": "testimonial-avatar-1",
+      "description": "Avatar for Aisha Khan",
+      "imageUrl": "https://picsum.photos/seed/101/80/80",
+      "imageHint": "woman professional"
+    },
+    {
+      "id": "testimonial-avatar-2",
+      "description": "Avatar for Raj Patel",
+      "imageUrl": "https://picsum.photos/seed/102/80/80",
+      "imageHint": "man professional"
+    },
+    {
+      "id": "testimonial-avatar-3",
+      "description": "Avatar for Priya Sharma",
+      "imageUrl": "https://picsum.photos/seed/103/80/80",
+      "imageHint": "woman smiling"
+    }
+  ]
+}

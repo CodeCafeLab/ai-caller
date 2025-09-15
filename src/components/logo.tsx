@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { MessageSquare } from 'lucide-react'; // Using MessageSquare as a generic icon
+import { MessageSquare } from 'lucide-react';
 
 interface LogoProps {
   className?: string;
@@ -11,9 +10,9 @@ interface LogoProps {
 export function Logo({ className, iconClassName, textClassName, hideTextOnCollapsed = true }: LogoProps) {
   const textSpanClass = hideTextOnCollapsed ? "group-data-[collapsible=icon]:hidden" : "";
   return (
-    <Link href="/dashboard" className={`flex items-center gap-2 text-2xl font-bold ${className}`}>
+    <div className={`flex items-center gap-2 text-2xl font-bold ${className}`}>
       <MessageSquare className={`h-7 w-7 ${iconClassName ?? 'text-primary group-data-[sidebar=sidebar]:text-sidebar-primary'}`} />
       <span className={`${textSpanClass} ${textClassName}`}>Avyukta AI Caller</span>
-    </Link>
+    </div>
   );
 }
