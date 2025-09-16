@@ -17,33 +17,8 @@ export default function AuthLayout({
       {/* Left side - Welcome Section */}
       <div className="hidden lg:flex flex-col justify-center p-12 w-1/2">
         <div className="max-w-md mx-auto w-full">
-          <h1 className="text-4xl font-bold mb-4">
-            Welcome to AI Caller
-          </h1>
+          <h1 className="text-4xl font-bold mb-4">Welcome to AI Caller</h1>
           <p className="text-lg">Login to AI Caller Dashboard</p>
-          <div className="mt-16 space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Support</h2>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 text-gray-700">
-                <Phone className="h-6 w-6 text-blue-600" />
-                <a
-                  href="tel:+918560000600"
-                  className="text-lg hover:text-blue-600 transition-colors"
-                >
-                  +91 85600 00600
-                </a>
-              </div>
-              <div className="flex items-center space-x-4 text-gray-700">
-                <Mail className="h-6 w-6 text-blue-600" />
-                <a
-                  href="mailto:sales@dialerindia.com"
-                  className="text-lg hover:text-blue-600 transition-colors"
-                >
-                  sales@dialerindia.com
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
