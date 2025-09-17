@@ -10,16 +10,18 @@ import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-background justify-center items-center p-0 m-0 ">
+    <div className="w-full min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1">
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <UseCases />
-        <Pricing />
-        <Testimonials />
-        <CTA />
+      <main className="flex-1 w-full max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full">
+          <Hero />
+          <Features />
+          <HowItWorks />
+          <UseCases />
+          <Pricing />
+          <Testimonials />
+          <CTA />
+        </div>
       </main>
       <Footer />
     </div>

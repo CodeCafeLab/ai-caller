@@ -13,21 +13,25 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen w-full flex">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row">
       {/* Left side - Welcome Section */}
-      <div className="hidden lg:flex flex-col justify-center p-12 w-1/2">
-        <div className="max-w-md mx-auto w-full">
-          <h1 className="text-4xl font-bold mb-4">Welcome to AI Caller</h1>
-          <p className="text-lg">Login to AI Caller Dashboard</p>
+      <div className="lg:flex-1 bg-gradient-to-br from-primary/10 to-background flex items-center justify-center p-8">
+        <div className="max-w-md w-full text-center lg:text-left">
+          <div className="lg:hidden mb-6">
+            <Logo className="mx-auto" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-foreground">
+            Welcome to <span className="text-primary">AI Caller</span>
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Login to access your AI Caller Dashboard
+          </p>
         </div>
       </div>
 
       {/* Right side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 bg-background">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-background">
         <div className="w-full max-w-md">
-          <div className="lg:hidden mb-8 text-center">
-            <Logo />
-          </div>
           {children}
         </div>
       </div>

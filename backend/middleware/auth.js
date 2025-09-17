@@ -2,7 +2,6 @@
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-very-secret-key';
-
 // JWT middleware
 const authenticateJWT = (req, res, next) => {
   console.log('[AUTH] Starting authentication check');
@@ -20,12 +19,16 @@ const authenticateJWT = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       console.error('[AUTH] Token verification failed:', err.message);
-    } else {
-      console.log('[AUTH] Token verified successfully. User:', { id: user.id, email: user.email, role: user.role });
-    }
-    if (err) {
       return res.status(403).json({ success: false, message: 'Invalid or expired token' });
     }
+    
+    console.log('[AUTH] Token verified successfully. User:', { 
+      id: user.id, 
+      email: user.email, 
+      role: user.role,
+      type: user.type
+    });
+    
     req.user = user;
     next();
   });

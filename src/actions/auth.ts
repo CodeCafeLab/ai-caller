@@ -21,7 +21,7 @@ interface SignInResult {
 }
 
 export async function signInUserAction(values: z.infer<typeof signInSchema>): Promise<SignInResult> {
-  console.log("Attempting TEMPORARY BYPASS sign-in with values:", values);
+  console.log("Attempting sign-in with values:", values);
 
   const validatedFields = signInSchema.safeParse(values);
   if (!validatedFields.success) {
@@ -30,32 +30,47 @@ export async function signInUserAction(values: z.infer<typeof signInSchema>): Pr
 
   const { email, password } = validatedFields.data;
 
-  // --- Temporary Bypass Logic ---
-  if (email.trim() !== "" && password.trim() !== "") {
-    console.log("Temporary bypass: Credentials provided. Simulating successful login.");
-    
-    let userRole: UserRole = 'super_admin';
-    let userFullName = 'Test Bypass Super Admin';
-    
-    if (email.toLowerCase().includes('clientadmin')) {
-      userRole = 'client_admin';
-      userFullName = 'Test Bypass Client Admin';
-      console.log("Bypass: Detected 'clientadmin' in User ID. Assigning client_admin role.");
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Important for cookies to be sent/received
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+    console.log('Login response:', data);
+
+    if (!response.ok) {
+      return { 
+        success: false, 
+        message: data.message || 'Login failed', 
+        user: null 
+      };
     }
 
+    // The token is automatically stored in the HTTP-only cookie
     return {
       success: true,
-      message: 'Sign in successful (Bypass Mode)!',
+      message: 'Login successful',
       user: {
-        userId: `test_user_bypass_${userRole}`,
-        email: email, // Use the entered value as email for consistency
-        fullName: userFullName,
-        role: userRole, 
-      },
+        userId: data.user?.id || '',
+        email: data.user?.email || email,
+        fullName: data.user?.name || email.split('@')[0],
+        role: data.user?.role || 'user',
+      }
     };
-  } else {
-    // This case should ideally be caught by the Zod schema, but as a fallback.
-    return { success: false, message: 'User ID and Password cannot be empty.', user: null };
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return { 
+      success: false, 
+      message: 'Network error. Please try again.', 
+      user: null,
+      error: error as Error 
+    };
   }
   // --- End of Temporary Bypass Logic ---
 }

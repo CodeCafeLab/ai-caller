@@ -41,26 +41,29 @@ router.post('/login', async (req, res) => {
         console.log('[AUTH] Token generated successfully');
         const isProduction = process.env.NODE_ENV === 'production';
         const domain = isProduction ? '.codecafelab.in' : 'localhost';
+        const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
         
-        // Set HTTP-only cookie for authentication
-        res.cookie('token', token, {
+        // Set HTTP-only secure cookie for authentication
+        res.cookie('auth_token', token, {
           httpOnly: true,
-          secure: true,       // must be true on HTTPS
-          sameSite: 'none',   // allow cross-site if needed
-          domain: '.codecafelab.in',
+          secure: true,  // Force secure flag for HTTPS
+          sameSite: 'none',  // Required for cross-site cookies
+          domain: domain,
           path: '/',
-          maxAge: 24*60*60*1000
+          maxAge: 24 * 60 * 60 * 1000,  // 1 day
+          sameParty: false,
+          priority: 'high',
+          partitioned: true  // For Chrome's new cookie partitioning
         });
-        
         
         // Also set a non-HTTP-only flag for client-side access
         res.cookie('isAuthenticated', 'true', {
           httpOnly: false,
-          secure: isProduction,
-          sameSite: isProduction ? 'none' : 'lax',
+          secure: true,
+          sameSite: 'lax',
           domain: domain,
           path: '/',
-          maxAge: 24 * 60 * 60 * 1000
+          maxAge: 24 * 60 * 60 * 1000  // 1 day
         });
 
         const userData = { 
@@ -74,8 +77,9 @@ router.post('/login', async (req, res) => {
         console.log('[AUTH] Generated Token:', token);
 
         // Return both the token and user data
-        return res.json({ 
+        return res.status(200).json({ 
           success: true, 
+          message: 'Login successful',
           user: userData,
           token: token,  // Include the token in the response body
           expiresIn: 24 * 60 * 60 * 1000  // Token expiration time in milliseconds (1 day)
