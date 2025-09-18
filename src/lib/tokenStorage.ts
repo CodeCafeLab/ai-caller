@@ -38,7 +38,7 @@ export const tokenStorage = {
     if (!tokenStorage.isBrowser()) return null;
 
     // First try to get from cookie (server-set)
-    const cookieToken = tokenStorage.getCookie(TOKEN_KEY);
+    const cookieToken = tokenStorage.getCookie('auth_token') || tokenStorage.getCookie('token');
     if (cookieToken) {
       // Update localStorage for backward compatibility
       localStorage.setItem(TOKEN_KEY, cookieToken);
