@@ -24,15 +24,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { signInUserAction } from "@/actions/auth";
 import { useState, useTransition } from "react";
 import { useUser } from "@/lib/utils";
-import { api } from "@/lib/apiConfig";
 
-// Form validation schema
 const formSchema = z.object({
-  email: z.string().min(1, { message: "Email is required" })
-    .email({ message: "Please enter a valid email address" }),
+  email: z
+    .string()
+    .min(1, { message: "Email is required" })
+    .email({ message: "Invalid email" }),
   password: z.string().min(1, { message: "Password is required" }),
 });
 
@@ -44,89 +43,58 @@ export default function SignInPage() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
       try {
-        console.log("[DEBUG] Attempting login with email:", values.email);
-        
-        // Use relative URL for API calls to work on both local and domain
-        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-        const loginUrl = `${apiUrl}/api/auth/login`;
-        console.log("[DEBUG] API URL:", loginUrl);
-
-        const response = await fetch(loginUrl, {
+        const data = await fetch("/api/auth/login", {
           method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          credentials: "include", // Required for cookies
           body: JSON.stringify(values),
         });
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-          console.error("[ERROR] Login failed:", response.status, data);
-          throw new Error(
-            data.message || `Login failed: ${response.status} ${response.statusText}`
-          );
+        const response = await data.json();
+
+        if (response.token) {
+          tokenStorage.setToken(response.token);
         }
 
-        // Handle token from response
-        if (data.token) {
-          tokenStorage.setToken(data.token);
-        }
-        
-        // Set user data in context
-        if (data.user) {
-          const userData = {
-            userId: data.user.id,  // Changed from 'id' to 'userId' to match AuthUser type
-            email: data.user.email,
-            name: data.user.name || data.user.email.split('@')[0],
-            role: data.user.role || 'user',
-            type: data.user.type || 'admin' as const
-          };
-
-          setUser(userData);
-          console.log("[DEBUG] User data set:", userData);
-
-          // Show welcome message
-          toast({
-            title: "Sign In Successful",
-            description: `Welcome back, ${userData.name || userData.email}!`,
+        if (response.user) {
+          setUser({
+            userId: response.user.id,
+            email: response.user.email,
+            name: response.user.name || response.user.email.split("@")[0],
+            role: response.user.role,
+            type: response.user.type,
           });
 
-          // Redirect based on user type and role
-          const userType = data.user.type || "user";
-          const userRole = data.user.role || "user";
-          
-          // Handle redirection
+          toast({
+            title: "Sign In Successful",
+            description: `Welcome back, ${
+              response.user.name || response.user.email
+            }!`,
+          });
+
           let redirectPath = "/dashboard";
-          if (userType === "admin" && userRole === "admin_users") {
+          if (
+            response.user.type === "admin" &&
+            response.user.role === "admin_users"
+          ) {
             redirectPath = "/admin_users/dashboard";
-          } else if (userType === "client") {
+          } else if (response.user.type === "client") {
             redirectPath = "/client-admin/dashboard";
           }
-          
-          console.log(`[DEBUG] Redirecting to: ${redirectPath}`);
           router.push(redirectPath);
-          
         } else {
-          throw new Error("No user data received from server");
+          throw new Error("No user data returned");
         }
       } catch (error) {
         console.error("Login error:", error);
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     });
@@ -134,10 +102,8 @@ export default function SignInPage() {
 
   return (
     <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">
-          Sign In
-        </CardTitle>
+      <CardHeader>
+        <CardTitle className="text-2xl text-center">Sign In</CardTitle>
         <CardDescription className="text-center">
           Enter your credentials to access your account
         </CardDescription>
@@ -154,7 +120,7 @@ export default function SignInPage() {
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="Enter your email address"
+                      placeholder="Enter email"
                       {...field}
                       disabled={isPending}
                     />
@@ -172,7 +138,7 @@ export default function SignInPage() {
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder="Enter password"
                       {...field}
                       disabled={isPending}
                     />

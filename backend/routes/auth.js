@@ -1,311 +1,402 @@
 // backend/routes/auth.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const db = require('../config/database');
-const { JWT_SECRET } = require('../middleware/auth');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const db = require("../config/database");
+const { JWT_SECRET } = require("../middleware/auth");
+
+/**
+ * Notes:
+ * - Cookie name: auth_token (used for both admin and client)
+ * - Token is also returned in response body (so frontend can store it in localStorage)
+ * - Cookie settings are conservative: no experimental flags, secure used only when request is HTTPS or NODE_ENV=production
+ * - Domain for production: aicaller.codecafelab.in (explicit host avoids some browser issues)
+ */
+
+// Helper to set cookies consistently
+function setAuthCookies(res, token, req) {
+  const isProduction = process.env.NODE_ENV === "production";
+  // Determine if incoming request is secure (works behind proxy if app.set('trust proxy', 1) is set)
+  const reqIsSecure =
+    req.secure || (req.headers && req.headers["x-forwarded-proto"] === "https");
+  const secureFlag = isProduction || reqIsSecure;
+
+  // Use the specific host as domain in production to avoid domain scoping issues
+  const cookieDomain = isProduction ? "aicaller.codecafelab.in" : undefined;
+
+  // Main httpOnly cookie for server-side auth (so browser won't expose it to JS)
+  res.cookie("auth_token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // only send on HTTPS in production
+    sameSite: "strict",
+  });
+  res.json({ success: true, token });
+
+  // Optional non-httpOnly flag that front-end can read (boolean marker)
+  res.cookie("isAuthenticated", "true", {
+    httpOnly: false,
+    secure: secureFlag,
+    sameSite: isProduction ? "lax" : "lax",
+    domain: cookieDomain,
+    path: "/",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+}
 
 // Combined Login endpoint for both admins and clients
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log('Login attempt for:', email);
+  console.log(`[AUTH] Login attempt for: ${email}`);
 
-  // First try admin login
-  db.query('SELECT * FROM admin_users WHERE email = ?', [email], async (err, adminResults) => {
-    if (err) {
-      console.error('Admin lookup error:', err);
-      return res.status(500).json({ success: false, message: 'DB error', error: err });
-    }
-
-    // If found in admin_users table
-    if (adminResults.length > 0) {
-      console.log('Found user in admin_users');
-      const user = adminResults[0];
-      try {
-        const valid = await bcrypt.compare(password, user.password);
-        if (!valid) {
-          console.log('Admin password invalid');
-          return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-
-        // Update lastLogin to now
-        db.query('UPDATE admin_users SET lastLogin = NOW() WHERE id = ?', [user.id]);
-
-        console.log('[AUTH] Generating JWT token for user:', { id: user.id, email: user.email, role: user.roleName });
-        const token = jwt.sign(
-          { id: user.id, name: user.name, email: user.email, role: user.roleName, type: 'admin' },
-          JWT_SECRET,
-          { expiresIn: '1d' }
-        );
-        console.log('[AUTH] Token generated successfully');
-        const isProduction = process.env.NODE_ENV === 'production';
-        const domain = isProduction ? 'aicaller.codecafelab.in' : 'localhost';
-        const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-        
-        // Set HTTP-only secure cookie for authentication
-        res.cookie('auth_token', token, {
-          httpOnly: true,
-          secure: true,  // Force secure flag for HTTPS
-          sameSite: 'none',  // Required for cross-site cookies
-          domain: domain,
-          path: '/',
-          maxAge: 24 * 60 * 60 * 1000,  // 1 day
-          sameParty: false,
-          priority: 'high',
-          partitioned: true  // For Chrome's new cookie partitioning
-        });
-        
-        // Also set a non-HTTP-only flag for client-side access
-        res.cookie('isAuthenticated', 'true', {
-          httpOnly: false,
-          secure: true,
-          sameSite: 'lax',
-          domain: domain,
-          path: '/',
-          maxAge: 24 * 60 * 60 * 1000  // 1 day
-        });
-
-        const userData = { 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          role: user.roleName,
-          type: 'admin'
-        };
-        
-        console.log('[AUTH] Generated Token:', token);
-
-        // Return both the token and user data
-        return res.status(200).json({ 
-          success: true, 
-          message: 'Login successful',
-          user: userData,
-          token: token,  // Include the token in the response body
-          expiresIn: 24 * 60 * 60 * 1000  // Token expiration time in milliseconds (1 day)
-        });
-      } catch (err) {
-        console.error('Error in admin authentication:', err);
-        return res.status(500).json({ success: false, message: 'Authentication error' });
-      }
-    }
-
-    // If not found in admin_users, try client login
-    console.log('Not found in admin_users, trying clients table');
-    db.query('SELECT * FROM clients WHERE companyEmail = ?', [email], async (err, clientResults) => {
+  // Try admin first
+  db.query(
+    "SELECT * FROM admin_users WHERE email = ?",
+    [email],
+    async (err, adminResults) => {
       if (err) {
-        console.error('Client lookup error:', err);
-        return res.status(500).json({ success: false, message: 'DB error', error: err });
-      }
-      if (!clientResults.length) {
-        console.log('Email not found in clients table');
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        console.error("[AUTH] Admin lookup error:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "DB error", error: err.message });
       }
 
-      const client = clientResults[0];
-      console.log('Found client:', { id: client.id, email: client.companyEmail });
-      
+      // If found in admin_users
+      if (adminResults.length > 0) {
+        const user = adminResults[0];
+        try {
+          const valid = await bcrypt.compare(password, user.password);
+          if (!valid) {
+            console.log("[AUTH] Admin password invalid for:", email);
+            return res
+              .status(401)
+              .json({ success: false, message: "Invalid credentials" });
+          }
+
+          // Update lastLogin
+          db.query(
+            "UPDATE admin_users SET lastLogin = NOW() WHERE id = ?",
+            [user.id],
+            (uErr) => {
+              if (uErr)
+                console.warn(
+                  "[AUTH] Failed to update lastLogin:",
+                  uErr.message
+                );
+            }
+          );
+
+          const token = jwt.sign(
+            {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.roleName,
+              type: "admin",
+            },
+            JWT_SECRET,
+            { expiresIn: "1d" }
+          );
+
+          // Set cookies
+          setAuthCookies(res, token, req);
+
+          const userData = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.roleName,
+            type: "admin",
+          };
+
+          console.log("[AUTH] Admin login successful:", {
+            id: user.id,
+            email: user.email,
+          });
+          return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            user: userData,
+            token,
+            expiresIn: 24 * 60 * 60 * 1000,
+          });
+        } catch (err) {
+          console.error("[AUTH] Error in admin authentication:", err);
+          return res
+            .status(500)
+            .json({ success: false, message: "Authentication error" });
+        }
+      }
+
+      // If not an admin, try clients table
+      console.log(
+        "[AUTH] Not found in admin_users, trying clients table for:",
+        email
+      );
+      db.query(
+        "SELECT * FROM clients WHERE companyEmail = ?",
+        [email],
+        async (err2, clientResults) => {
+          if (err2) {
+            console.error("[AUTH] Client lookup error:", err2);
+            return res
+              .status(500)
+              .json({
+                success: false,
+                message: "DB error",
+                error: err2.message,
+              });
+          }
+          if (!clientResults.length) {
+            console.log("[AUTH] Email not found in clients table:", email);
+            return res
+              .status(401)
+              .json({ success: false, message: "Invalid credentials" });
+          }
+
+          const client = clientResults[0];
+          try {
+            let isValidPassword = false;
+
+            // If adminPassword looks like bcrypt hash, use bcrypt
+            if (
+              client.adminPassword &&
+              typeof client.adminPassword === "string" &&
+              client.adminPassword.startsWith("$2")
+            ) {
+              try {
+                isValidPassword = await bcrypt.compare(
+                  password,
+                  client.adminPassword
+                );
+                console.log(
+                  "[AUTH] Bcrypt comparison result for client:",
+                  isValidPassword
+                );
+              } catch (bcryptErr) {
+                console.error(
+                  "[AUTH] Bcrypt compare error, falling back to plain-text check:",
+                  bcryptErr.message
+                );
+                isValidPassword = password === client.adminPassword;
+              }
+            } else {
+              // Plain-text stored password (legacy) — do plain comparison and upgrade to hashed password if matches
+              console.log(
+                "[AUTH] Stored client password not hashed, performing plain-text comparison"
+              );
+              isValidPassword = password === client.adminPassword;
+              console.log(
+                "[AUTH] Plain-text comparison result for client:",
+                isValidPassword
+              );
+
+              if (isValidPassword) {
+                // Upgrade to bcrypt hash (do not await to avoid blocking response significantly)
+                bcrypt
+                  .hash(password, 10)
+                  .then((hashed) => {
+                    db.query(
+                      "UPDATE clients SET adminPassword = ? WHERE id = ?",
+                      [hashed, client.id],
+                      (updateErr) => {
+                        if (updateErr) {
+                          console.error(
+                            "[AUTH] Failed to upgrade client password to hash:",
+                            updateErr.message
+                          );
+                        } else {
+                          console.log(
+                            "[AUTH] Successfully upgraded client password to hash for id:",
+                            client.id
+                          );
+                        }
+                      }
+                    );
+                  })
+                  .catch((hashErr) => {
+                    console.error(
+                      "[AUTH] Error hashing password for upgrade:",
+                      hashErr.message
+                    );
+                  });
+              }
+            }
+
+            if (!isValidPassword) {
+              console.log("[AUTH] Client password invalid for:", email);
+              return res
+                .status(401)
+                .json({ success: false, message: "Invalid credentials" });
+            }
+
+            // Create JWT token for client admin
+            const token = jwt.sign(
+              {
+                id: client.id,
+                name: client.companyName,
+                email: client.companyEmail,
+                role: "client_admin",
+                type: "client",
+                companyName: client.companyName,
+              },
+              JWT_SECRET,
+              { expiresIn: "1d" }
+            );
+
+            // Set cookies (same cookie name as admin)
+            setAuthCookies(res, token, req);
+
+            const userData = {
+              id: client.id,
+              name: client.companyName,
+              email: client.companyEmail,
+              type: "client",
+              role: "client_admin",
+            };
+
+            console.log("[AUTH] Client login successful:", {
+              id: client.id,
+              email: client.companyEmail,
+            });
+            return res.status(200).json({
+              success: true,
+              message: "Login successful",
+              user: userData,
+              token,
+              expiresIn: 24 * 60 * 60 * 1000,
+            });
+          } catch (errClient) {
+            console.error("[AUTH] Error in client authentication:", errClient);
+            return res
+              .status(500)
+              .json({ success: false, message: "Authentication error" });
+          }
+        }
+      );
+    }
+  );
+});
+
+// Client Admin Login endpoint (explicit route kept for backward compatibility)
+router.post("/client-admin/login", async (req, res) => {
+  const { email, password } = req.body;
+  db.query(
+    "SELECT * FROM clients WHERE companyEmail = ?",
+    [email],
+    async (err, results) => {
+      if (err) {
+        console.error("[AUTH] Client-admin lookup error:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "DB error", error: err.message });
+      }
+      if (!results.length) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Invalid credentials" });
+      }
+
+      const client = results[0];
       try {
         let isValidPassword = false;
 
-        // First try bcrypt comparison (for hashed passwords)
         try {
-          console.log('Trying bcrypt comparison');
-          // Check if the stored password looks like a bcrypt hash (starts with $2a$, $2b$, or $2y$)
-          if (client.adminPassword && client.adminPassword.startsWith('$2')) {
-            isValidPassword = await bcrypt.compare(password, client.adminPassword);
-            console.log('Bcrypt comparison result:', isValidPassword);
-          } else {
-            // If not a bcrypt hash, do plain text comparison
-            console.log('Stored password is not a bcrypt hash, trying plain-text comparison');
-            isValidPassword = (password === client.adminPassword);
-            console.log('Plain-text comparison result:', isValidPassword);
-
-            // If plain-text password is correct, upgrade it to hashed
-            if (isValidPassword) {
-              console.log('Plain-text password matched. Upgrading to hashed password...');
-              const hashedPassword = await bcrypt.hash(password, 10);
-              db.query(
-                'UPDATE clients SET adminPassword = ? WHERE id = ?',
-                [hashedPassword, client.id],
-                (updateErr) => {
-                  if (updateErr) {
-                    console.error('Failed to upgrade password to hash:', updateErr);
-                  } else {
-                    console.log('Successfully upgraded password to hash');
-                  }
-                }
-              );
-            }
-          }
+          isValidPassword = await bcrypt.compare(
+            password,
+            client.adminPassword
+          );
         } catch (hashError) {
-          console.error('Error during password comparison:', hashError);
-          // If any error occurs during bcrypt comparison, try plain text
-          console.log('Error in password comparison, falling back to plain-text');
-          isValidPassword = (password === client.adminPassword);
-          console.log('Plain-text comparison result:', isValidPassword);
+          console.log(
+            "[AUTH] Hash comparison failed, trying plain-text comparison"
+          );
+          isValidPassword = password === client.adminPassword;
 
-          // If plain-text password is correct, upgrade it to hashed
           if (isValidPassword) {
-            console.log('Plain-text password matched. Upgrading to hashed password...');
-            const hashedPassword = await bcrypt.hash(password, 10);
-            db.query(
-              'UPDATE clients SET adminPassword = ? WHERE id = ?',
-              [hashedPassword, client.id],
-              (updateErr) => {
-                if (updateErr) {
-                  console.error('Failed to upgrade password to hash:', updateErr);
-                } else {
-                  console.log('Successfully upgraded password to hash');
-                }
-              }
-            );
+            // Upgrade to hashed password asynchronously
+            bcrypt
+              .hash(password, 10)
+              .then((hashed) => {
+                db.query(
+                  "UPDATE clients SET adminPassword = ? WHERE id = ?",
+                  [hashed, client.id],
+                  (updateErr) => {
+                    if (updateErr)
+                      console.error(
+                        "[AUTH] Failed to upgrade password to hash:",
+                        updateErr.message
+                      );
+                    else
+                      console.log(
+                        "[AUTH] Upgraded client password to hash for id:",
+                        client.id
+                      );
+                  }
+                );
+              })
+              .catch((e) => console.error("[AUTH] Hashing error:", e.message));
           }
         }
 
         if (!isValidPassword) {
-          console.log('Client password invalid');
-          return res.status(401).json({ success: false, message: 'Invalid credentials' });
+          return res
+            .status(401)
+            .json({ success: false, message: "Invalid credentials" });
         }
 
-        console.log('Client password valid, creating token');
         const token = jwt.sign(
-          { 
-            id: client.id, 
-            email: client.companyEmail, 
-            role: 'client_admin',
-            type: 'client',
-            companyName: client.companyName 
+          {
+            id: client.id,
+            name: client.companyName,
+            email: client.companyEmail,
+            role: "client_admin",
+            type: "client",
           },
           JWT_SECRET,
-          { expiresIn: '1d' }
+          { expiresIn: "1d" }
         );
 
-        // Set cookie with proper configuration for both environments
-        const isProduction = process.env.NODE_ENV === 'production';
-        res.cookie('token', token, {
-          httpOnly: true,
-          secure: isProduction,
-          sameSite: isProduction ? 'none' : 'lax',
-          domain: isProduction ? '.codecafelab.in' : undefined,
-          path: '/',
-          maxAge: 24*60*60*1000
-        });
+        setAuthCookies(res, token, req);
 
-        const userData = { 
-          id: client.id, 
-          name: client.companyName, 
-          email: client.companyEmail, 
-          type: 'client',
-          role: 'client_admin'
-        };
-
-        // Return both the token and user data
-        return res.json({ 
-          success: true, 
-          user: userData,
-          token: token,  // Include the token in the response body
-          expiresIn: 24 * 60 * 60 * 1000  // Token expiration time in milliseconds (1 day)
+        return res.status(200).json({
+          success: true,
+          user: {
+            id: client.id,
+            email: client.companyEmail,
+            role: "client_admin",
+            type: "client",
+            companyName: client.companyName,
+          },
+          token,
+          expiresIn: 24 * 60 * 60 * 1000,
         });
       } catch (err) {
-        console.error('Error in client authentication:', err);
-        return res.status(500).json({ success: false, message: 'Authentication error' });
+        console.error("[AUTH] Error in client-admin authentication:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Authentication error" });
       }
-    });
-  });
-});
-
-// Client Admin Login endpoint
-router.post('/client-admin/login', async (req, res) => {
-  const { email, password } = req.body;
-  db.query('SELECT * FROM clients WHERE companyEmail = ?', [email], async (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'DB error', error: err });
-    if (!results.length) return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    
-    const client = results[0];
-    try {
-      let isValidPassword = false;
-
-      // First try bcrypt comparison (for hashed passwords)
-      try {
-        isValidPassword = await bcrypt.compare(password, client.adminPassword);
-      } catch (hashError) {
-        // If bcrypt.compare fails, it might be a plain-text password
-        console.log('Hash comparison failed, trying plain-text comparison');
-        isValidPassword = (password === client.adminPassword);
-
-        // If plain-text password is correct, upgrade it to hashed
-        if (isValidPassword) {
-          console.log('Plain-text password matched. Upgrading to hashed password...');
-          const hashedPassword = await bcrypt.hash(password, 10);
-          db.query(
-            'UPDATE clients SET adminPassword = ? WHERE id = ?',
-            [hashedPassword, client.id],
-            (updateErr) => {
-              if (updateErr) {
-                console.error('Failed to upgrade password to hash:', updateErr);
-                // Continue anyway since login is successful
-              } else {
-                console.log('Successfully upgraded password to hash');
-              }
-            }
-          );
-        }
-      }
-
-      if (!isValidPassword) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
-      }
-
-      // Create JWT token for client admin
-      const token = jwt.sign(
-        { 
-          id: client.id, 
-          email: client.companyEmail, 
-          role: 'client_admin',
-          companyName: client.companyName 
-        },
-        JWT_SECRET,
-        { expiresIn: '1d' }
-      );
-
-      // Set cookie with proper configuration for both environments
-      const isProduction = process.env.NODE_ENV === 'production';
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',
-        domain: isProduction ? '.codecafelab.in' : undefined,
-        path: '/',
-        maxAge: 24*60*60*1000
-      });
-
-      res.json({ 
-        success: true, 
-        user: { 
-          id: client.id, 
-          email: client.companyEmail, 
-          role: 'client_admin',
-          type: 'client',
-          companyName: client.companyName 
-        },
-        token: token,  // Also include token in response body
-        expiresIn: 24 * 60 * 60 * 1000
-      });
-    } catch (err) {
-      console.error('Error in authentication:', err);
-      res.status(500).json({ success: false, message: 'Authentication error' });
     }
-  });
+  );
 });
 
-// Logout endpoint
-router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
+// Logout endpoint - clear auth cookies
+router.post("/logout", (req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieDomain = isProduction ? "aicaller.codecafelab.in" : undefined;
+
+  res.clearCookie("auth_token", {
     httpOnly: true,
-    path: '/'
+    path: "/",
+    domain: cookieDomain,
   });
-  res.json({ success: true, message: 'Logged out successfully' });
+  res.clearCookie("isAuthenticated", {
+    httpOnly: false,
+    path: "/",
+    domain: cookieDomain,
+  });
+
+  return res.json({ success: true, message: "Logged out successfully" });
 });
 
 module.exports = router;
