@@ -56,7 +56,6 @@ app.use(
         "https://aicaller.codecafelab.in",
         "https://2nq68jpg-3000.inc1.devtunnels.ms",
       ];
-
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);

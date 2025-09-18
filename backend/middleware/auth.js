@@ -19,10 +19,16 @@ const authenticateJWT = (req, res, next) => {
     console.log('[AUTH] Token found in Authorization header');
   } 
   // Then check cookies
-  else if (req.cookies && req.cookies.auth_token) {
-    token = req.cookies.auth_token;
-    console.log('[AUTH] Token found in auth_token cookie');
+  // else if (req.cookies && req.cookies.auth_token) {
+  //   token = req.cookies.auth_token;
+  //   console.log('[AUTH] Token found in auth_token cookie');
+  // }
+
+  else if (req.cookies && (req.cookies.auth_token || req.cookies.token)) {
+    token = req.cookies.auth_token || req.cookies.token;
+    console.log('[AUTH] Token found in cookie');
   }
+
   // Then check query parameters (for testing only - not recommended for production)
   else if (req.query && req.query.token) {
     token = req.query.token;
