@@ -21,26 +21,35 @@ export const tokenStorage = {
 
   // Set token in both cookie and localStorage for backward compatibility
   setToken: (token: string) => {
-    if (tokenStorage.isBrowser()) {
-      // Store in localStorage for backward compatibility
-      localStorage.setItem(TOKEN_KEY, token);
+    if (!tokenStorage.isBrowser()) return;
 
-      // Set a flag in localStorage to indicate user is authenticated
-      localStorage.setItem(IS_AUTHENTICATED_KEY, "true");
+    // Store in localStorage for backward compatibility
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(IS_AUTHENTICATED_KEY, "true");
 
-      // Also store in cookie so backend middleware can read it
-      document.cookie = `auth_token=${token}; path=/; SameSite=Strict`;
-    }
+    // Set a cookie (for backend JWT middleware)
+    const isProduction = process.env.NODE_ENV === "production";
+    const secure = isProduction; // true in production
+    const sameSite = isProduction ? "None" : "Strict"; // None for cross-site in production
+
+    document.cookie = `${TOKEN_KEY}=${token}; path=/; ${
+      secure ? "Secure; " : ""
+    }SameSite=${sameSite}; max-age=${24 * 60 * 60}`;
+    document.cookie = `${IS_AUTHENTICATED_KEY}=true; path=/; ${
+      secure ? "Secure; " : ""
+    }SameSite=${sameSite}; max-age=${24 * 60 * 60}`;
   },
 
   // Get token - try cookie first, then localStorage
   getToken: (): string | null => {
     if (!tokenStorage.isBrowser()) return null;
 
-    // First try to get from cookie (server-set)
-    const cookieToken = tokenStorage.getCookie('auth_token') || tokenStorage.getCookie('token');
+    // Check both possible cookies set by backend
+    const cookieToken =
+      tokenStorage.getCookie("auth_token") || tokenStorage.getCookie("token");
+
     if (cookieToken) {
-      // Update localStorage for backward compatibility
+      // Keep localStorage in sync
       localStorage.setItem(TOKEN_KEY, cookieToken);
       return cookieToken;
     }
@@ -51,15 +60,16 @@ export const tokenStorage = {
 
   // Remove token from both cookie and localStorage
   removeToken: () => {
-    if (tokenStorage.isBrowser()) {
-      // Remove from localStorage
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(IS_AUTHENTICATED_KEY);
+    if (!tokenStorage.isBrowser()) return;
 
-      // Clear the cookie by setting an expired date
-      document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      document.cookie = `${IS_AUTHENTICATED_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    }
+    // Remove from localStorage
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(IS_AUTHENTICATED_KEY);
+
+    // Remove cookies
+    document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    document.cookie = `${IS_AUTHENTICATED_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    document.cookie = `token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`; // in case backend used 'token'
   },
 
   // Check if user is authenticated
@@ -69,7 +79,8 @@ export const tokenStorage = {
     // Check cookie first
     const hasAuthCookie =
       tokenStorage.getCookie(IS_AUTHENTICATED_KEY) === "true";
-    // Then check localStorage for backward compatibility
+
+    // Then check localStorage
     const hasLocalStorageToken = localStorage.getItem(TOKEN_KEY) !== null;
 
     return hasAuthCookie || hasLocalStorageToken;
