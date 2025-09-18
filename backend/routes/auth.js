@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
         );
         console.log('[AUTH] Token generated successfully');
         const isProduction = process.env.NODE_ENV === 'production';
-        const domain = isProduction ? '.codecafelab.in' : 'localhost';
+        const domain = isProduction ? 'aicaller.codecafelab.in' : 'localhost';
         const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
         
         // Set HTTP-only secure cookie for authentication

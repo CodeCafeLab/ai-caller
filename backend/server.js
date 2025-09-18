@@ -1,10 +1,10 @@
-// backend/server.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const fetch = (...args) =>
-  import("node-fetch").then((mod) => mod.default(...args));
+const path = require('path');
+const fetch = (...args) => import("node-fetch").then((mod) => mod.default(...args));
+
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -90,7 +90,8 @@ app.use(
 );
 
 app.use(express.json());
-app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // Test API route
 app.get("/", (req, res) => {
@@ -101,6 +102,9 @@ app.get("/", (req, res) => {
 
 // Public routes (no authentication required)
 app.use("/api/auth", authRoutes);
+
+// Serve static files from uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Apply authentication middleware to all routes except public ones
 app.use(authenticateJWT);
