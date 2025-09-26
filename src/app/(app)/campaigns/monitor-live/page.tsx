@@ -75,6 +75,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { tokenStorage } from "@/lib/tokenStorage";
+import { useUser } from "@/lib/utils";
 
 // export const metadata: Metadata = {
 //   title: 'Monitor Live Calls - AI Caller',
@@ -211,6 +212,7 @@ const logColors: Record<LogType, string> = {
 
 export default function MonitorLiveCallsPage() {
   const { toast } = useToast();
+  const { user } = useUser();
   const [liveCalls, setLiveCalls] = React.useState<LiveCall[]>([]);
   const [logEntries, setLogEntries] = React.useState<LogEntry[]>([]);
 
@@ -218,6 +220,10 @@ export default function MonitorLiveCallsPage() {
   const [activeAgents, setActiveAgents] = React.useState(0);
   const [avgResponseTime, setAvgResponseTime] = React.useState("0s");
   const [campaignId, setCampaignId] = React.useState<string | null>(null);
+  const [clientId, setClientId] = React.useState<string | null>(null);
+  type CampaignOption = { id: string; name: string; clientId?: string; clientName?: string };
+  const [clients, setClients] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [campaigns, setCampaigns] = React.useState<CampaignOption[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -315,6 +321,55 @@ export default function MonitorLiveCallsPage() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("campaignId");
     if (id) setCampaignId(id);
+  }, []);
+
+  // Load clients and campaigns for filters (admin view)
+  React.useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        // Fetch clients list
+        const clientsRes = await fetch(urls.backend.clients.list(), {
+          headers: { "Authorization": `Bearer ${tokenStorage.getToken()}` }
+        });
+        if (clientsRes.ok) {
+          const clientsJson = await clientsRes.json();
+          const items = Array.isArray(clientsJson?.data) ? clientsJson.data : (Array.isArray(clientsJson?.clients) ? clientsJson.clients : []);
+          type RawClient = { id?: string | number; _id?: string; clientId?: string | number; companyName?: string; name?: string; clientName?: string };
+          const mappedClients = ((items || []) as RawClient[]).map((c: RawClient) => ({ id: String(c.id || c._id || c.clientId), name: c.companyName || c.name || c.clientName || "Client" }));
+          setClients(mappedClients.filter(c => c.id));
+        }
+
+        // Optionally fetch campaigns to power campaign filter
+        const campsRes = await fetch(urls.backend.campaigns.list(), {
+          headers: { "Authorization": `Bearer ${tokenStorage.getToken()}` }
+        });
+        if (campsRes.ok) {
+          const campsJson = await campsRes.json();
+          const batches = Array.isArray(campsJson?.batch_calls) ? campsJson.batch_calls : [];
+          const localOnly = Array.isArray(campsJson?.local_only) ? campsJson.local_only : [];
+          const localFromBatches = batches
+            .map((b: any) => b?.local)
+            .filter((l: any) => l && (l.id || l.external_id));
+          const allLocal = [...localFromBatches, ...localOnly];
+          const dedup = new Map<string, any>();
+          for (const l of allLocal) {
+            const key = String(l.id || l.external_id);
+            if (!dedup.has(key)) dedup.set(key, l);
+          }
+          const mappedCamps = Array.from(dedup.values()).map((l: any) => ({
+            id: String(l.id || l.external_id),
+            name: l.name || l.campaignName || "Campaign",
+            clientId: l.clientId ? String(l.clientId) : undefined,
+            clientName: l.clientName || undefined,
+          }));
+          setCampaigns(mappedCamps);
+        }
+      } catch (e) {
+        // Non-blocking
+        console.warn('[MonitorLiveCalls] Failed to load filters', e);
+      }
+    };
+    loadFilters();
   }, []);
 
   // Real-time duration updates for active calls
@@ -473,6 +528,17 @@ export default function MonitorLiveCallsPage() {
     }
   };
 
+  const selectedClient = clients.find(c => c.id === clientId) || null;
+  const selectedCampaign = campaigns.find(c => c.id === campaignId) || null;
+
+  const filteredCampaigns: CampaignOption[] = clientId
+    ? campaigns.filter((c: CampaignOption) => (c.clientId && c.clientId === clientId) || (c.clientName && selectedClient && c.clientName.toLowerCase() === selectedClient.name.toLowerCase()))
+    : campaigns;
+
+  const filteredLiveCalls = liveCalls
+    .filter((c) => !selectedClient || (c.clientName && c.clientName.toLowerCase() === (selectedClient.name || '').toLowerCase()))
+    .filter((c) => !selectedCampaign || (c.campaignName && c.campaignName.toLowerCase() === (selectedCampaign.name || '').toLowerCase()));
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
@@ -492,6 +558,38 @@ export default function MonitorLiveCallsPage() {
         >
           {loading ? "Refreshing..." : "Refresh"}
         </Button>
+      </div>
+
+      {/* Admin filters */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Filter by Client</Label>
+          <Select value={clientId ?? "all"} onValueChange={(val) => { const v = val === "all" ? null : val; setClientId(v); if (campaignId) setCampaignId(null); }}>
+            <SelectTrigger>
+              <SelectValue placeholder="All clients" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All clients</SelectItem>
+              {clients.map((c: { id: string; name: string }) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Filter by Campaign</Label>
+          <Select value={campaignId ?? "all"} onValueChange={(val) => setCampaignId(val === "all" ? null : val)}>
+            <SelectTrigger>
+              <SelectValue placeholder="All campaigns" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All campaigns</SelectItem>
+              {filteredCampaigns.map((c: CampaignOption) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {error && (
@@ -574,7 +672,7 @@ export default function MonitorLiveCallsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading && liveCalls.length === 0 ? (
+                  {loading && filteredLiveCalls.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={7}
@@ -583,7 +681,7 @@ export default function MonitorLiveCallsPage() {
                         Loading live calls data...
                       </TableCell>
                     </TableRow>
-                  ) : liveCalls.length === 0 ? (
+                  ) : filteredLiveCalls.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={7}
@@ -601,7 +699,7 @@ export default function MonitorLiveCallsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    liveCalls.map((call) => {
+                    filteredLiveCalls.map((call) => {
                       const StatusIcon = statusIcons[call.status];
                       return (
                         <TableRow key={call.id}>

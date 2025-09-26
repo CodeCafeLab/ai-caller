@@ -67,6 +67,12 @@ export const API_ENDPOINTS = {
       `/api/client-users/client/${clientId}`,
   },
 
+    // Client Roles
+    CLIENT_ROLES: {
+      BASE: '/api/client-roles',
+      BY_ID: (roleId: string) => `/api/client-roles/${roleId}`,
+    },  
+
   // Campaigns
   CAMPAIGNS: {
     BASE: "/api/campaigns",
@@ -363,6 +369,7 @@ export const api = {
         "Authorization": `Bearer ${tokenStorage.getToken()}`,
       },
     }),
+  clientUserLogin: (data: any) => apiUtils.post('/api/auth/client-user/login', data),
   logout: () => apiUtils.post(API_ENDPOINTS.AUTH.LOGOUT),
 
   // Admin Users
@@ -428,8 +435,14 @@ export const api = {
     apiUtils.put(API_ENDPOINTS.CLIENT_USERS.BY_ID(userId), data),
   deleteClientUser: (userId: string) =>
     apiUtils.delete(API_ENDPOINTS.CLIENT_USERS.BY_ID(userId)),
-  resetClientUserPassword: (userId: string) =>
-    apiUtils.post(API_ENDPOINTS.CLIENT_USERS.RESET_PASSWORD(userId)),
+  resetClientUserPassword: (userId: string, data: any) => apiUtils.post(API_ENDPOINTS.CLIENT_USERS.RESET_PASSWORD(userId), data),
+
+  // Client Roles
+  getClientRoles: () => apiUtils.get(API_ENDPOINTS.CLIENT_ROLES.BASE),
+  getClientRole: (roleId: string) => apiUtils.get(API_ENDPOINTS.CLIENT_ROLES.BY_ID(roleId)),
+  createClientRole: (data: any) => apiUtils.post(API_ENDPOINTS.CLIENT_ROLES.BASE, data),
+  updateClientRole: (roleId: string, data: any) => apiUtils.put(API_ENDPOINTS.CLIENT_ROLES.BY_ID(roleId), data),
+  deleteClientRole: (roleId: string) => apiUtils.delete(API_ENDPOINTS.CLIENT_ROLES.BY_ID(roleId)),
 
   // Campaigns
   getCampaigns: () => apiUtils.get(API_ENDPOINTS.CAMPAIGNS.LIST),

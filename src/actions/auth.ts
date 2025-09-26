@@ -2,6 +2,7 @@
 'use server';
 
 import { z } from 'zod';
+import { urls } from '@/lib/config/urls';
 
 // Define UserRole type - ensure this matches roles used in your application
 export type UserRole = 'super_admin' | 'client_admin' | 'user' | 'agent' | 'analyst' | 'viewer';
@@ -31,7 +32,7 @@ export async function signInUserAction(values: z.infer<typeof signInSchema>): Pr
   const { email, password } = validatedFields.data;
 
   try {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(urls.backend.api('/auth/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,10 +44,10 @@ export async function signInUserAction(values: z.infer<typeof signInSchema>): Pr
     const data = await response.json();
     console.log('Login response:', data);
 
-    if (!response.ok) {
+    if (!response.ok || !data?.success) {
       return { 
         success: false, 
-        message: data.message || 'Login failed', 
+        message: data?.message || 'Login failed', 
         user: null 
       };
     }
