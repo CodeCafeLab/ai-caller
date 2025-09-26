@@ -1,9 +1,9 @@
-name: Deploy AI Caller
+name: Deploy AI Caller Production
 
 on:
   push:
     branches:
-      - main
+      - production
 
 jobs:
   deploy:
@@ -13,8 +13,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ---------- Backend ----------
-      - name: Deploy Backend
+      # ---------- Backend (Production) ----------
+      - name: Deploy Backend (Prod)
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: 168.231.112.124
@@ -23,16 +23,16 @@ jobs:
           port: 22
           script: |
             set -e
-            echo "🚀 Deploying AI Caller Backend..."
-            cd /var/www/ai-caller/backend
-            git reset --hard
-            git pull https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/CodeCafeLab/ai-caller.git main
+            echo "🚀 Deploying AI Caller Backend (Production)..."
+            cd /var/www/ai-caller-prod/backend
+            git fetch --all
+            git reset --hard origin/production
             npm install --production
-            pm2 restart ai-caller-backend
-            echo "✅ Backend deployed successfully!"
+            pm2 reload ai-caller-backend-prod || pm2 restart ai-caller-backend-prod || pm2 start server.js --name ai-caller-backend-prod
+            echo "✅ Backend (Production) deployed successfully!"
 
-      # ---------- Frontend ----------
-      - name: Deploy Frontend
+      # ---------- Frontend (Production) ----------
+      - name: Deploy Frontend (Prod)
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: 168.231.112.124
@@ -41,11 +41,11 @@ jobs:
           port: 22
           script: |
             set -e
-            echo "🚀 Deploying AI Caller Frontend..."
-            cd /var/www/ai-caller
-            git reset --hard
-            git pull https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/CodeCafeLab/ai-caller.git main
+            echo "🚀 Deploying AI Caller Frontend (Production)..."
+            cd /var/www/ai-caller-prod
+            git fetch --all
+            git reset --hard origin/production
             npm install
             npm run build || { echo "❌ Frontend build failed"; exit 1; }
-            pm2 restart ai-caller-frontend
-            echo "✅ Frontend deployed successfully!"
+            pm2 reload ai-caller-frontend-prod || pm2 restart ai-caller-frontend-prod || pm2 start "npm start" --name ai-caller-frontend-prod
+            echo "✅ Frontend (Production) deployed successfully!"
