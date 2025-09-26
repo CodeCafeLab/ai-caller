@@ -82,6 +82,41 @@ body {
     --sidebar-border: 240 3.7% 12%; /* Border for dark theme sidebar */
     --sidebar-ring: 240 3.7% 15.9%; /* Ring color for dark theme */
   }
+
+  /* Scoped homepage theme (CodeCafe style) */
+  .theme-codecafe {
+    /* Base surface and text */
+    --background: 33 31% 8%; /* #1B160E in HSL approx */
+    --foreground: 0 0% 100%; /* white */
+    --card: 33 31% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 33 31% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 50 100% 54%; /* #FFC012 */
+    --primary-foreground: 33 31% 8%;
+    /* Secondary surfaces are dark, not green */
+    --secondary: 33 31% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 33 31% 14%;
+    --muted-foreground: 0 0% 92%;
+    --accent: 90 69% 50%; /* green accent */
+    --accent-foreground: 33 31% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 33 31% 18%;
+    --input: 33 31% 18%;
+    --ring: 50 100% 54%;
+
+    /* Sidebar variables to avoid clashes */
+    --sidebar-background: 33 31% 7%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 33 31% 12%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 33 31% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 33 31% 16%;
+    --sidebar-ring: 50 100% 54%;
+  }
 }
 
 /* Custom scrollbar styles */

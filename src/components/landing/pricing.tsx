@@ -35,25 +35,25 @@ const plans = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-20 md:py-28 bg-secondary">
+    <section id="pricing" className="py-20 md:py-28">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl">Pricing Plans</h2>
-          <p className="mt-4 text-muted-foreground md:text-lg">
+          <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">Pricing Plans</h2>
+          <p className="mt-4 md:text-lg text-foreground/80">
             Choose the plan that's right for your business.
           </p>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
-            <Card key={plan.name} className={cn('flex flex-col', plan.popular && 'border-primary ring-2 ring-primary')}>
+            <Card key={plan.name} className={cn('flex flex-col bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)] text-foreground rounded-2xl shadow-[0_0_0_1px_hsl(33,31%,18%)]', plan.popular && 'ring-2 ring-[#FFC012]')}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
-                  {plan.popular && <Badge variant="default">MOST POPULAR</Badge>}
+                  <CardTitle className="font-headline text-2xl text-foreground">{plan.name}</CardTitle>
+                  {plan.popular && <Badge className="bg-[#FFC012] text-black">MOST POPULAR</Badge>}
                 </div>
                 <div className="flex items-baseline">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  {plan.period && <span className="text-muted-foreground">{plan.period}</span>}
+                  <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                  {plan.period && <span className="text-foreground/70">{plan.period}</span>}
                 </div>
                 <CardDescription>{plan.description}</CardDescription>
               </CardHeader>
@@ -62,7 +62,7 @@ export function Pricing() {
                 <ul className="space-y-3">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center">
-                      <Check className="h-5 w-5 text-primary mr-2 flex-shrink-0" />
+                      <Check className="h-5 w-5 text-[#6DD629] mr-2 flex-shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -70,12 +70,12 @@ export function Pricing() {
               </CardContent>
               <CardFooter>
                 {plan.cta === 'Sign In' ? (
-                  <Button asChild className="w-full" variant={plan.popular ? 'default' : 'secondary'}>
+                  <Button asChild className="w-full bg-[#FFC012] text-black hover:opacity-90" variant={"default"}>
                     <a href="/signin">{plan.cta}</a>
                   </Button>
                 ) : (
                   <BookDemoDialog>
-                    <Button className="w-full" variant={plan.popular ? 'default' : 'secondary'}>
+                    <Button className="w-full bg-[#6DD629] text-black hover:opacity-90" variant={"default"}>
                       {plan.cta}
                     </Button>
                   </BookDemoDialog>
