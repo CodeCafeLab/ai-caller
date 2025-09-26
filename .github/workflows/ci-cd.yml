@@ -25,8 +25,8 @@ jobs:
             set -e
             echo "🚀 Deploying AI Caller Backend..."
             cd /var/www/ai-caller/backend
-            git fetch --all
-            git reset --hard origin/main
+            git reset --hard
+            git pull origin main
             npm install --production
             pm2 restart ai-caller-backend
             echo "✅ Backend deployed successfully!"
@@ -43,9 +43,16 @@ jobs:
             set -e
             echo "🚀 Deploying AI Caller Frontend..."
             cd /var/www/ai-caller
-            git fetch --all
-            git reset --hard origin/main
+            git reset --hard
+            git pull origin main
             npm install
-            npm run build || { echo "❌ Frontend build failed"; exit 1; }
+            # Run build fully, don't exit immediately on error
+            npm run build || BUILD_FAILED=true
+            # If build failed, stop deployment
+            if [ "$BUILD_FAILED" = true ]; then
+              echo "❌ Frontend build failed"
+              exit 1
+            fi
+            # Reload frontend safely
             pm2 restart ai-caller-frontend
             echo "✅ Frontend deployed successfully!"
