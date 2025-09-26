@@ -15,7 +15,10 @@ export type AuthUser = {
   avatarUrl?: string;
   companyName?: string;
   clientId?: string; // <-- Add this line
+  client_id?: string;
+  bio?: string;
   permissions?: string[];
+  role_name?: string;
 };
 
 interface UserContextType {

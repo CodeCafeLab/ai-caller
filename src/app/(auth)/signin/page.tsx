@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { urls } from "@/lib/config/urls";
 import { useState, useTransition } from "react";
 import { useUser } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export default function SignInPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
       try {
-        const data = await fetch("/api/auth/login", {
+        const data = await fetch(urls.backend.api("/auth/login"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -62,7 +63,7 @@ export default function SignInPage() {
           tokenStorage.setToken(response.token);
         }
 
-        if (response.user) {
+        if (response.success && response.user) {
           setUser({
             userId: response.user.id,
             email: response.user.email,
@@ -89,7 +90,7 @@ export default function SignInPage() {
           }
           router.push(redirectPath);
         } else {
-          throw new Error("No user data returned");
+          throw new Error(response?.message || "No user data returned");
         }
       } catch (error) {
         console.error("Login error:", error);
