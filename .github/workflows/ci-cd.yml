@@ -26,7 +26,7 @@ jobs:
             echo "🚀 Deploying AI Caller Backend..."
             cd /var/www/ai-caller/backend
             git reset --hard
-            git pull origin main
+            git pull https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/CodeCafeLab/ai-caller.git main
             npm install --production
             pm2 restart ai-caller-backend
             echo "✅ Backend deployed successfully!"
@@ -44,15 +44,8 @@ jobs:
             echo "🚀 Deploying AI Caller Frontend..."
             cd /var/www/ai-caller
             git reset --hard
-            git pull origin main
+            git pull https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/CodeCafeLab/ai-caller.git main
             npm install
-            # Run build fully, don't exit immediately on error
-            npm run build || BUILD_FAILED=true
-            # If build failed, stop deployment
-            if [ "$BUILD_FAILED" = true ]; then
-              echo "❌ Frontend build failed"
-              exit 1
-            fi
-            # Reload frontend safely
+            npm run build || { echo "❌ Frontend build failed"; exit 1; }
             pm2 restart ai-caller-frontend
             echo "✅ Frontend deployed successfully!"
