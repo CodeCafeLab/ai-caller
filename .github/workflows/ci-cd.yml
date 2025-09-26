@@ -1,271 +1,51 @@
-name: AI Caller CI/CD Pipeline
+name: Deploy AI Caller
 
 on:
   push:
-    branches: [ main, sandbox1 ]
-  pull_request:
-    branches: [ main, sandbox1 ]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-        - staging
-        - sandbox
-        - production
-
-env:
-  NODE_VERSION: '18'
-  NPM_VERSION: '9'
+    branches:
+      - main
 
 jobs:
-  # Code Quality & Security Checks
-  code-quality:
-    name: Code Quality & Security
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # ---------- Backend ----------
+      - name: Deploy Backend
+        uses: appleboy/ssh-action@v0.1.7
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          host: 168.231.112.124
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            echo "🚀 Deploying AI Caller Backend..."
+            cd /var/www/ai-caller/backend
+            git fetch --all
+            git reset --hard origin/main
+            npm install --production
+            pm2 reload ai-caller-backend || pm2 restart ai-caller-backend || pm2 start server.js --name ai-caller-backend
+            echo "✅ Backend deployed successfully!"
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: |
-          # Check if ESLint is configured
-          if [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ] || [ -f ".eslintrc" ]; then
-            echo "✅ ESLint configuration found, running linting..."
-            npm run lint --silent || echo "⚠️  Linting issues found (non-blocking)"
-          else
-            echo "⚠️  No ESLint configuration found, skipping linting..."
-            echo "This is normal for new Next.js projects"
-          fi
-        continue-on-error: true
-
-      - name: Run TypeScript type check
-        run: npm run typecheck || echo "⚠️  TypeScript check failed (non-blocking)"
-        continue-on-error: true
-
-      - name: Check for security vulnerabilities
-        run: |
-          echo "🔍 Running security audit..."
-          npm audit --audit-level moderate || {
-            echo "⚠️  Security vulnerabilities found (non-blocking)"
-            echo "📋 Vulnerabilities summary:"
-            npm audit --audit-level moderate --json | jq -r '.metadata.vulnerabilities | "Critical: \(.critical // 0), High: \(.high // 0), Moderate: \(.moderate // 0), Low: \(.low // 0)"' || echo "Could not parse audit results"
-          }
-        continue-on-error: true
-
-      - name: Check for outdated dependencies
-        run: npm outdated || true
-
-  # Build & Test
-  build-and-test:
-    name: Build & Test
-    runs-on: ubuntu-latest
-    needs: code-quality
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # ---------- Frontend ----------
+      - name: Deploy Frontend
+        uses: appleboy/ssh-action@v0.1.7
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Create environment file for testing
-        run: |
-          echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:5000" > .env.local
-          echo "FRONTEND_URL=http://localhost:3000" >> .env.local
-          echo "NODE_ENV=test" >> .env.local
-          echo "DB_HOST=localhost" >> .env.local
-          echo "DB_USER=test_user" >> .env.local
-          echo "DB_PASSWORD=test_password" >> .env.local
-          echo "DB_NAME=ai_caller_test" >> .env.local
-          echo "JWT_SECRET=test-secret-key" >> .env.local
-
-      - name: Build Next.js application
-        run: npm run build
-
-      - name: Run tests (if available)
-        run: npm test || echo "No tests configured yet"
-
-      - name: Check build output
-        run: |
-          if [ -d ".next" ]; then
-            echo "✅ Next.js build successful"
-            ls -la .next/
-          else
-            echo "❌ Next.js build failed"
-            exit 1
-          fi
-
-  # Database Schema Validation
-  database-check:
-    name: Database Schema Validation
-    runs-on: ubuntu-latest
-    needs: code-quality
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check database configuration
-        run: |
-          echo "🔍 Checking database configuration..."
-          if grep -q "CREATE TABLE" server.js; then
-            echo "✅ Database schema definitions found in server.js"
-            grep -n "CREATE TABLE" server.js | head -5
-          else
-            echo "⚠️  No CREATE TABLE statements found in server.js"
-          fi
-
-      - name: Check environment variables
-        run: |
-          echo "🔍 Checking environment configuration..."
-          if [ -f ".env.local" ]; then
-            echo "✅ .env.local file exists"
-            echo "📋 Environment variables:"
-            grep -v "^#" .env.local | grep -v "^$" || echo "No environment variables found"
-          else
-            echo "⚠️  .env.local file not found"
-          fi
-
-  # Security & Dependency Analysis
-  security-scan:
-    name: Security & Dependencies
-    runs-on: ubuntu-latest
-    needs: code-quality
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-        continue-on-error: true
-
-      - name: Check for sensitive data in code
-        run: |
-          echo "🔍 Scanning for potential sensitive data..."
-          if grep -r -i "password\|secret\|key\|token" src/ --exclude-dir=node_modules | grep -v "process.env" | head -10; then
-            echo "⚠️  Potential sensitive data found in source code"
-          else
-            echo "✅ No obvious sensitive data found in source code"
-          fi
-
-  # Performance & Bundle Analysis
-  performance-check:
-    name: Performance & Bundle Analysis
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build for analysis
-        run: npm run build
-
-      - name: Analyze bundle size
-        run: |
-          echo "📊 Bundle analysis..."
-          if [ -d ".next" ]; then
-            echo "📁 Next.js build directory size:"
-            du -sh .next/
-            echo "📁 Static files:"
-            du -sh .next/static/ || echo "No static files found"
-          fi
-
-      - name: Check for large dependencies
-        run: |
-          echo "📦 Checking for large dependencies..."
-          npm list --depth=0 | grep -E "MB|KB" | head -10 || echo "No size information available"
-
-  # Final Status Check
-  final-status:
-    name: Final Status
-    runs-on: ubuntu-latest
-    needs: [code-quality, build-and-test, database-check, security-scan, performance-check]
-    if: always()
-    steps:
-      - name: Check job statuses
-        run: |
-          echo "📊 Pipeline Status Summary" >> $GITHUB_STEP_SUMMARY
-          echo "=========================" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ needs.code-quality.result }}" = "success" ]; then
-            echo "- ✅ Code Quality: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ Code Quality: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "${{ needs.build-and-test.result }}" = "success" ]; then
-            echo "- ✅ Build & Test: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ Build & Test: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "${{ needs.database-check.result }}" = "success" ]; then
-            echo "- ✅ Database Check: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ Database Check: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "${{ needs.security-scan.result }}" = "success" ]; then
-            echo "- ✅ Security Scan: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ Security Scan: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "${{ needs.performance-check.result }}" = "success" ]; then
-            echo "- ✅ Performance Check: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ Performance Check: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "${{ needs.deployment-prep.result }}" = "success" ]; then
-            echo "- ✅ Deployment Prep: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ❌ Deployment Prep: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ needs.deployment-prep.result }}" = "success" ]; then
-            echo "🎉 **All checks passed! Ready for deployment.**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **Some checks failed. Please review before deployment.**" >> $GITHUB_STEP_SUMMARY
-          fi
+          host: 168.231.112.124
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            echo "🚀 Deploying AI Caller Frontend..."
+            cd /var/www/ai-caller
+            git fetch --all
+            git reset --hard origin/main
+            npm install
+            npm run build || { echo "❌ Frontend build failed"; exit 1; }
+            pm2 reload ai-caller-frontend || pm2 restart ai-caller-frontend || pm2 start "npm start" --name ai-caller-frontend
+            echo "✅ Frontend deployed successfully!"
