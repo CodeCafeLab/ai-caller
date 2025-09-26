@@ -410,18 +410,18 @@ export default function ActivePausedCampaignsPage() {
 
       <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as "active" | "paused" | "completed")} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:w-2/3 lg:w-1/2">
-          <TabsTrigger value="active">
-            <PlayCircle className="mr-2 h-4 w-4" /> Active Campaigns
+          <TabsTrigger value="completed">
+            <ListChecks className="mr-2 h-4 w-4" /> Completed Campaigns
           </TabsTrigger>
           <TabsTrigger value="paused">
             <PauseCircle className="mr-2 h-4 w-4" /> Paused Campaigns
           </TabsTrigger>
-          <TabsTrigger value="completed">
-            <ListChecks className="mr-2 h-4 w-4" /> Completed Campaigns
+          <TabsTrigger value="active">
+            <PlayCircle className="mr-2 h-4 w-4" /> Active Campaigns
           </TabsTrigger>
         </TabsList>
-        
-        {(["active", "paused", "completed"] as const).map(tabStatus => (
+
+        {(["completed", "paused", "active"] as const).map(tabStatus => (
             <TabsContent key={tabStatus} value={tabStatus} className="mt-6">
             {loading ? (
                 <div className="text-center py-12">

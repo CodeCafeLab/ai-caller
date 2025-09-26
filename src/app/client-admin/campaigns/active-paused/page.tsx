@@ -282,21 +282,21 @@ export default function ClientActivePausedCampaignsPage() {
       {/* Campaign Tabs */}
       <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as typeof currentTab)}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="active" className="flex items-center gap-2">
-            <Play className="h-4 w-4" />
-            Active ({activeCampaigns.length})
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Completed ({completedCampaigns.length})
           </TabsTrigger>
           <TabsTrigger value="paused" className="flex items-center gap-2">
             <Pause className="h-4 w-4" />
             Paused ({pausedCampaigns.length})
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            Completed ({completedCampaigns.length})
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <Play className="h-4 w-4" />
+            Active ({activeCampaigns.length})
           </TabsTrigger>
         </TabsList>
 
-        {["active", "paused", "completed"].map((tab) => {
+        {["completed", "paused", "active"].map((tab) => {
           const tabCampaigns = tab === "active" ? activeCampaigns : tab === "paused" ? pausedCampaigns : completedCampaigns;
           const statusLabel = tab === "active" ? "Active" : tab === "paused" ? "Paused" : "Completed";
           

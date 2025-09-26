@@ -90,6 +90,9 @@ export const urls = {
     api: (endpoint: string) => `${config.backend.api}${endpoint}`,
     health: () => `${config.backend.base}/api/health`,
     voices: () => `${config.backend.base}/api/voices`,
+    clients: {
+      list: () => `${config.backend.api}/clients`,
+    },
     campaigns: {
       submit: () => `${config.backend.api}/campaigns`,
       list: () => `${config.backend.api}/campaigns`,
