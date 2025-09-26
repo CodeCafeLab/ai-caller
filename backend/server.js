@@ -20,6 +20,7 @@ const uploadRoutes = require("./routes/upload");
 const salesRoutes = require("./routes/sales");
 const knowledgeBaseRoutes = require("./routes/knowledgeBase");
 const languagesRoutes = require("./routes/languages");
+const demosRoutes = require("./routes/demos");
 const adminRoutes = require("./routes/admin");
 const adminRolesRoutes = require("./routes/adminRoles");
 const clientUsersRoutes = require("./routes/clientUsers");
@@ -101,6 +102,7 @@ app.get("/", (req, res) => {
 
 // Public routes (no authentication required)
 app.use("/api/auth", authRoutes);
+app.use("/api/demos", demosRoutes);
 
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

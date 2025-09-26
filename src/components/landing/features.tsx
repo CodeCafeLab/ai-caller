@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bot, Phone, Users, Globe, BarChart3, Text, Move } from 'lucide-react';
+import { Bot, Phone, Users, Globe, BarChart3, Text, Move, Sparkles } from 'lucide-react';
+import { SectionHeader } from './section-header';
 import type { ReactNode } from 'react';
 
 interface Feature {
@@ -48,22 +49,21 @@ const features: Feature[] = [
 
 export function Features() {
   return (
-    <section id="features" className="py-20 md:py-28 bg-secondary">
+    <section id="features" className="py-20 md:py-28">
       <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl">Key Features</h2>
-          <p className="mt-4 text-muted-foreground md:text-lg">
-            Everything you need to automate and scale your voice communications.
-          </p>
-        </div>
+        <SectionHeader
+          icon={<Sparkles className="h-6 w-6 text-[#FFC012]" />}
+          title="Key Features"
+          description="Everything you need to automate and scale your voice communications."
+        />
         <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, i) => (
-            <Card key={i} className="flex flex-col items-start p-6 bg-background">
+            <Card key={i} className={`flex flex-col items-start p-6 bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)] text-foreground rounded-xl shadow-[0_0_0_1px_hsl(33,31%,18%)] ${i === features.length - 1 ? 'lg:col-start-2' : ''}`}>
               <CardHeader className="p-0">
                 {feature.icon}
-                <CardTitle className="mt-4 font-headline text-xl">{feature.title}</CardTitle>
+                <CardTitle className="mt-4 font-headline text-xl text-foreground">{feature.title}</CardTitle>
               </CardHeader>
-              <CardDescription className="mt-2 text-base text-muted-foreground">
+              <CardDescription className="mt-2 text-base text-foreground/80">
                 {feature.description}
               </CardDescription>
             </Card>

@@ -1,16 +1,23 @@
 import Link from 'next/link';
-import { MicVocal, Linkedin, Twitter, Facebook } from 'lucide-react';
+import Image from 'next/image';
+import { Linkedin, Twitter, Facebook } from 'lucide-react';
 import { Copyright } from '@/components/copyright';
 
 export function Footer() {
   return (
-    <footer className="border-t bg-secondary">
+    <footer className="border-t bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)]">
       <div className="container py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center space-x-2">
-              <MicVocal className="h-6 w-6 text-primary" />
-              <span className="font-bold font-headline">AI Caller</span>
+              <Image
+                src="/logo.png"
+                alt="Code Cafe Lab Logo"
+                width={120}
+                height={40}
+                priority
+                className="object-contain"
+              />
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">Automate calls, support, and sales.</p>
           </div>
@@ -29,6 +36,7 @@ export function Footer() {
               <li><Link href="#" className="text-sm text-muted-foreground hover:text-foreground">Contact</Link></li>
               <li><Link href="#" className="text-sm text-muted-foreground hover:text-foreground">Terms of Service</Link></li>
               <li><Link href="#" className="text-sm text-muted-foreground hover:text-foreground">Privacy Policy</Link></li>
+              <li><Link href="#" className="text-sm text-muted-foreground hover:text-foreground">Refund Policy</Link></li>
             </ul>
           </div>
           <div>
@@ -40,7 +48,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
+        <div className="mt-8 border-t border-[hsl(33,31%,18%)] pt-8 text-center text-sm text-muted-foreground">
           <Copyright />
         </div>
       </div>

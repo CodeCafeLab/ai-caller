@@ -31,7 +31,6 @@ function setAuthCookies(res, token, req) {
     secure: process.env.NODE_ENV === "production", // only send on HTTPS in production
     sameSite: "strict",
   });
-  res.json({ success: true, token });
 
   // Optional non-httpOnly flag that front-end can read (boolean marker)
   res.cookie("isAuthenticated", "true", {

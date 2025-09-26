@@ -156,6 +156,11 @@ export const API_ENDPOINTS = {
     BASE: "/api/mcp-servers",
     BY_ID: (id: string) => `/api/mcp-servers/${id}`,
   },
+
+  // Demos (public)
+  DEMOS: {
+    BASE: "/api/demos",
+  },
 };
 
 // Helper function to build full API URLs
@@ -509,6 +514,9 @@ export const api = {
     apiUtils.get(API_ENDPOINTS.MCP_SERVERS.BY_ID(id)),
   createMcpServer: (data: any) =>
     apiUtils.post(API_ENDPOINTS.MCP_SERVERS.BASE, data),
+
+  // Demos
+  createDemo: (data: any) => apiUtils.post(API_ENDPOINTS.DEMOS.BASE, data, { credentials: 'include' }),
 
   // External APIs
   elevenLabs: {

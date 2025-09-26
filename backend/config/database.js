@@ -5,7 +5,7 @@ const mysql = require("mysql2");
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "Antu@2252",
+  password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "ai-caller",
   multipleStatements: true
 });
@@ -18,7 +18,7 @@ db.connect(err => {
     const tempDb = mysql.createConnection({
       host: process.env.DB_HOST || "localhost",
       user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "Antu@2252"
+      password: process.env.DB_PASSWORD || ""
     });
 
     tempDb.connect(err => {
@@ -318,6 +318,29 @@ function initializeTables() {
       console.error("Failed to create knowledge base table:", err);
     } else {
       console.log("✅ Knowledge base table ready");
+    }
+  });
+
+  // Create demos table for storing demo bookings
+  const createDemosTable = `
+    CREATE TABLE IF NOT EXISTS demos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      company VARCHAR(255) NULL,
+      message TEXT NULL,
+      scheduled_date DATE NOT NULL,
+      slot_start VARCHAR(5) NOT NULL, -- HH:MM in 24h
+      slot_end VARCHAR(5) NOT NULL,   -- HH:MM in 24h
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  db.query(createDemosTable, (err) => {
+    if (err) {
+      console.error("Failed to create demos table:", err);
+    } else {
+      console.log("✅ Demos table ready");
     }
   });
 

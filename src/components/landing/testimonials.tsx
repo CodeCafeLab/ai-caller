@@ -27,11 +27,11 @@ const avatarMap = new Map<string, ImagePlaceholder>(PlaceHolderImages.map(img =>
 
 export function Testimonials() {
   return (
-    <section id="testimonials" className="py-20 md:py-28 bg-secondary">
+    <section id="testimonials" className="py-20 md:py-28">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl">What Our Customers Say</h2>
-          <p className="mt-4 text-muted-foreground md:text-lg">
+          <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">What Our Customers Say</h2>
+          <p className="mt-4 md:text-lg text-foreground/80">
             Real stories from businesses revolutionizing their communication with AI Caller.
           </p>
         </div>
@@ -39,7 +39,7 @@ export function Testimonials() {
           {testimonialData.map((testimonial) => {
             const avatar = avatarMap.get(testimonial.avatarId);
             return (
-              <Card key={testimonial.name} className="bg-background">
+              <Card key={testimonial.name} className="bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)] text-foreground rounded-2xl">
                 <CardContent className="p-6">
                   <blockquote className="italic text-lg">"{testimonial.quote}"</blockquote>
                   <div className="mt-6 flex items-center">
@@ -55,7 +55,7 @@ export function Testimonials() {
                     </Avatar>
                     <div className="ml-4">
                       <p className="font-semibold text-foreground">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.title}</p>
+                      <p className="text-sm text-foreground/70">{testimonial.title}</p>
                     </div>
                   </div>
                 </CardContent>
