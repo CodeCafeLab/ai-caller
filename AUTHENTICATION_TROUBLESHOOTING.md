@@ -1,4 +1,14 @@
-# Authentication Troubleshooting Guide
+# Authentication Troubleshooting Guide - Updated for Production
+
+This guide helps debug common authentication issues when deploying AI Caller in production.
+
+## Latest Fixes Applied
+
+✅ Fixed cookie domain issues by removing explicit domain setting
+✅ Changed sameSite from 'none' to 'lax' for better compatibility  
+✅ Added proper HTTPS detection for secure cookie flag
+✅ Enhanced logging for authentication debugging
+✅ Fixed middleware order issues
 
 ## Overview
 
