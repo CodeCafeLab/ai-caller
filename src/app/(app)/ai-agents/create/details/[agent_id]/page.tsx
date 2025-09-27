@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { tokenStorage } from "@/lib/tokenStorage";
+import { ConvAIPopup } from "@/components/ConvAIPopup";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -1047,6 +1048,7 @@ export default function AgentDetailsPage() {
   const [newAgentName, setNewAgentName] = useState("");
   const [copiedId, setCopiedId] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
+  const [isConvAIPopupOpen, setIsConvAIPopupOpen] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [isChangingClient, setIsChangingClient] = useState(false);
@@ -1113,6 +1115,32 @@ export default function AgentDetailsPage() {
       },
     },
   });
+
+  // Recompute additional languages after languages list or ElevenLabs agent changes
+  useEffect(() => {
+    try {
+      const el: any = elevenLabsAgent || {};
+      const presets = el?.conversation_config?.language_presets || {};
+      const fromPresets: string[] = Object.keys(presets || {});
+      const explicit = el?.conversation_config?.agent?.additional_languages || el?.conversation_config?.agent?.prompt?.additional_languages || [];
+      const combined = Array.from(new Set([
+        ...fromPresets,
+        ...explicit.map((x: any) => (typeof x === 'string' ? x : (x?.code || x?.lang || '')))
+      ].filter(Boolean)));
+      if (!combined.length) return;
+      const mapped = combined.map(code => {
+        const base = String(code).split('-')[0].toLowerCase();
+        const match = languages.find(l => l.code.toLowerCase() === String(code).toLowerCase() || l.code.split('-')[0].toLowerCase() === base);
+        return match ? match.code : String(code);
+      });
+      setAgentSettings((prev: any) => {
+        const prevArr = Array.isArray(prev.additional_languages) ? prev.additional_languages : [];
+        const same = prevArr.length === mapped.length && prevArr.every((v: string, i: number) => v === mapped[i]);
+        if (same) return prev;
+        return { ...prev, additional_languages: mapped };
+      });
+    } catch {}
+  }, [languages, elevenLabsAgent]);
   const [widgetConfig, setWidgetConfig] = useState({
     voice: "Eric",
     multi_voice: false,
@@ -1367,25 +1395,26 @@ export default function AgentDetailsPage() {
         const auth = (el.platform_settings && el.platform_settings.auth) || {};
         const evaluation =
           (el.platform_settings && el.platform_settings.evaluation) || {};
-        // Parse language_presets from ElevenLabs to get additional languages
-        const language_presets =
-          data.elevenlabs.conversation_config?.language_presets || {};
-        console.log(
-          "[DEBUG] Language presets from ElevenLabs:",
-          language_presets
+        // Parse additional languages from ElevenLabs (support both language_presets and arrays)
+        const language_presets = data.elevenlabs?.conversation_config?.language_presets || {};
+        const additionalLanguagesFromPresets = Object.keys(language_presets || {});
+        // Some responses may include an explicit array on agent or prompt
+        const explicitAdditional = (
+          data.elevenlabs?.conversation_config?.agent?.additional_languages ||
+          data.elevenlabs?.conversation_config?.agent?.prompt?.additional_languages ||
+          []
         );
-        const additional_languages = Object.keys(language_presets).map(
-          (langCode) => {
-            // Find the full language code by matching first two letters (only if languages are loaded)
-            const fullLang =
-              languages.length > 0
-                ? languages.find(
-                    (l) =>
-                      l.code.substring(0, 2).toLowerCase() ===
-                      langCode.toLowerCase()
-                  )
-                : null;
-            return fullLang ? fullLang.code : langCode;
+        const combinedLanguageCodes = Array.from(new Set([
+          ...additionalLanguagesFromPresets,
+          ...explicitAdditional.map((x: any) => (typeof x === 'string' ? x : x?.code || x?.lang || ''))
+        ].filter(Boolean)));
+        // Map codes to full codes in our list (preserve full code when possible)
+        const additional_languages = combinedLanguageCodes.map((code: string) => {
+          const normalized = code.split('-')[0].toLowerCase();
+          const fullLang = languages.length > 0
+            ? languages.find(l => l.code.toLowerCase() === code.toLowerCase() || l.code.split('-')[0].toLowerCase() === normalized)
+            : null;
+          return fullLang ? fullLang.code : code;
           }
         );
         console.log(
@@ -1408,12 +1437,16 @@ export default function AgentDetailsPage() {
         setAgentSettings((prev) => ({
           ...prev,
           language: data?.local?.language_code || prev.language || "en-US",
-          additional_languages:
-            additional_languages.length > 0
-              ? additional_languages
-              : data?.local?.additional_languages ||
-                prev.additional_languages ||
-                [],
+          additional_languages: (() => {
+            // Prefer explicit additional_languages on agent if present
+            const explicit = data.elevenlabs?.conversation_config?.agent?.additional_languages || data.elevenlabs?.conversation_config?.agent?.prompt?.additional_languages;
+            if (Array.isArray(explicit) && explicit.length) {
+              const mapped = explicit.map((x: any) => typeof x === 'string' ? x : (x?.code || x?.lang || '')).filter(Boolean);
+              if (mapped.length) return mapped;
+            }
+            if (additional_languages.length > 0) return additional_languages;
+            return (data?.local?.additional_languages || prev.additional_languages || []);
+          })(),
           llm:
             data.elevenlabs.conversation_config?.agent?.prompt?.llm ||
             data?.local?.llm ||
@@ -2209,8 +2242,16 @@ export default function AgentDetailsPage() {
 
   // Handle test AI agent
   const handleTestAgent = () => {
-    const testUrl = `https://elevenlabs.io/app/conversational-ai/agents/${agentId}`;
-    window.open(testUrl, "_blank");
+    console.log('Test Agent clicked, agentId:', agentId);
+    if (!agentId) {
+      toast({
+        title: "Error",
+        description: "Agent ID not found. Please refresh the page and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsConvAIPopupOpen(true);
   };
 
   // Handle copy link
@@ -2404,8 +2445,7 @@ export default function AgentDetailsPage() {
   // 2. Fetch voices on mount
   useEffect(() => {
     setVoicesLoading(true);
-    api.elevenLabs
-      .getVoices(process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY)
+    api.getVoices()
       .then(async (res: Response) => {
         const data = await res.json();
         setElevenVoices(data.voices || []);
@@ -4547,10 +4587,16 @@ export default function AgentDetailsPage() {
                   ) : (
                     <div className="flex flex-col gap-2">
                       {/* Built-in tools */}
-                      {BUILT_IN_TOOLS.map((tool) => (
+                      {BUILT_IN_TOOLS.map((tool) => {
+                        const isDisabled = ["transfer_to_agent", "transfer_to_number"].includes(tool.name);
+                        const isChecked = agentSettings.tools.includes(tool.name);
+                        
+                        return (
                         <div
                           key={tool.name}
-                          className="flex items-center justify-between py-2 border-b last:border-b-0"
+                            className={`flex items-center justify-between py-2 border-b last:border-b-0 ${
+                              isDisabled ? "opacity-50" : ""
+                            }`}
                         >
                           <div>
                             <div className="font-medium">{tool.label}</div>
@@ -4558,11 +4604,14 @@ export default function AgentDetailsPage() {
                               {tool.description}
                             </div>
                           </div>
-                          <label className="inline-flex items-center cursor-pointer">
+                            <label className={`inline-flex items-center ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
-                              checked={agentSettings.tools.includes(tool.name)}
+                                checked={isChecked}
+                                disabled={isDisabled}
                               onChange={(e) => {
+                                  if (isDisabled) return;
+                                  
                                 // When enabling a tool that needs config, open drawer
                                 const needsConfig = [
                                   "transfer_to_agent",
@@ -4588,15 +4637,15 @@ export default function AgentDetailsPage() {
                             />
                             <div
                               className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                                agentSettings.tools.includes(tool.name)
+                                  isChecked
                                   ? "bg-blue-600"
                                   : "bg-gray-200"
-                              }`}
+                                } ${isDisabled ? "opacity-50" : ""}`}
                               style={{ position: "relative" }}
                             >
                               <div
                                 className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                                  agentSettings.tools.includes(tool.name)
+                                    isChecked
                                     ? "translate-x-5"
                                     : ""
                                 }`}
@@ -4604,7 +4653,8 @@ export default function AgentDetailsPage() {
                             </div>
                           </label>
                         </div>
-                      ))}
+                        );
+                      })}
                       {/* Custom tools from API (exclude built-in tool names) */}
                       {allTools
                         .filter(
@@ -6792,6 +6842,13 @@ export default function AgentDetailsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ConvAI Popup */}
+      <ConvAIPopup
+        isOpen={isConvAIPopupOpen}
+        onClose={() => setIsConvAIPopupOpen(false)}
+        agentId={agentId as string}
+      />
     </div>
   );
 }
