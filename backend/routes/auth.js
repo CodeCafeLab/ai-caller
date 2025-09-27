@@ -22,14 +22,16 @@ function setAuthCookies(res, token, req) {
     req.secure || (req.headers && req.headers["x-forwarded-proto"] === "https");
   const secureFlag = isProduction || reqIsSecure;
 
-  // Use the specific host as domain in production to avoid domain scoping issues
-  const cookieDomain = isProduction ? "aicaller.codecafelab.in" : undefined;
+  // Don't set domain in production - let it default to current domain
+  const cookieDomain = undefined; // Removed explicit domain setting
+
+  console.log(`[AUTH] Setting cookies - Production: ${isProduction}, Secure: ${secureFlag}, Host: ${req.get('host')}`);
 
   // Main httpOnly cookie for server-side auth (so browser won't expose it to JS)
   res.cookie("auth_token", token, {
     httpOnly: true,
     secure: secureFlag,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "lax" : "lax", // Changed from "none" to "lax" for better compatibility
     domain: cookieDomain,
     path: "/",
     maxAge: 24 * 60 * 60 * 1000,
@@ -39,7 +41,7 @@ function setAuthCookies(res, token, req) {
   res.cookie("token", token, {
     httpOnly: true,
     secure: secureFlag,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "lax" : "lax",
     domain: cookieDomain,
     path: "/",
     maxAge: 24 * 60 * 60 * 1000,
@@ -49,7 +51,7 @@ function setAuthCookies(res, token, req) {
   res.cookie("isAuthenticated", "true", {
     httpOnly: false,
     secure: secureFlag,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "lax" : "lax",
     domain: cookieDomain,
     path: "/",
     maxAge: 24 * 60 * 60 * 1000,
@@ -500,21 +502,21 @@ router.post('/client-user/login', async (req, res) => {
       );
 
       // Set cookie with proper configuration for production
+      const isProduction = process.env.NODE_ENV === 'production';
+      const reqIsSecure = req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https');
+      const secureFlag = isProduction || reqIsSecure;
+      
       const cookieOptions = {
         httpOnly: true,
         path: '/',
-        maxAge: 24*60*60*1000 // 24 hours
+        maxAge: 24*60*60*1000, // 24 hours
+        secure: secureFlag,
+        sameSite: 'lax' // Use lax for better compatibility
       };
       
-      // Configure for production vs development
-      if (process.env.NODE_ENV === 'production') {
-        cookieOptions.sameSite = 'none';
-        cookieOptions.secure = true;
-      } else {
-        cookieOptions.sameSite = 'lax';
-        cookieOptions.secure = false;
-      }
+      console.log(`[AUTH] Client user setting cookies - Production: ${isProduction}, Secure: ${secureFlag}`);
       
+      res.cookie('auth_token', token, cookieOptions);
       res.cookie('token', token, cookieOptions);
 
       res.json({ 
@@ -541,9 +543,14 @@ router.post('/client-user/login', async (req, res) => {
 // Logout endpoint - clear auth cookies
 router.post("/logout", (req, res) => {
   const isProduction = process.env.NODE_ENV === "production";
-  const cookieDomain = isProduction ? "aicaller.codecafelab.in" : undefined;
+  const cookieDomain = undefined; // Don't set domain
 
   res.clearCookie("auth_token", {
+    httpOnly: true,
+    path: "/",
+    domain: cookieDomain,
+  });
+  res.clearCookie("token", {
     httpOnly: true,
     path: "/",
     domain: cookieDomain,

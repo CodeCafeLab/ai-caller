@@ -94,9 +94,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
-// Test API route
+// Health check routes (no authentication required)
 app.get("/", (req, res) => {
   res.send("🟢 Backend is running!");
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    success: true, 
+    message: "Backend is healthy", 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Database is already initialized in database.js
@@ -164,8 +173,8 @@ app.get("/api/campaigns/agents", (req, res) => {
   }
 });
 
-// ElevenLabs Voices Proxy Endpoint (protected by authentication)
-app.get("/api/voices", authenticateJWT, async (req, res) => {
+// ElevenLabs Voices Proxy Endpoint (already protected by global middleware)
+app.get("/api/voices", async (req, res) => {
   try {
     console.log("ELEVENLABS_API_KEY:", process.env.ELEVENLABS_API_KEY);
     const response = await fetch("https://api.elevenlabs.io/v1/voices", {
