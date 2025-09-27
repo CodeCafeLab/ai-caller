@@ -1104,4 +1104,148 @@ router.delete('/:agentId/analysis/data-item', (req, res) => {
   });
 });
 
+// --- Advanced Settings Endpoints ---
+
+// GET /api/agents/:agentId/advanced-settings - Get advanced settings for an agent
+router.get('/:agentId/advanced-settings', (req, res) => {
+  const agentId = req.params.agentId;
+  
+  console.log(`[GET /api/agents/:agentId/advanced-settings] Fetching advanced settings for agent: ${agentId}`);
+  
+  db.query('SELECT * FROM agent_advanced_settings WHERE agent_id = ?', [agentId], (err, rows) => {
+    if (err) {
+      console.error(`[GET /api/agents/:agentId/advanced-settings] Database error:`, err);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch advanced settings',
+        details: err.message 
+      });
+    }
+    
+    if (rows.length === 0) {
+      // Return default settings if no settings exist
+      const defaultSettings = {
+        turn_timeout: null,
+        silence_end_call_timeout: null,
+        max_conversation_duration: null,
+        keywords: null,
+        text_only: null,
+        user_input_audio_format: null,
+        client_events: null,
+        privacy_settings: null,
+        conversations_retention_period: null,
+        delete_transcript_and_derived_fields: null,
+        delete_audio: null
+      };
+      return res.json({ 
+        success: true, 
+        data: defaultSettings 
+      });
+    }
+    
+    const settings = rows[0];
+    // Parse JSON fields if they exist
+    if (settings.privacy_settings) {
+      try {
+        settings.privacy_settings = JSON.parse(settings.privacy_settings);
+      } catch (e) {
+        console.warn(`[GET /api/agents/:agentId/advanced-settings] Failed to parse privacy_settings JSON:`, e);
+      }
+    }
+    
+    console.log(`[GET /api/agents/:agentId/advanced-settings] Returning settings:`, settings);
+    res.json({ 
+      success: true, 
+      data: settings 
+    });
+  });
+});
+
+// POST /api/agents/:agentId/advanced-settings - Save advanced settings for an agent
+router.post('/:agentId/advanced-settings', (req, res) => {
+  const agentId = req.params.agentId;
+  const settings = req.body;
+  
+  console.log(`[POST /api/agents/:agentId/advanced-settings] Saving advanced settings for agent: ${agentId}`, settings);
+  
+  // Validate required fields
+  if (!agentId) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Agent ID is required' 
+    });
+  }
+  
+  // Prepare the data for insertion/update
+  const insertData = {
+    agent_id: agentId,
+    turn_timeout: settings.turn_timeout || null,
+    silence_end_call_timeout: settings.silence_end_call_timeout || null,
+    max_conversation_duration: settings.max_conversation_duration || null,
+    keywords: settings.keywords || null,
+    text_only: settings.text_only || null,
+    user_input_audio_format: settings.user_input_audio_format || null,
+    client_events: settings.client_events || null,
+    privacy_settings: settings.privacy_settings ? JSON.stringify(settings.privacy_settings) : null,
+    conversations_retention_period: settings.conversations_retention_period || null,
+    delete_transcript_and_derived_fields: settings.delete_transcript_and_derived_fields || null,
+    delete_audio: settings.delete_audio || null
+  };
+  
+  // Use INSERT ... ON DUPLICATE KEY UPDATE to handle both insert and update cases
+  const sql = `
+    INSERT INTO agent_advanced_settings (
+      agent_id, turn_timeout, silence_end_call_timeout, max_conversation_duration,
+      keywords, text_only, user_input_audio_format, client_events, privacy_settings,
+      conversations_retention_period, delete_transcript_and_derived_fields, delete_audio
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      turn_timeout = VALUES(turn_timeout),
+      silence_end_call_timeout = VALUES(silence_end_call_timeout),
+      max_conversation_duration = VALUES(max_conversation_duration),
+      keywords = VALUES(keywords),
+      text_only = VALUES(text_only),
+      user_input_audio_format = VALUES(user_input_audio_format),
+      client_events = VALUES(client_events),
+      privacy_settings = VALUES(privacy_settings),
+      conversations_retention_period = VALUES(conversations_retention_period),
+      delete_transcript_and_derived_fields = VALUES(delete_transcript_and_derived_fields),
+      delete_audio = VALUES(delete_audio),
+      updated_at = NOW()
+  `;
+  
+  const values = [
+    insertData.agent_id,
+    insertData.turn_timeout,
+    insertData.silence_end_call_timeout,
+    insertData.max_conversation_duration,
+    insertData.keywords,
+    insertData.text_only,
+    insertData.user_input_audio_format,
+    insertData.client_events,
+    insertData.privacy_settings,
+    insertData.conversations_retention_period,
+    insertData.delete_transcript_and_derived_fields,
+    insertData.delete_audio
+  ];
+  
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error(`[POST /api/agents/:agentId/advanced-settings] Database error:`, err);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to save advanced settings',
+        details: err.message 
+      });
+    }
+    
+    console.log(`[POST /api/agents/:agentId/advanced-settings] Successfully saved advanced settings for agent: ${agentId}`);
+    res.json({ 
+      success: true, 
+      message: 'Advanced settings saved successfully',
+      agentId: agentId
+    });
+  });
+});
+
 module.exports = router;

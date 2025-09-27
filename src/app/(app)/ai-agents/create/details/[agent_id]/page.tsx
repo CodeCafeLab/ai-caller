@@ -1348,6 +1348,11 @@ export default function AgentDetailsPage() {
     fetchTools();
   }, [fetchTools]);
 
+  // Debug output for agentSettings changes
+  useEffect(() => {
+    console.log("🔧 [DEBUG] agentSettings.tools changed:", agentSettings.tools);
+  }, [agentSettings.tools]);
+
   // Fetch agent details from backend (which fetches from ElevenLabs and local DB)
   useEffect(() => {
     setLoading(true);
@@ -1513,24 +1518,19 @@ export default function AgentDetailsPage() {
             data?.local?.custom_llm_headers ||
             prev.custom_llm_headers ||
             [],
-          // Hydrate tools from ElevenLabs: merge prompt.tool_ids (IDs) + built_in_tools names; fallback to agent.tools; then local
+          // Hydrate tools from ElevenLabs: get enabled tools from tools array
           tools: (() => {
-            const toolIds =
-              Array.isArray(agent.prompt?.tool_ids) &&
-              agent.prompt?.tool_ids?.length
-                ? agent.prompt.tool_ids
-                : [];
-            const builtInNames = agent.prompt?.built_in_tools
-              ? Object.keys(agent.prompt.built_in_tools)
+            // Get enabled tools from agent.conversation_config.agent.prompt.tools array
+            const enabledTools = Array.isArray(data.elevenlabs?.conversation_config?.agent?.prompt?.tools) 
+              ? data.elevenlabs.conversation_config.agent.prompt.tools.map((tool: any) => tool.name).filter(Boolean)
               : [];
-            const fromAgentTools = Array.isArray(agent.tools)
-              ? agent.tools
-              : [];
-            const base = toolIds.length
-              ? [...toolIds, ...builtInNames]
-              : fromAgentTools;
-            const fallback = data?.local?.tools || prev.tools || [];
-            return Array.from(new Set([...(base || []), ...(fallback || [])]));
+            
+            console.log("🔧 [DEBUG] Tools from ElevenLabs prompt.tools:", {
+              agentTools: data.elevenlabs?.conversation_config?.agent?.prompt?.tools,
+              enabledTools: enabledTools
+            });
+            
+            return enabledTools;
           })(),
           // hydrate built-in tool configs
           transfer_to_agent_transfers: Array.isArray(
@@ -4590,6 +4590,7 @@ export default function AgentDetailsPage() {
                       {BUILT_IN_TOOLS.map((tool) => {
                         const isDisabled = ["transfer_to_agent", "transfer_to_number"].includes(tool.name);
                         const isChecked = agentSettings.tools.includes(tool.name);
+                        
                         
                         return (
                         <div
