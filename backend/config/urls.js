@@ -26,13 +26,13 @@ const config = {
 
   // Local Backend Configuration
   backend: {
-    base: process.env.BACKEND_URL || 'http://localhost:5000',
-    api: process.env.BACKEND_URL || 'http://localhost:5000/api'
+    base: process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000'),
+    api: process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/api` : (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api')
   },
 
   // Frontend Configuration
   frontend: {
-    base: process.env.FRONTEND_URL || 'http://localhost:3000'
+    base: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000')
   },
 
   // Database Configuration

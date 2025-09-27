@@ -3,8 +3,27 @@
  * All base URLs and API endpoints are maintained here
  */
 
-const rawBackendBase =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+// Detect if we're running in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Get the current window location for dynamic URL detection
+const currentHost = isBrowser ? window.location.origin : '';
+
+// Determine the backend base URL with proper fallbacks
+const rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || 
+  (isBrowser ? 
+    (process.env.NODE_ENV === 'production' ? currentHost : "http://localhost:5000") 
+    : "http://localhost:5000");
+
+// Log for debugging
+if (isBrowser) {
+  console.log('🔧 API Configuration Debug:');
+  console.log('- NODE_ENV:', process.env.NODE_ENV);
+  console.log('- NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+  console.log('- Current host:', currentHost);
+  console.log('- Selected backend base:', rawBackendBase);
+}
+
 const normalizedBackendBase = rawBackendBase.replace(/\/$/, "");
 const normalizedBackendApi = normalizedBackendBase.endsWith("/api")
   ? normalizedBackendBase
