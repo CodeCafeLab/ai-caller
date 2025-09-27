@@ -28,15 +28,28 @@ function setAuthCookies(res, token, req) {
   // Main httpOnly cookie for server-side auth (so browser won't expose it to JS)
   res.cookie("auth_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // only send on HTTPS in production
-    sameSite: "strict",
+    secure: secureFlag,
+    sameSite: isProduction ? "none" : "lax",
+    domain: cookieDomain,
+    path: "/",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  // Also set token cookie for backward compatibility
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: secureFlag,
+    sameSite: isProduction ? "none" : "lax",
+    domain: cookieDomain,
+    path: "/",
+    maxAge: 24 * 60 * 60 * 1000,
   });
 
   // Optional non-httpOnly flag that front-end can read (boolean marker)
   res.cookie("isAuthenticated", "true", {
     httpOnly: false,
     secure: secureFlag,
-    sameSite: isProduction ? "lax" : "lax",
+    sameSite: isProduction ? "none" : "lax",
     domain: cookieDomain,
     path: "/",
     maxAge: 24 * 60 * 60 * 1000,
