@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { tokenStorage } from "@/lib/tokenStorage";
+import { ConvAIPopup } from "@/components/ConvAIPopup";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -893,9 +894,14 @@ async function addKnowledgeBaseItem(
   });
   const elevenData = await elevenRes.json();
 
-  // 2. Save to your local DB (use your actual API call)
+    // 2. Save to your local DB with ElevenLabs document ID
   if (typeof api !== "undefined" && api.createKnowledgeBaseItem) {
     await api.createKnowledgeBaseItem(localDbPayload);
+    const payloadWithElevenLabsId = {
+      ...localDbPayload,
+      elevenlabs_id: elevenData.id || elevenData.document_id || null
+    };
+    await api.createKnowledgeBaseItem(payloadWithElevenLabsId);
   }
 
   return elevenData;
@@ -1038,6 +1044,31 @@ export default function AgentDetailsPage() {
     custom_llm_api_key: "",
     custom_llm_headers: [] as { type: string; name: string; secret: string }[],
   });
+  // Recompute additional languages after languages list or ElevenLabs agent changes
+  useEffect(() => {
+    try {
+      const el: any = elevenLabsAgent || {};
+      const presets = el?.conversation_config?.language_presets || {};
+      const fromPresets: string[] = Object.keys(presets || {});
+      const explicit = el?.conversation_config?.agent?.additional_languages || el?.conversation_config?.agent?.prompt?.additional_languages || [];
+      const combined = Array.from(new Set([
+        ...fromPresets,
+        ...explicit.map((x: any) => (typeof x === 'string' ? x : (x?.code || x?.lang || '')))
+      ].filter(Boolean)));
+      if (!combined.length) return;
+      const mapped = combined.map(code => {
+        const base = String(code).split('-')[0].toLowerCase();
+        const match = languages.find(l => l.code.toLowerCase() === String(code).toLowerCase() || l.code.split('-')[0].toLowerCase() === base);
+        return match ? match.code : String(code);
+      });
+      setAgentSettings((prev: any) => {
+        const prevArr = Array.isArray(prev.additional_languages) ? prev.additional_languages : [];
+        const same = prevArr.length === mapped.length && prevArr.every((v: string, i: number) => v === mapped[i]);
+        if (same) return prev;
+        return { ...prev, additional_languages: mapped };
+      });
+    } catch {}
+  }, [languages, elevenLabsAgent]);
   const [widgetConfig, setWidgetConfig] = useState({
     voice: "Eric",
     multi_voice: false,
@@ -1168,6 +1199,7 @@ export default function AgentDetailsPage() {
   const [mcpServers, setMcpServers] = useState<any[]>(
     agentSettings.mcp_server_ids || []
   );
+  const [isConvAIPopupOpen, setIsConvAIPopupOpen] = useState(false);
 
   // MCP server selection helpers
   const selectedMcpIds: string[] = agentSettings.mcp_server_ids || [];
@@ -1357,25 +1389,26 @@ export default function AgentDetailsPage() {
         const evaluation =
           (el.platform_settings && el.platform_settings.evaluation) || {};
 
-        // Parse language_presets from ElevenLabs to get additional languages
-        const language_presets =
-          data.elevenlabs.conversation_config?.language_presets || {};
-        console.log(
-          "[DEBUG] Language presets from ElevenLabs:",
-          language_presets
+        // Parse additional languages from ElevenLabs (support both language_presets and arrays)
+        const language_presets = data.elevenlabs?.conversation_config?.language_presets || {};
+        const additionalLanguagesFromPresets = Object.keys(language_presets || {});
+        // Some responses may include an explicit array on agent or prompt
+        const explicitAdditional = (
+          data.elevenlabs?.conversation_config?.agent?.additional_languages ||
+          data.elevenlabs?.conversation_config?.agent?.prompt?.additional_languages ||
+          []
         );
-        const additional_languages = Object.keys(language_presets).map(
-          (langCode) => {
-            // Find the full language code by matching first two letters (only if languages are loaded)
-            const fullLang =
-              languages.length > 0
-                ? languages.find(
-                    (l) =>
-                      l.code.substring(0, 2).toLowerCase() ===
-                      langCode.toLowerCase()
-                  )
-                : null;
-            return fullLang ? fullLang.code : langCode;
+        const combinedLanguageCodes = Array.from(new Set([
+          ...additionalLanguagesFromPresets,
+          ...explicitAdditional.map((x: any) => (typeof x === 'string' ? x : x?.code || x?.lang || ''))
+        ].filter(Boolean)));
+        // Map codes to full codes in our list (preserve full code when possible)
+        const additional_languages = combinedLanguageCodes.map((code: string) => {
+          const normalized = code.split('-')[0].toLowerCase();
+          const fullLang = languages.length > 0
+            ? languages.find(l => l.code.toLowerCase() === code.toLowerCase() || l.code.split('-')[0].toLowerCase() === normalized)
+            : null;
+          return fullLang ? fullLang.code : code;
           }
         );
         console.log(
@@ -1398,12 +1431,16 @@ export default function AgentDetailsPage() {
         setAgentSettings((prev) => ({
           ...prev,
           language: data?.local?.language_code || prev.language || "en-US",
-          additional_languages:
-            additional_languages.length > 0
-              ? additional_languages
-              : data?.local?.additional_languages ||
-                prev.additional_languages ||
-                [],
+          additional_languages: (() => {
+            // Prefer explicit additional_languages on agent if present
+            const explicit = data.elevenlabs?.conversation_config?.agent?.additional_languages || data.elevenlabs?.conversation_config?.agent?.prompt?.additional_languages;
+            if (Array.isArray(explicit) && explicit.length) {
+              const mapped = explicit.map((x: any) => typeof x === 'string' ? x : (x?.code || x?.lang || '')).filter(Boolean);
+              if (mapped.length) return mapped;
+            }
+            if (additional_languages.length > 0) return additional_languages;
+            return (data?.local?.additional_languages || prev.additional_languages || []);
+          })(),
           llm:
             data.elevenlabs.conversation_config?.agent?.prompt?.llm ||
             data?.local?.llm ||
@@ -2010,20 +2047,89 @@ export default function AgentDetailsPage() {
   );
   const docPickerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch documents from local knowledge base API for the current client admin
-  useEffect(() => {
-    api
-      .getKnowledgeBase()
-      .then((res) => res.json())
-      .then((data) => {
-        // Only show docs for the current client admin
-        setAvailableDocs(
-          (data.data || []).filter(
-            (doc: any) =>
-              String(doc.client_id || "") === String(user?.userId || "")
-          )
-        );
+ // Enrich local knowledge base docs with ElevenLabs IDs for legacy rows
+ async function enrichDocsWithElevenLabsIds(localDocs: any[]): Promise<any[]> {
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
+    if (!apiKey) return localDocs;
+    const res = await fetch('https://api.elevenlabs.io/v1/convai/knowledge-base', {
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await res.json();
+    const remoteDocs: any[] = Array.isArray(data?.knowledge_bases)
+      ? data.knowledge_bases
+      : Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.documents)
+      ? data.documents
+      : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data)
+      ? data
+      : [];
+
+    // Build lookup by url and name
+    const byUrl = new Map<string, any>();
+    const byName = new Map<string, any>();
+    for (const rd of remoteDocs) {
+      const rid = rd?.id || rd?.document_id;
+      if (!rid) continue;
+      if (rd?.url) byUrl.set(String(rd.url).trim(), rd);
+      if (rd?.name) byName.set(String(rd.name).trim().toLowerCase(), rd);
+    }
+
+    return localDocs.map(ld => {
+      if (ld?.elevenlabs_id) return ld;
+      const urlKey = ld?.url ? String(ld.url).trim() : '';
+      const nameKey = ld?.name ? String(ld.name).trim().toLowerCase() : '';
+      const match = (urlKey && byUrl.get(urlKey)) || (nameKey && byName.get(nameKey));
+      if (match) {
+        const rid = match?.id || match?.document_id;
+        if (rid) return { ...ld, elevenlabs_id: rid };
+      }
+      return ld;
+    });
+  } catch {
+    return localDocs;
+  }
+}
+
+// Fetch ElevenLabs docs and filter by local client association (hide deleted/unlinked)
+useEffect(() => {
+  if (!user?.userId) return;
+  (async () => {
+    try {
+      // Pull remote list
+      const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
+      const res = await fetch('https://api.elevenlabs.io/v1/convai/knowledge-base', {
+        headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
       });
+      const r = await res.json();
+      const remote: any[] = Array.isArray(r?.knowledge_bases) ? r.knowledge_bases : Array.isArray(r?.items) ? r.items : Array.isArray(r?.documents) ? r.documents : Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : [];
+
+      // Build local meta map
+      const metaRes = await api.getKnowledgeBase();
+      const metaJson = await metaRes.json();
+      const map: Record<string, any> = {};
+      (metaJson?.data || []).forEach((item: any) => {
+        if (item?.url) map[item.url] = item; else if (item?.name) map[item.name] = item;
+      });
+
+      const clientId = String(user.userId);
+      const filtered = remote.filter((doc: any) => {
+        const meta = (doc?.url ? map[doc.url] : undefined) || (doc?.name ? map[doc.name] : undefined) || null;
+        return meta && String(meta.client_id) === clientId;
+      });
+
+      const normalized = filtered.map(d => ({ ...d, id: String(d.id || d.document_id || ''), elevenlabs_id: String(d.id || d.document_id || '') }));
+      setAvailableDocs(normalized);
+    } catch {
+      // fallback: keep previous
+    }
+  })();
   }, [user?.userId]);
 
   // Add document dialog handlers (use local DB and set client_id)
@@ -2035,9 +2141,16 @@ export default function AgentDetailsPage() {
 
   // Handle test AI agent
   const handleTestAgent = () => {
-    // Open the agent test page in a new tab
-    const testUrl = `https://elevenlabs.io/app/conversational-ai/agents/${agentId}`;
-    window.open(testUrl, "_blank");
+    console.log('Test Agent clicked, agentId:', agentId);
+    if (!agentId) {
+      toast({
+        title: "Error",
+        description: "Agent ID not found. Please refresh the page and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsConvAIPopupOpen(true);
   };
 
   // Handle copy link
@@ -2113,7 +2226,7 @@ export default function AgentDetailsPage() {
         }
       );
       const elevenDoc = await elevenRes.json();
-      // 2. Add to local DB
+      // 2. Add to local DB with ElevenLabs document ID
       const localDbPayload = {
         client_id: user?.userId || null,
         type: "url",
@@ -2123,8 +2236,18 @@ export default function AgentDetailsPage() {
         text_content: null,
         size: null,
         created_by: "user@example.com", // replace with actual user email if available
+        elevenlabs_id: elevenDoc.id || elevenDoc.document_id || null
       };
-      await api.createKnowledgeBaseItem(localDbPayload);
+      const createdRes = await api.createKnowledgeBaseItem(localDbPayload);
+      const createdJson = await createdRes.json().catch(() => null);
+      const createdId = createdJson?.id;
+
+      // Auto-select newly added doc for this agent
+      const newDoc = { ...localDbPayload, id: createdId } as any;
+      setSelectedDocs(prev => {
+        const next = [...prev, newDoc];
+        return next;
+      });
       setAddUrlInput("");
       setOpenDialog(null);
       // Refresh availableDocs
@@ -2134,13 +2257,12 @@ export default function AgentDetailsPage() {
         (doc: any) => String(doc.client_id || "") === String(user?.userId || "")
       );
       setAvailableDocs(docs);
-      // Update agent knowledge base in ElevenLabs
-      await updateAgentKnowledgeBaseInElevenLabs(
-        String(agentId),
-        docs
-          .map((doc: any) => (typeof doc?.id === "string" ? doc.id : undefined))
-          .filter((id: unknown): id is string => !!id)
-      );
+      // Update agent knowledge base in ElevenLabs using selected docs + new
+      const selectedIds = [...selectedDocs, newDoc]
+        .map(d => (typeof d?.elevenlabs_id === 'string' ? d.elevenlabs_id : undefined))
+        .filter((id: unknown): id is string => !!id);
+      const uniqueSelectedIds = Array.from(new Set(selectedIds));
+      await updateAgentKnowledgeBaseInElevenLabs(String(agentId), uniqueSelectedIds);
     } finally {
       setAddDocLoading(false);
     }
@@ -2161,7 +2283,7 @@ export default function AgentDetailsPage() {
         }
       );
       const elevenDoc = await elevenRes.json();
-      // 2. Add to local DB
+      // 2. Add to local DB with ElevenLabs document ID
       const localDbPayload = {
         client_id: user?.userId || null,
         type: "text",
@@ -2171,8 +2293,14 @@ export default function AgentDetailsPage() {
         text_content: addTextContent,
         size: `${addTextContent.length} chars`,
         created_by: "user@example.com", // replace with actual user email if available
+        elevenlabs_id: elevenDoc.id || elevenDoc.document_id || null
       };
-      await api.createKnowledgeBaseItem(localDbPayload);
+      const createdRes = await api.createKnowledgeBaseItem(localDbPayload);
+      const createdJson = await createdRes.json().catch(() => null);
+      const createdId = createdJson?.id;
+
+      const newDoc = { ...localDbPayload, id: createdId } as any;
+      setSelectedDocs(prev => [...prev, newDoc]);
       setAddTextName("");
       setAddTextContent("");
       setOpenDialog(null);
@@ -2184,12 +2312,11 @@ export default function AgentDetailsPage() {
       );
       setAvailableDocs(docs);
       // Update agent knowledge base in ElevenLabs
-      await updateAgentKnowledgeBaseInElevenLabs(
-        String(agentId),
-        docs
-          .map((doc: any) => (typeof doc?.id === "string" ? doc.id : undefined))
-          .filter((id: unknown): id is string => !!id)
-      );
+      const selectedIds = [...selectedDocs, newDoc]
+        .map(d => (typeof d?.elevenlabs_id === 'string' ? d.elevenlabs_id : undefined))
+        .filter((id: unknown): id is string => !!id);
+      const uniqueSelectedIds = Array.from(new Set(selectedIds));
+      await updateAgentKnowledgeBaseInElevenLabs(String(agentId), uniqueSelectedIds);
     } finally {
       setAddDocLoading(false);
     }
@@ -2213,7 +2340,7 @@ export default function AgentDetailsPage() {
         }
       );
       const elevenDoc = await elevenRes.json();
-      // 2. Add to local DB
+      // 2. Add to local DB with ElevenLabs document ID
       const localDbPayload = {
         client_id: user?.userId || null,
         type: "file",
@@ -2223,8 +2350,14 @@ export default function AgentDetailsPage() {
         text_content: null,
         size: `${(addFile.size / 1024).toFixed(1)} kB`,
         created_by: "user@example.com", // replace with actual user email if available
+        elevenlabs_id: elevenDoc.id || elevenDoc.document_id || null
       };
-      await api.createKnowledgeBaseItem(localDbPayload);
+      const createdRes = await api.createKnowledgeBaseItem(localDbPayload);
+      const createdJson = await createdRes.json().catch(() => null);
+      const createdId = createdJson?.id;
+
+      const newDoc = { ...localDbPayload, id: createdId } as any;
+      setSelectedDocs(prev => [...prev, newDoc]);
       setAddFile(null);
       setOpenDialog(null);
       // Refresh availableDocs
@@ -2235,12 +2368,11 @@ export default function AgentDetailsPage() {
       );
       setAvailableDocs(docs);
       // Update agent knowledge base in ElevenLabs
-      await updateAgentKnowledgeBaseInElevenLabs(
-        String(agentId),
-        docs
-          .map((doc: any) => (typeof doc?.id === "string" ? doc.id : undefined))
-          .filter((id: unknown): id is string => !!id)
-      );
+      const selectedIds = [...selectedDocs, newDoc]
+        .map(d => (typeof d?.elevenlabs_id === 'string' ? d.elevenlabs_id : undefined))
+        .filter((id: unknown): id is string => !!id);
+      const uniqueSelectedIds = Array.from(new Set(selectedIds));
+      await updateAgentKnowledgeBaseInElevenLabs(String(agentId), uniqueSelectedIds);
     } finally {
       setAddDocLoading(false);
     }
@@ -2287,8 +2419,7 @@ export default function AgentDetailsPage() {
 
   useEffect(() => {
     setVoicesLoading(true);
-    api.elevenLabs
-      .getVoices(process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY)
+    api.getVoices()
       .then(async (res: Response) => {
         const data = await res.json();
         setElevenVoices(data.voices || []);
@@ -4544,9 +4675,7 @@ export default function AgentDetailsPage() {
                           <span className="font-medium">
                             {doc.name || doc.title || doc.id}
                           </span>
-                          <span className="text-xs text-gray-500">
-                            {doc.id}
-                          </span>
+                          <span className="text-xs text-gray-500">{doc.elevenlabs_id || doc.id}</span>
                           <button
                             type="button"
                             className="ml-auto text-red-500 hover:text-red-700 text-sm"
@@ -4623,7 +4752,17 @@ export default function AgentDetailsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="max-h-48 overflow-y-auto">
+                      {Object.values(docTypeFilter).some(Boolean) && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-black text-white rounded-full px-2.5 py-0.5 text-xs font-medium">× Type</span>
+                          {(['file','url','text'] as const).filter(t => docTypeFilter[t]).map(t => (
+                            <span key={t} className="bg-black text-white rounded-full px-2.5 py-0.5 text-xs font-medium">
+                              {t.toUpperCase()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="max-h-56 overflow-y-auto">
                         {Array.isArray(availableDocs) &&
                           availableDocs
                             .filter((doc) => {
@@ -4637,26 +4776,17 @@ export default function AgentDetailsPage() {
                             .map((doc) => (
                               <div
                                 key={doc.id}
-                                className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 cursor-pointer rounded"
+                                className="flex items-start gap-2 px-2 py-2 hover:bg-gray-100 cursor-pointer rounded"
                                 onClick={() => {
                                   setSelectedDocs((prev) => [...prev, doc]);
                                   setShowDocPicker(false);
                                 }}
                               >
-                                <span className="text-lg">
-                                  {doc.icon ||
-                                    (doc.type === "web"
-                                      ? "🌐"
-                                      : doc.type === "text"
-                                      ? "📝"
-                                      : "📄")}
-                                </span>
-                                <span className="font-medium">
-                                  {doc.name || doc.title || doc.id}
-                                </span>
-                                <span className="text-xs text-gray-500 ml-auto">
-                                  {doc.id}
-                                </span>
+                                <span className="text-lg mt-0.5">{doc.icon || (doc.type === 'web' ? '🌐' : doc.type === 'text' ? '📝' : '📄')}</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-sm truncate">{doc.name || doc.title || (doc.elevenlabs_id || doc.id)}</div>
+                                <div className="text-xs text-gray-500 font-mono truncate">{doc.elevenlabs_id || doc.id}</div>
+                              </div>
                               </div>
                             ))}
                       </div>
@@ -4826,10 +4956,16 @@ export default function AgentDetailsPage() {
                   ) : (
                     <div className="flex flex-col gap-2">
                       {/* Built-in tools */}
-                      {BUILT_IN_TOOLS.map((tool) => (
+                      {BUILT_IN_TOOLS.map((tool) => {
+                        const isDisabled = ["transfer_to_agent", "transfer_to_number"].includes(tool.name);
+                        const isChecked = agentSettings.tools.includes(tool.name);
+                        
+                        return (
                         <div
                           key={tool.name}
-                          className="flex items-center justify-between py-2 border-b last:border-b-0"
+                            className={`flex items-center justify-between py-2 border-b last:border-b-0 ${
+                              isDisabled ? "opacity-50" : ""
+                            }`}
                         >
                           <div>
                             <div className="font-medium">{tool.label}</div>
@@ -4837,11 +4973,14 @@ export default function AgentDetailsPage() {
                               {tool.description}
                             </div>
                           </div>
-                          <label className="inline-flex items-center cursor-pointer">
+                            <label className={`inline-flex items-center ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
-                              checked={agentSettings.tools.includes(tool.name)}
+                                checked={isChecked}
+                                disabled={isDisabled}
                               onChange={(e) => {
+                                  if (isDisabled) return;
+                                  
                                 const needsConfig = [
                                   "transfer_to_agent",
                                   "transfer_to_number",
@@ -4866,15 +5005,15 @@ export default function AgentDetailsPage() {
                             />
                             <div
                               className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                                agentSettings.tools.includes(tool.name)
+                                  isChecked
                                   ? "bg-blue-600"
                                   : "bg-gray-200"
-                              }`}
+                                } ${isDisabled ? "opacity-50" : ""}`}
                               style={{ position: "relative" }}
                             >
                               <div
                                 className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                                  agentSettings.tools.includes(tool.name)
+                                    isChecked
                                     ? "translate-x-5"
                                     : ""
                                 }`}
@@ -4882,7 +5021,8 @@ export default function AgentDetailsPage() {
                             </div>
                           </label>
                         </div>
-                      ))}
+                        );
+                      })}
                       {/* Custom tools from API (exclude built-in tool names) */}
                       {allTools
                         .filter(
@@ -6849,6 +6989,13 @@ export default function AgentDetailsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ConvAI Popup */}
+      <ConvAIPopup
+        isOpen={isConvAIPopupOpen}
+        onClose={() => setIsConvAIPopupOpen(false)}
+        agentId={agentId as string}
+      />
     </div>
   );
 }

@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-very-secret-key';
 // JWT middleware
 function authenticateJWT(req, res, next) {
   // Get token from Authorization header or cookies
-  let token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+  let token = req.headers.authorization?.split(' ')[1] || req.cookies.auth_token || req.cookies.token;
   
   if (!token) {
     return res.status(401).json({ success: false, message: 'No token provided' });
