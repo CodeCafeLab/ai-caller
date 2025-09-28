@@ -88,6 +88,9 @@ NEXT_PUBLIC_API_BASE_URL=https://$DOMAIN
 NODE_ENV=production
 EOF
 
+echo "📝 Created frontend environment file:" 
+cat .env.local
+
 # Backend environment
 cat > backend/.env << EOF
 # Database Configuration

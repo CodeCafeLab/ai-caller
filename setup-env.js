@@ -27,7 +27,7 @@ const scenarios = {
     name: "Server Deployment",
     description: "Frontend on localhost, Backend on server",
     config: {
-      NEXT_PUBLIC_API_BASE_URL: "https://aicaller.codecafelab.in/",
+      NEXT_PUBLIC_API_BASE_URL: "https://aicaller.codecafelab.in",
       FRONTEND_URL: "http://localhost:3000",
     },
   },

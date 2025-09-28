@@ -9,11 +9,27 @@ const isBrowser = typeof window !== 'undefined';
 // Get the current window location for dynamic URL detection
 const currentHost = isBrowser ? window.location.origin : '';
 
-// Determine the backend base URL with proper fallbacks
-const rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || 
-  (isBrowser ? 
-    (process.env.NODE_ENV === 'production' ? currentHost : "http://localhost:5000") 
-    : "http://localhost:5000");
+// Determine the backend base URL with smart detection
+let rawBackendBase: string;
+
+// Check if we're on a production domain (not localhost/127.0.0.1)
+const isLocalhost = currentHost.includes('localhost') || currentHost.includes('127.0.0.1') || currentHost.includes('3000');
+const hasProductionUrl = process.env.NEXT_PUBLIC_API_BASE_URL && process.env.NEXT_PUBLIC_API_BASE_URL !== 'http://localhost:5000';
+
+// Improved URL detection logic
+if (isBrowser && !isLocalhost) {
+  // We're in a browser and not on localhost - this is production
+  rawBackendBase = hasProductionUrl ? (process.env.NEXT_PUBLIC_API_BASE_URL || currentHost) : currentHost;
+  console.log('🌐 Production environment detected');
+} else if (hasProductionUrl) {
+  // We have a production URL configured, use it
+  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+  console.log('🔧 Using configured production URL');
+} else {
+  // Default to localhost for development
+  rawBackendBase = "http://localhost:5000";
+  console.log('🛠️ Development environment detected');
+}
 
 // Log for debugging
 if (isBrowser) {
@@ -21,6 +37,8 @@ if (isBrowser) {
   console.log('- NODE_ENV:', process.env.NODE_ENV);
   console.log('- NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
   console.log('- Current host:', currentHost);
+  console.log('- Is localhost:', isLocalhost);
+  console.log('- Has production URL:', hasProductionUrl);
   console.log('- Selected backend base:', rawBackendBase);
 }
 
