@@ -9,17 +9,17 @@ const isBrowser = typeof window !== 'undefined';
 // Get the current window location for dynamic URL detection
 const currentHost = isBrowser ? window.location.origin : '';
 
-// Determine the backend base URL with proper fallbacks
+// Determine the backend base URL with smart detection
 let rawBackendBase;
 
 // Check if we're in a browser and on a production domain (not localhost)
-const isProductionDomain = isBrowser && !currentHost.includes('localhost');
+const isProductionDomain = isBrowser && !currentHost.includes('localhost') && !currentHost.includes('127.0.0.1');
 
-// In browser environment on production domain, always use relative URLs unless explicitly overridden
+// Smart URL detection based on environment and domain
 if (isProductionDomain) {
-  // Use relative URL for API calls in production to ensure they work with any domain
-  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-  console.log('🔄 Using relative API paths in production for domain flexibility');
+  // On production domain, use the current origin for API calls
+  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || currentHost;
+  console.log('🌐 Production domain detected, using current host for API calls');
 } else {
   // In development or server-side, use the configured URL or localhost
   rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
