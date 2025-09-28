@@ -10,10 +10,20 @@ const isBrowser = typeof window !== 'undefined';
 const currentHost = isBrowser ? window.location.origin : '';
 
 // Determine the backend base URL with proper fallbacks
-const rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || 
-  (isBrowser ? 
-    (process.env.NODE_ENV === 'production' ? currentHost : "http://localhost:5000") 
-    : "http://localhost:5000");
+let rawBackendBase;
+
+// Check if we're in a browser and on a production domain (not localhost)
+const isProductionDomain = isBrowser && !currentHost.includes('localhost');
+
+// In browser environment on production domain, always use relative URLs unless explicitly overridden
+if (isProductionDomain) {
+  // Use relative URL for API calls in production to ensure they work with any domain
+  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+  console.log('🔄 Using relative API paths in production for domain flexibility');
+} else {
+  // In development or server-side, use the configured URL or localhost
+  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+}
 
 // Log for debugging
 if (isBrowser) {
@@ -21,6 +31,7 @@ if (isBrowser) {
   console.log('- NODE_ENV:', process.env.NODE_ENV);
   console.log('- NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
   console.log('- Current host:', currentHost);
+  console.log('- Is production domain:', isProductionDomain);
   console.log('- Selected backend base:', rawBackendBase);
 }
 

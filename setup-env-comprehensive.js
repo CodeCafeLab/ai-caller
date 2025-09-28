@@ -27,8 +27,8 @@ const scenarios = {
     name: "Server Deployment",
     description: "Both frontend and backend on server",
     env: {
-      NEXT_PUBLIC_API_BASE_URL: "https://aicaller.codecafelab.in/",
-      FRONTEND_URL: "https://aicaller.codecafelab.in/",
+      NEXT_PUBLIC_API_BASE_URL: "https://aicaller.codecafelab.in",
+      FRONTEND_URL: "https://aicaller.codecafelab.in",
       NODE_ENV: "production",
     },
   },
