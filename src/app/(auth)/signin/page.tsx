@@ -24,7 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { urls } from "@/lib/config/urls";
+import { api } from "@/lib/apiConfig";
 import { useState, useTransition } from "react";
 import { useUser } from "@/lib/utils";
 
@@ -50,47 +50,41 @@ export default function SignInPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
       try {
-        const data = await fetch(urls.backend.api("/auth/login"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(values),
-        });
+        const response = await api.login(values);
+        const data = await response.json();
 
-        const response = await data.json();
-
-        if (response.token) {
-          tokenStorage.setToken(response.token);
+        if (data.token) {
+          tokenStorage.setToken(data.token);
         }
 
-        if (response.success && response.user) {
+        if (data.success && data.user) {
           setUser({
-            userId: response.user.id,
-            email: response.user.email,
-            name: response.user.name || response.user.email.split("@")[0],
-            role: response.user.role,
-            type: response.user.type,
+            userId: data.user.id,
+            email: data.user.email,
+            name: data.user.name || data.user.email.split("@")[0],
+            role: data.user.role,
+            type: data.user.type,
           });
 
           toast({
             title: "Sign In Successful",
             description: `Welcome back, ${
-              response.user.name || response.user.email
+              data.user.name || data.user.email
             }!`,
           });
 
           let redirectPath = "/dashboard";
           if (
-            response.user.type === "admin" &&
-            response.user.role === "admin_users"
+            data.user.type === "admin" &&
+            data.user.role === "admin_users"
           ) {
             redirectPath = "/admin_users/dashboard";
-          } else if (response.user.type === "client") {
+          } else if (data.user.type === "client") {
             redirectPath = "/client-admin/dashboard";
           }
           router.push(redirectPath);
         } else {
-          throw new Error(response?.message || "No user data returned");
+          throw new Error(data?.message || "No user data returned");
         }
       } catch (error) {
         console.error("Login error:", error);

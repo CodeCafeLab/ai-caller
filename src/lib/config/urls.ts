@@ -12,17 +12,23 @@ const currentHost = isBrowser ? window.location.origin : '';
 // Determine the backend base URL with smart detection
 let rawBackendBase;
 
-// Check if we're in a browser and on a production domain (not localhost)
-const isProductionDomain = isBrowser && !currentHost.includes('localhost') && !currentHost.includes('127.0.0.1');
+// Check if we're on a production domain (not localhost/127.0.0.1)
+const isLocalhost = currentHost.includes('localhost') || currentHost.includes('127.0.0.1') || currentHost.includes('3000');
+const hasProductionUrl = process.env.NEXT_PUBLIC_API_BASE_URL && process.env.NEXT_PUBLIC_API_BASE_URL !== 'http://localhost:5000';
 
-// Smart URL detection based on environment and domain
-if (isProductionDomain) {
-  // On production domain, use the current origin for API calls
-  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || currentHost;
-  console.log('🌐 Production domain detected, using current host for API calls');
+// Improved URL detection logic
+if (isBrowser && !isLocalhost) {
+  // We're in a browser and not on localhost - this is production
+  rawBackendBase = hasProductionUrl ? process.env.NEXT_PUBLIC_API_BASE_URL : currentHost;
+  console.log('🌐 Production environment detected');
+} else if (hasProductionUrl) {
+  // We have a production URL configured, use it
+  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  console.log('🔧 Using configured production URL');
 } else {
-  // In development or server-side, use the configured URL or localhost
-  rawBackendBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+  // Default to localhost for development
+  rawBackendBase = "http://localhost:5000";
+  console.log('🛠️ Development environment detected');
 }
 
 // Log for debugging
@@ -31,7 +37,8 @@ if (isBrowser) {
   console.log('- NODE_ENV:', process.env.NODE_ENV);
   console.log('- NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
   console.log('- Current host:', currentHost);
-  console.log('- Is production domain:', isProductionDomain);
+  console.log('- Is localhost:', isLocalhost);
+  console.log('- Has production URL:', hasProductionUrl);
   console.log('- Selected backend base:', rawBackendBase);
 }
 
