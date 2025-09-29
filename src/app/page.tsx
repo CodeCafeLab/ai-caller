@@ -17,12 +17,7 @@ import { FAQs } from "@/components/landing/faqs";
 import { Blog } from "@/components/landing/blog";
 
 export default function Home() {
-  useEffect(() => {
-    document.body.classList.add("theme-codecafe");
-    return () => {
-      document.body.classList.remove("theme-codecafe");
-    };
-  }, []);
+  useEffect(() => {}, []);
   return (
     <div className="relative w-full min-h-screen flex flex-col bg-background text-foreground">
       {/* Ambient brand glows (CodeCafe style) using #FFC012 and #6DD629 */}
