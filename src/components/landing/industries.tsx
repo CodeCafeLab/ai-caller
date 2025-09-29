@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FaShoppingCart, FaHeartbeat, FaGraduationCap, FaBuilding, FaMoneyCheckAlt, FaTruck, FaRobot, FaUserTie, FaHeadset, FaChartLine, FaMobileAlt } from "react-icons/fa";
+import { Factory } from 'lucide-react';
 
 const industries = [
 	{ name: 'E-commerce', desc: 'Order status, returns, and post-purchase follow-ups.', icon: <FaShoppingCart size={24} /> },
@@ -20,26 +21,47 @@ const cardColors = [
 ];
 
 export function Industries() {
+	const dup = [...industries, ...industries];
 	return (
 		<section id="industries" className="py-20 md:py-28">
 			<div className="container">
-				<div className="mx-auto max-w-2xl text-center">
-					<h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">Industries</h2>
+				<div className="mx-auto text-center">
+					<div className="flex justify-center mb-3">
+						<Factory className="h-10 w-10 text-[#6DD629]" />
+					</div>
+					<h2 className="font-headline text-4xl md:text-5xl font-bold tracking-tight text-foreground">Industries</h2>
 					<p className="mt-4 md:text-lg text-foreground/80">Where AI Caller delivers immediate ROI.</p>
 				</div>
-				<div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-					{industries.map((i, idx) => (
-						<Card
-							key={i.name}
-							className={`rounded-xl border-2 p-3 flex flex-col items-start gap-2 shadow transition ${cardColors[idx % 2]} bg-[hsl(33,31%,10%)]`}
-						>
-							<CardHeader className="flex flex-row items-center gap-2 pb-1">
-								<span>{i.icon}</span>
-								<CardTitle className="text-base font-semibold">{i.name}</CardTitle>
-							</CardHeader>
-							<CardContent className="text-xs opacity-80 pt-0">{i.desc}</CardContent>
-						</Card>
-					))}
+
+				<div className="relative mt-10 overflow-x-hidden overflow-y-visible py-3">
+					<div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent" />
+					<div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />
+					<div className="marquee-track flex gap-4" style={{ width: 'max-content', animationDuration: '60s' }}>
+						{dup.map((i, idx) => (
+							<Card key={i.name + '-' + idx} className={`min-w-[240px] rounded-xl border-2 p-4 flex flex-col gap-2 shadow bg-[hsl(33,31%,10%)] ${cardColors[idx % 2]}`}>
+								<CardHeader className="flex flex-row items-center gap-2 pb-1">
+									<span>{i.icon}</span>
+									<CardTitle className="text-base font-semibold">{i.name}</CardTitle>
+								</CardHeader>
+								<CardContent className="text-xs opacity-80 pt-0">{i.desc}</CardContent>
+							</Card>
+						))}
+					</div>
+				</div>
+				<div className="relative mt-5 overflow-x-hidden overflow-y-visible py-3">
+					<div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent" />
+					<div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />
+					<div className="marquee-track marquee-reverse flex gap-4 pl-10" style={{ width: 'max-content', animationDuration: '65s' }}>
+						{dup.map((i, idx) => (
+							<Card key={i.name + '-b-' + idx} className={`min-w-[240px] rounded-xl border-2 p-4 flex flex-col gap-2 shadow bg-[hsl(33,31%,10%)] ${cardColors[(idx + 1) % 2]}`}>
+								<CardHeader className="flex flex-row items-center gap-2 pb-1">
+									<span>{i.icon}</span>
+									<CardTitle className="text-base font-semibold">{i.name}</CardTitle>
+								</CardHeader>
+								<CardContent className="text-xs opacity-80 pt-0">{i.desc}</CardContent>
+							</Card>
+						))}
+					</div>
 				</div>
 			</div>
 		</section>
