@@ -9,41 +9,42 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    /* CodeCafe default theme across the entire app */
+    --background: 33 31% 8%;
+    --foreground: 0 0% 100%;
+    --card: 33 31% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 33 31% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 50 100% 54%; /* #FFC012 */
+    --primary-foreground: 33 31% 8%;
+    --secondary: 33 31% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 33 31% 14%;
+    --muted-foreground: 0 0% 92%;
+    --accent: 90 69% 50%; /* Green accent */
+    --accent-foreground: 33 31% 8%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
+    --border: 33 31% 18%;
+    --input: 33 31% 18%;
+    --ring: 50 100% 54%;
     --radius: 0.5rem;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
+    --chart-1: 50 100% 54%;
+    --chart-2: 90 69% 50%;
+    --chart-3: 33 31% 60%;
     --chart-4: 280 65% 60%;
     --chart-5: 320 75% 50%;
 
-    /* Sidebar specific colors (dark sidebar for light theme) */
-    --sidebar-background: 240 10% 10%; /* Dark grey, almost black */
-    --sidebar-foreground: 0 0% 95%; /* off-white */
-    --sidebar-primary: 240 5.9% 20%; /* Slightly lighter dark for active */
-    --sidebar-primary-foreground: 0 0% 98%; /* white text on active */
-    --sidebar-accent: 240 5.9% 15%; /* Hover color */
-    --sidebar-accent-foreground: 0 0% 98%; /* white text on hover */
-    --sidebar-border: 240 5.9% 15%; /* Border for sidebar elements */
-    --sidebar-ring: 240 5.9% 20%; /* Ring color */
+    /* Sidebar specific colors aligned to CodeCafe */
+    --sidebar-background: 33 31% 7%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 33 31% 12%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 33 31% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 33 31% 16%;
+    --sidebar-ring: 50 100% 54%;
   }
 
   .dark {
@@ -83,31 +84,27 @@ body {
     --sidebar-ring: 240 3.7% 15.9%; /* Ring color for dark theme */
   }
 
-  /* Scoped homepage theme (CodeCafe style) */
+  /* Scoped homepage theme was used earlier; no longer needed but keep for safety */
   .theme-codecafe {
-    /* Base surface and text */
-    --background: 33 31% 8%; /* #1B160E in HSL approx */
-    --foreground: 0 0% 100%; /* white */
+    --background: 33 31% 8%;
+    --foreground: 0 0% 100%;
     --card: 33 31% 10%;
     --card-foreground: 0 0% 100%;
     --popover: 33 31% 10%;
     --popover-foreground: 0 0% 100%;
-    --primary: 50 100% 54%; /* #FFC012 */
+    --primary: 50 100% 54%;
     --primary-foreground: 33 31% 8%;
-    /* Secondary surfaces are dark, not green */
     --secondary: 33 31% 12%;
     --secondary-foreground: 0 0% 100%;
     --muted: 33 31% 14%;
     --muted-foreground: 0 0% 92%;
-    --accent: 90 69% 50%; /* green accent */
+    --accent: 90 69% 50%;
     --accent-foreground: 33 31% 8%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 33 31% 18%;
     --input: 33 31% 18%;
     --ring: 50 100% 54%;
-
-    /* Sidebar variables to avoid clashes */
     --sidebar-background: 33 31% 7%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 33 31% 12%;
@@ -167,4 +164,56 @@ body {
 }
 .animate-subtle-pulse-glow {
   animation: subtle-pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes marquee-left-to-right {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-marquee {
+  animation: marquee-left-to-right 12s linear infinite;
+}
+
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.type-caret {
+  color: #FFC012;
+  animation: caret-blink 1s steps(1, end) infinite;
+}
+
+/* Marquee for Why section */
+@keyframes marquee-scroll {
+  0% { transform: translateX(var(--marq-offset, 0%)); }
+  100% { transform: translateX(calc(-50% + var(--marq-offset, 0%))); }
+}
+.marquee-track {
+  animation: marquee-scroll 25s linear infinite;
+}
+
+.marquee-reverse {
+  animation-direction: reverse;
+}
+
+/* Utility: hide scrollbars but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Floating bubble animation for cards */
+@keyframes bubble-wave {
+  0% { transform: translateY(0) scale(1); }
+  22% { transform: translateY(-15px) scale(1.01); }
+  44% { transform: translateY(10px) scale(0.995); }
+  55% { transform: translateY(-15px) scale(1); }
+  77% { transform: translateY(10px) scale(0.995); }
+  88% { transform: translateY(-15px) scale(1); }
+  100% { transform: translateY(10px) scale(0.995); }
+  /* 50% { transform: translateY(0) scale(1); }
+  75% { transform: translateY(15px) scale(0.995); }
+  100% { transform: translateY(0) scale(1); } */
+}
+.bubble-wave {
+  animation: bubble-wave 5.5s ease-in-out infinite;
+  will-change: transform;
 }
