@@ -42,7 +42,7 @@ jobs:
           script: |
             set -e
             echo "🚀 Deploying AI Caller Frontend..."
-            cd /var/www/ai-caller/frontend
+            cd /var/www/ai-caller
             git fetch --all
             git reset --hard origin/main
             npm ci
