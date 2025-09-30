@@ -28,7 +28,7 @@ jobs:
             git fetch --all
             git reset --hard origin/production
             npm install --production
-            pm2 restart ai-caller-prod-backend || pm2 start server.js --name ai-caller-prod-backend -- --port=4100
+            pm2 restart ai-caller-prod-backend
             echo "✅ Backend deployed successfully!"
 
       # ---------- Frontend ----------
@@ -42,10 +42,10 @@ jobs:
           script: |
             set -e
             echo "🚀 Deploying AI Caller Frontend (Production)..."
-            cd /var/www/ai-caller-prod/frontend
+            cd /var/www/ai-caller-prod
             git fetch --all
             git reset --hard origin/production
             npm install
             npm run build || { echo "❌ Frontend build failed"; exit 1; }
-            pm2 restart ai-caller-prod-frontend || pm2 start "serve -s build -l 4200" --name ai-caller-prod-frontend
+            pm2 restart ai-caller-prod-frontend
             echo "✅ Frontend deployed successfully!"
