@@ -1,7 +1,6 @@
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { SectionHeader } from './section-header';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { Building, Landmark, GraduationCap, Headset, CalendarClock } from 'lucide-react';
 
@@ -14,38 +13,51 @@ const useCases = [
 ];
 
 export function UseCases() {
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<string>(useCases[0].name);
   return (
     <section id="use-cases" className="py-20 md:py-28">
       <div className="container">
         <SectionHeader icon={<Briefcase className="h-6 w-6 text-[#6DD629]" />} title="Use Cases" description="Discover how teams use AI Caller to grow revenue and reduce costs." />
-        <div className="mt-12 flex flex-wrap justify-center gap-4">
-          {useCases.map((useCase) => (
-            <button onClick={() => setActive(active === useCase.name ? null : useCase.name)} key={useCase.name} className="focus:outline-none">
-              <Badge  variant="outline" className="flex items-center text-lg py-3 px-6 rounded-lg border-2 bg-[hsl(33,31%,12%)] text-foreground hover:bg-[hsl(33,31%,12%)]/80 cursor-pointer border-[hsl(33,31%,18%)]">
-              {useCase.icon}
-              <span className="font-medium">{useCase.name}</span>
-              </Badge>
-            </button>
-          ))}
-        </div>
-        {active && (
-          <div className="mt-8 flex justify-center">
-            <Card className="max-w-3xl w-full bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)]">
-              <CardContent className="p-6">
-                <h3 className="font-headline text-xl mb-4">How AI Caller helps in {active}</h3>
-                <ul className="space-y-3">
-                  {["Automated outreach and follow-ups","Real-time qualification and routing","Analytics for conversion and ROI","Seamless CRM integration"].map((point, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <span className={`mt-1 inline-block h-2.5 w-2.5 rounded-full ${idx % 2 === 0 ? 'bg-[#6DD629]' : 'bg-[#FFC012]'}`}></span>
-                      <span className={`${idx % 2 === 0 ? 'text-[#6DD629]' : 'text-[#FFC012]'} font-medium`}>{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+        {/* Horizontal menu like Features, active = green text */}
+        <div className="mt-10 relative">
+          <div className="inline-flex gap-2 rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-2 w-full justify-center flex-wrap">
+            {useCases.map((uc) => (
+              <button
+                key={uc.name}
+                onClick={() => setActive(uc.name)}
+                className={`px-4 py-2 rounded-full flex items-center gap-2 whitespace-nowrap transition ${active === uc.name ? 'text-[#6DD629]' : 'text-foreground hover:text-[#FFC012]'}`}
+              >
+                {uc.icon}
+                <span className="font-medium">{uc.name}</span>
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+        {/* Content below: left points, right image placeholder (reverse of Features) */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          <Card className="rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-6 min-h-[320px] flex flex-col">
+            <div className="text-sm uppercase tracking-wide text-foreground/60">Use case details</div>
+            <h3 className="mt-2 text-2xl font-bold text-foreground">{active}</h3>
+            <p className="mt-3 text-base leading-relaxed text-foreground/80">Practical ways AI Caller accelerates results for {active}.</p>
+            <ul className="mt-4 space-y-3">
+              {["Automated outreach and follow-ups","Real-time qualification and routing","Analytics for conversion and ROI","Seamless CRM integration"].map((point) => (
+                <li key={point} className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-[#6DD629] mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-foreground">{point}</div>
+                    <div className="text-sm text-foreground/75">Detailed explanation for {point.toLowerCase()}.</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+          <Card className="rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-6 min-h-[320px] flex items-center justify-center text-foreground/70">
+            <div className="flex flex-col items-center text-center">
+              <ImageIcon className="h-10 w-10 text-[#FFC012] mb-2" />
+              <div>Screenshot placeholder</div>
+            </div>
+          </Card>
+        </div>
       </div>
     </section>
   );

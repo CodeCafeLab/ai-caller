@@ -58,6 +58,15 @@ export function BookDemoDialog({ children }: { children: React.ReactNode }) {
     },
   });
 
+  // Check if all required fields are filled
+  const isFormValid = React.useMemo(() => {
+    const values = form.getValues();
+    return values.name.length >= 2 && 
+           values.email.includes('@') && 
+           values.date && 
+           values.slot;
+  }, [form.watch()]);
+
   const timeSlots = React.useMemo(() => {
     const slots: { label: string; start: string; end: string }[] = [];
     let startMinutes = 15 * 60; // 3:00pm
@@ -277,13 +286,15 @@ export function BookDemoDialog({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               )}
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                className="w-full bg-[#FFC012] text-[#18120B] font-semibold hover:bg-[#6DD629] hover:text-[#18120B] transition"
-              >
-                {form.formState.isSubmitting ? 'Sending...' : 'Request Demo'}
-              </Button>
+              {isFormValid && (
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  className="w-full bg-[#FFC012] text-[#18120B] font-semibold hover:bg-[#6DD629] hover:text-[#18120B] transition"
+                >
+                  {form.formState.isSubmitting ? 'Sending...' : 'Request Demo'}
+                </Button>
+              )}
             </form>
           </Form>
         </div>
