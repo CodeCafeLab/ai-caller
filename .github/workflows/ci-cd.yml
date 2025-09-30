@@ -25,10 +25,9 @@ jobs:
             set -e
             echo "🚀 Deploying AI Caller Backend..."
             cd /var/www/ai-caller/backend
-            git fetch --all
-            git reset --hard origin/main
-            npm i --production
-            pm2 restart ai-caller-backend || pm2 start server.js --name ai-caller-backend
+            git pull origin main
+            npm install --production
+            pm2 restart ai-caller-backend
             echo "✅ Backend deployed successfully!"
 
       # ---------- Frontend ----------
@@ -43,9 +42,8 @@ jobs:
             set -e
             echo "🚀 Deploying AI Caller Frontend..."
             cd /var/www/ai-caller
-            git fetch --all
-            git reset --hard origin/main
-            npm i
+            git pull origin main
+            npm install
             npm run build || { echo "❌ Frontend build failed"; exit 1; }
-            pm2 restart ai-caller-frontend || pm2 start npm --name ai-caller-frontend -- run start
+            pm2 restart ai-caller-frontend
             echo "✅ Frontend deployed successfully!"
