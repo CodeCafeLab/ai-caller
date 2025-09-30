@@ -1215,8 +1215,8 @@ export default function CallReportsPage() {
             <div className="flex-1 flex flex-col min-h-0">
               {/* Audio Recording - Fixed at top */}
               {conversationAudioUrl && (
-                <div className="px-6 py-4 border-b bg-gray-50 flex-shrink-0">
-                  <div className="font-semibold text-sm text-gray-700 mb-2">Audio Recording</div>
+                <div className="px-6 py-4 border-b bg-background flex-shrink-0">
+                  <div className="font-semibold text-sm text-foreground mb-2">Audio Recording</div>
                   <audio controls src={conversationAudioUrl} className="w-full" />
                 </div>
               )}
@@ -1263,28 +1263,28 @@ export default function CallReportsPage() {
                         {/* Summary */}
                         <div>
                           <div className="font-semibold text-base mb-2">Summary</div>
-                          <div className="text-sm text-gray-700 leading-relaxed">{conversationDetails?.transcript_summary || selectedConversation?.transcript_summary || 'N/A'}</div>
+                          <div className="text-sm text-foreground leading-relaxed">{conversationDetails?.transcript_summary || selectedConversation?.transcript_summary || 'N/A'}</div>
                         </div>
                         {/* Call status */}
                         <div>
                           <div className="font-semibold text-base mb-2">Call status</div>
-                          <div className="text-sm text-gray-700">{conversationDetails?.analysis?.call_successful || 'Unknown'}</div>
+                          <div className="text-sm text-foreground">{conversationDetails?.analysis?.call_successful || 'Unknown'}</div>
                         </div>
                         {/* User ID */}
                         <div>
                           <div className="font-semibold text-base mb-2">User ID</div>
-                          <div className="text-sm text-gray-700 font-mono">{conversationDetails?.user_id || 'Unknown'}</div>
+                          <div className="text-sm text-foreground font-mono">{conversationDetails?.user_id || 'Unknown'}</div>
                         </div>
                         {/* Criteria evaluation */}
                         {conversationDetails?.analysis?.evaluation_criteria_results && (
                           <div>
                             <div className="font-semibold text-base mb-2">Criteria evaluation</div>
-                            <div className="text-sm text-gray-600 mb-3">0 of {Object.keys(conversationDetails.analysis.evaluation_criteria_results).length} successful</div>
+                            <div className="text-sm text-foreground mb-3">0 of {Object.keys(conversationDetails.analysis.evaluation_criteria_results).length} successful</div>
                             {Object.entries(conversationDetails.analysis.evaluation_criteria_results).map(([key, val]: [string, any]) => (
                               <div key={key} className="mb-4">
-                                <div className="font-semibold text-sm text-gray-800 mb-1">{key.replace(/_/g, ' ')}</div>
-                                <div className="text-sm text-gray-700 mb-1">{val.value ?? 'unknown'}</div>
-                                {val.rationale && <div className="text-xs text-gray-500 leading-relaxed">{val.rationale}</div>}
+                                <div className="font-semibold text-sm text-foreground mb-1">{key.replace(/_/g, ' ')}</div>
+                                <div className="text-sm text-foreground mb-1">{val.value ?? 'unknown'}</div>
+                                {val.rationale && <div className="text-xs text-muted-foreground leading-relaxed">{val.rationale}</div>}
                               </div>
                             ))}
                           </div>
@@ -1295,10 +1295,10 @@ export default function CallReportsPage() {
                             <div className="font-semibold text-base mb-2">Data collection</div>
                             {Object.entries(conversationDetails.analysis.data_collection_results).map(([key, val]: [string, any]) => (
                               <div key={key} className="mb-4">
-                                <div className="font-semibold text-sm text-gray-800 mb-1">{key}</div>
-                                <div className="text-sm text-gray-700 mb-1">Type: {val.json_schema?.type || 'unknown'}</div>
-                                <div className="text-sm text-gray-700 mb-1">Value: {val.value === null ? 'null' : String(val.value)}</div>
-                                {val.rationale && <div className="text-xs text-gray-500 leading-relaxed">{val.rationale}</div>}
+                                <div className="font-semibold text-sm text-foreground mb-1">{key}</div>
+                                <div className="text-sm text-foreground mb-1">Type: {val.json_schema?.type || 'unknown'}</div>
+                                <div className="text-sm text-foreground mb-1">Value: {val.value === null ? 'null' : String(val.value)}</div>
+                                {val.rationale && <div className="text-xs text-muted-foreground leading-relaxed">{val.rationale}</div>}
                               </div>
                             ))}
                           </div>
@@ -1307,7 +1307,7 @@ export default function CallReportsPage() {
                         {conversationDetails?.analysis?.call_summary_title && (
                           <div>
                             <div className="font-semibold text-base mb-2">Call summary title</div>
-                            <div className="text-sm text-gray-700">{conversationDetails.analysis.call_summary_title}</div>
+                            <div className="text-sm text-foreground">{conversationDetails.analysis.call_summary_title}</div>
                           </div>
                         )}
                       </div>
@@ -1345,7 +1345,7 @@ export default function CallReportsPage() {
                           }>
                             <div className={cn(
                               "rounded-2xl px-4 py-2 text-sm max-w-[80%] border",
-                              msg.role === 'user' ? 'bg-gray-100 border-gray-200 self-end' : 'bg-white border-gray-200 self-start')
+                              msg.role === 'user' ? 'bg-muted border-border self-end' : 'bg-background border-border self-start')
                             }>
                               {msg.message || ''}
                               {msg.timestamp && (
@@ -1375,7 +1375,7 @@ export default function CallReportsPage() {
                                   <td className="py-2 px-4 font-medium whitespace-nowrap align-top">{key}</td>
                                   <td className="py-2 px-4">
                                     {typeof value === 'object' && value !== null
-                                      ? <pre className="text-xs bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(value, null, 2)}</pre>
+                                      ? <pre className="text-xs bg-muted rounded p-2 overflow-x-auto">{JSON.stringify(value, null, 2)}</pre>
                                       : String(value)}
                                   </td>
                                 </tr>
@@ -1392,32 +1392,32 @@ export default function CallReportsPage() {
               </div>
             </div>
             {/* Metadata sidebar - fixed position */}
-            <div className="w-64 flex-shrink-0 border-l px-6 py-4 bg-gray-50 overflow-y-auto">
-              <div className="mb-4 text-sm font-semibold text-gray-800">Metadata</div>
+            <div className="w-64 flex-shrink-0 border-l px-6 py-4 bg-background overflow-y-auto">
+              <div className="mb-4 text-sm font-semibold text-foreground">Metadata</div>
               <div className="space-y-3">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Date</div>
-                  <div className="text-sm text-gray-700">{conversationDetails?.metadata?.accepted_time_unix_secs ? format(new Date(conversationDetails.metadata.accepted_time_unix_secs * 1000), 'MMM dd, yyyy, hh:mm a') : 'N/A'}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Date</div>
+                  <div className="text-sm text-foreground">{conversationDetails?.metadata?.accepted_time_unix_secs ? format(new Date(conversationDetails.metadata.accepted_time_unix_secs * 1000), 'MMM dd, yyyy, hh:mm a') : 'N/A'}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Connection duration</div>
-                  <div className="text-sm text-gray-700">{conversationDetails?.metadata?.call_duration_secs ? `${Math.floor(conversationDetails.metadata.call_duration_secs / 60)}:${(conversationDetails.metadata.call_duration_secs % 60).toString().padStart(2, '0')}` : '0:00'}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Connection duration</div>
+                  <div className="text-sm text-foreground">{conversationDetails?.metadata?.call_duration_secs ? `${Math.floor(conversationDetails.metadata.call_duration_secs / 60)}:${(conversationDetails.metadata.call_duration_secs % 60).toString().padStart(2, '0')}` : '0:00'}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Credits (call)</div>
-                  <div className="text-sm text-gray-700">{conversationDetails?.metadata?.cost || 'N/A'}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Credits (call)</div>
+                  <div className="text-sm text-foreground">{conversationDetails?.metadata?.cost || 'N/A'}</div>
                   {conversationDetails?.metadata?.charging?.dev_discount && (
-                    <div className="text-xs text-gray-500">Development discount applied</div>
+                    <div className="text-xs text-muted-foreground">Development discount applied</div>
                   )}
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Credits (LLM)</div>
-                  <div className="text-sm text-gray-700">{conversationDetails?.metadata?.charging?.llm_usage?.total_tokens || 'N/A'}</div>
+                  <div className="text-xs text-muted-foreground mb-1">Credits (LLM)</div>
+                  <div className="text-sm text-foreground">{conversationDetails?.metadata?.charging?.llm_usage?.total_tokens || 'N/A'}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">LLM Cost</div>
-                  <div className="text-sm text-gray-700">${conversationDetails?.metadata?.charging?.llm_price || '0.0000'} / min</div>
-                  <div className="text-sm text-gray-700">Total: ${conversationDetails?.metadata?.charging?.llm_cost || '0.0000'}</div>
+                  <div className="text-xs text-muted-foreground mb-1">LLM Cost</div>
+                  <div className="text-sm text-foreground">${conversationDetails?.metadata?.charging?.llm_price || '0.0000'} / min</div>
+                  <div className="text-sm text-foreground">Total: ${conversationDetails?.metadata?.charging?.llm_cost || '0.0000'}</div>
                 </div>
               </div>
               {/* Actions */}

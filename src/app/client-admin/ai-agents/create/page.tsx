@@ -65,10 +65,10 @@ export default function CreateAgentPage() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white overflow-hidden">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background text-foreground overflow-hidden">
       <div className="w-full max-w-xl flex flex-col items-center">
         <h1 className="text-xl md:text-2xl font-bold mb-1 w-full text-left">Name your agent</h1>
-        <p className="text-sm text-gray-500 mb-4 w-full text-left">
+        <p className="text-sm text-muted-foreground mb-4 w-full text-left">
           Choose a name that reflects your agent's purpose
         </p>
         {/* Client Dropdown */}
@@ -79,19 +79,19 @@ export default function CreateAgentPage() {
           value={name}
           maxLength={MAX_LENGTH}
           onChange={e => setName(e.target.value)}
-          className="w-full text-base px-4 py-3 border rounded-lg mb-1 focus:outline-none focus:ring-2 focus:ring-black transition-all text-center font-semibold"
+          className="w-full text-base px-4 py-3 border border-border bg-background text-foreground rounded-lg mb-1 focus:outline-none focus:ring-2 focus:ring-primary transition-all text-center font-semibold"
           style={{ boxSizing: "border-box" }}
         />
-        <div className="w-full text-center text-xs text-gray-500 mb-5">{name.length}/{MAX_LENGTH} characters</div>
+        <div className="w-full text-center text-xs text-muted-foreground mb-5">{name.length}/{MAX_LENGTH} characters</div>
         <button
-          className={`w-full max-w-md flex items-center justify-center gap-2 py-2 rounded-lg text-base font-medium transition-colors mb-6 ${isValid && !loading ? 'bg-black text-white cursor-pointer' : 'bg-gray-400 text-white cursor-not-allowed'}`}
+          className={`w-full max-w-md flex items-center justify-center gap-2 py-2 rounded-lg text-base font-medium transition-colors mb-6 ${isValid && !loading ? 'bg-primary text-primary-foreground cursor-pointer' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
           disabled={!isValid || loading}
           onClick={handleCreateAgent}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Create Agent
         </button>
-        {success && <div className="text-green-600 text-sm mb-2">Agent created successfully!</div>}
-        {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
+        {success && <div className="text-green-400 text-sm mb-2">Agent created successfully!</div>}
+        {error && <div className="text-destructive text-sm mb-2">{error}</div>}
       </div>
     </div>
   );

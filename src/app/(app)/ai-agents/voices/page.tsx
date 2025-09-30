@@ -186,9 +186,10 @@ export default function VoicesPage() {
       maxWidth: 240,
       boxShadow: '0 4px 16px 0 rgba(0,0,0,0.10)',
       minHeight: 100,
-      background: 'white',
+      background: 'hsl(var(--card))',
+      color: 'hsl(var(--card-foreground))',
       borderRadius: 10,
-      border: '1px solid #f3f4f6', // debug border
+      border: '1px solid hsl(var(--border))',
       padding: 12,
     });
   };
@@ -212,13 +213,13 @@ export default function VoicesPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <input
           placeholder="Search by name, description..."
-          className="w-full md:w-96 border rounded px-3 py-2"
+          className="w-full md:w-96 border border-border bg-background text-foreground rounded px-3 py-2"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
         <div className="flex gap-2 items-center">
           <select
-            className="border rounded px-3 py-2"
+            className="border border-border bg-background text-foreground rounded px-3 py-2"
             value={sortLatest ? 'newest' : 'name'}
             onChange={e => setSortLatest(e.target.value === 'newest')}
           >
@@ -227,9 +228,9 @@ export default function VoicesPage() {
           </select>
         </div>
       </div>
-      <div className="bg-white rounded shadow overflow-x-auto">
+      <div className="bg-card border border-border rounded-xl overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-muted">
             <tr>
               <th className="px-4 py-2 text-left font-semibold">Voice</th>
               <th className="px-4 py-2 text-left font-semibold">Language(s)</th>
@@ -244,7 +245,7 @@ export default function VoicesPage() {
               <tr><td colSpan={7} className="text-center py-8">Loading voices...</td></tr>
             )}
             {!loading && displayedVoices.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-500">No voices found.</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">No voices found.</td></tr>
             )}
             {displayedVoices.map((voice: any) => {
               const avatarColor = voice.voice_id ? `hsl(${voice.voice_id.charCodeAt(0) * 13 % 360},70%,85%)` : '#eee';
@@ -296,7 +297,7 @@ export default function VoicesPage() {
               return (
                 <tr
                   key={voice.voice_id}
-                  className={`border-b last:border-0 hover:bg-gray-50`}
+                  className={`border-b border-border last:border-0 hover:bg-muted/50`}
                   // Remove row-level mouse events
                   style={{ position: 'relative' }}
                 >
@@ -328,14 +329,14 @@ export default function VoicesPage() {
                                 </div>
                                 <span className="font-semibold leading-tight text-xs">{voice.name}</span>
                               </div>
-                              <div className="text-xs text-gray-700 mb-1">
+                              <div className="text-xs text-muted-foreground mb-1">
                                 {desc.length > 120 && expandedPopover !== voice.voice_id ? (
                                   <>
-                                    {desc.slice(0, 120)}... <a href="#" className="text-blue-600 underline" onClick={e => { e.preventDefault(); setExpandedPopover(voice.voice_id); }}>read more</a>
+                                    {desc.slice(0, 120)}... <a href="#" className="text-primary underline" onClick={e => { e.preventDefault(); setExpandedPopover(voice.voice_id); }}>read more</a>
                                   </>
                                 ) : desc}
                               </div>
-                              <div className="flex flex-col gap-1 text-[10px] text-gray-600 mt-1">
+                              <div className="flex flex-col gap-1 text-[10px] text-muted-foreground mt-1">
                                 <div className="flex items-center gap-1">
                                   <span role="img" aria-label="calendar">📅</span> {voice.created_at_unix ? timeAgo(voice.created_at_unix) : '-'}
                                 </div>
@@ -349,7 +350,7 @@ export default function VoicesPage() {
                             </div>
                           )}
                         </div>
-                        <span className="text-xs text-gray-500 truncate max-w-[180px]">{desc}</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">{desc}</span>
                       </div>
                     </div>
                   </td>
@@ -377,8 +378,8 @@ export default function VoicesPage() {
                             position: 'fixed',
                             left: rect.left,
                             top: Math.round(top),
-                            background: 'rgba(0,0,0,0.85)',
-                            color: 'white',
+                            background: 'hsl(var(--popover))',
+                            color: 'hsl(var(--popover-foreground))',
                             borderRadius: 10,
                             padding: '6px 10px',
                             minWidth: 110,
@@ -387,6 +388,7 @@ export default function VoicesPage() {
                             fontSize: 12,
                             lineHeight: 1.3,
                             backdropFilter: 'blur(2px)',
+                            border: '1px solid hsl(var(--border))',
                           });
                         }
                       }}
@@ -398,7 +400,7 @@ export default function VoicesPage() {
                           key={lang.code}
                           src={lang.flag}
                           alt={lang.code}
-                          className="rounded-full border border-gray-200 align-middle"
+                          className="rounded-full border border-border align-middle"
                           width={20}
                           height={22}
                           style={{
@@ -407,17 +409,17 @@ export default function VoicesPage() {
                             verticalAlign: 'middle',
                             marginLeft: idx === 0 ? 0 : -5,
                             zIndex: 10 - idx,
-                            background: '#fff',
+                            background: 'hsl(var(--card))',
                           }}
                         />
                       ))}
                       {/* Primary language name */}
-                      <span className="ml-1 font-medium text-gray-800 text-sm">
+                      <span className="ml-1 font-medium text-foreground text-sm">
                         {getLanguageName(mainLang.code)}
                       </span>
                       {/* +N if more than 2 languages */}
                       {uniqueLangs.length > 2 && (
-                        <span className="ml-1 text-xs text-gray-500 align-middle">+{uniqueLangs.length - 2}</span>
+                        <span className="ml-1 text-xs text-muted-foreground align-middle">+{uniqueLangs.length - 2}</span>
                       )}
                       {/* Popover with all unique language full names and flags, only if more than 1 language */}
                       {langs.length > 1 && hoveredLang === voice.voice_id && (
@@ -430,13 +432,13 @@ export default function VoicesPage() {
                               <img
                                 src={lang.flag}
                                 alt={lang.code}
-                                className="rounded-full border border-gray-200"
+                                className="rounded-full border border-border"
                                 width={16}
                                 height={16}
-                                style={{ objectFit: 'cover', marginRight: 6, background: '#fff' }}
+                                style={{ objectFit: 'cover', marginRight: 6, background: 'hsl(var(--card))' }}
                               />
                               <span style={{ fontSize: 12, fontWeight: 500 }}>{getLanguageName(lang.code)}</span>
-                              <span style={{ fontSize: 10, color: '#bbb', marginLeft: 6 }}>({lang.code})</span>
+                              <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', marginLeft: 6 }}>({lang.code})</span>
                             </div>
                           ))}
                         </div>

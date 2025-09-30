@@ -13,7 +13,7 @@ const nextConfig = {
   
   // Configure images
   images: {
-    domains: ['placehold.co'],
+    domains: ['placehold.co', 'picsum.photos'],
   },
   
   // Environment variables
