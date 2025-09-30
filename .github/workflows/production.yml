@@ -1,0 +1,51 @@
+name: Deploy AI Caller Production
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # ---------- Backend ----------
+      - name: Deploy Backend (Prod)
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: 168.231.112.124
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            echo "🚀 Deploying AI Caller Backend (Production)..."
+            cd /var/www/ai-caller-prod/backend
+            git fetch --all
+            git reset --hard origin/production
+            npm install --production
+            pm2 restart ai-caller-prod-backend || pm2 start server.js --name ai-caller-prod-backend -- --port=4100
+            echo "✅ Backend deployed successfully!"
+
+      # ---------- Frontend ----------
+      - name: Deploy Frontend (Prod)
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: 168.231.112.124
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            echo "🚀 Deploying AI Caller Frontend (Production)..."
+            cd /var/www/ai-caller-prod/frontend
+            git fetch --all
+            git reset --hard origin/production
+            npm install
+            npm run build || { echo "❌ Frontend build failed"; exit 1; }
+            pm2 restart ai-caller-prod-frontend || pm2 start "serve -s build -l 4200" --name ai-caller-prod-frontend
+            echo "✅ Frontend deployed successfully!"
