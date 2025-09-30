@@ -25,10 +25,10 @@ jobs:
             set -e
             echo "🚀 Deploying AI Caller Backend..."
             cd /var/www/ai-caller/backend
-            git reset --hard
-            git pull https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/CodeCafeLab/ai-caller.git main
-            npm install --production
-            pm2 restart ai-caller-backend
+            git fetch --all
+            git reset --hard origin/main
+            npm ci --production
+            pm2 restart ai-caller-backend || pm2 start server.js --name ai-caller-backend
             echo "✅ Backend deployed successfully!"
 
       # ---------- Frontend ----------
@@ -42,10 +42,10 @@ jobs:
           script: |
             set -e
             echo "🚀 Deploying AI Caller Frontend..."
-            cd /var/www/ai-caller
-            git reset --hard
-            git pull https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/CodeCafeLab/ai-caller.git main
-            npm install
+            cd /var/www/ai-caller/frontend
+            git fetch --all
+            git reset --hard origin/main
+            npm ci
             npm run build || { echo "❌ Frontend build failed"; exit 1; }
-            pm2 restart ai-caller-frontend
+            pm2 restart ai-caller-frontend || pm2 start npm --name ai-caller-frontend -- run start
             echo "✅ Frontend deployed successfully!"
