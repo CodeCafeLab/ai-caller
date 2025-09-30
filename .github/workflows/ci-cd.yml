@@ -27,7 +27,7 @@ jobs:
             cd /var/www/ai-caller/backend
             git fetch --all
             git reset --hard origin/main
-            npm ci --production
+            npm i --production
             pm2 restart ai-caller-backend || pm2 start server.js --name ai-caller-backend
             echo "✅ Backend deployed successfully!"
 
@@ -45,7 +45,7 @@ jobs:
             cd /var/www/ai-caller
             git fetch --all
             git reset --hard origin/main
-            npm ci
+            npm i
             npm run build || { echo "❌ Frontend build failed"; exit 1; }
             pm2 restart ai-caller-frontend || pm2 start npm --name ai-caller-frontend -- run start
             echo "✅ Frontend deployed successfully!"
