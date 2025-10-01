@@ -35,7 +35,7 @@ const plans = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-20 md:py-28">
+    <section id="pricing" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">Pricing Plans</h2>

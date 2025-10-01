@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Mic } from 'lucide-react';
+import { api } from '@/lib/apiConfig';
 
 type ElevenVoice = {
   voice_id: string;
@@ -21,11 +22,12 @@ export function Voices() {
   useEffect(() => {
     async function loadVoices() {
       try {
-        const resp = await fetch('https://api.elevenlabs.io/v1/voices', {
-          headers: {
-            'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || ''
-          }
-        });
+        const resp = await api.getVoices();
+        if (!resp.ok) {
+          console.warn('Failed to fetch voices: bad response');
+          setVoices([]);
+          return;
+        }
         const data = await resp.json();
         const list: ElevenVoice[] = (data?.voices || []).slice(0, 10);
         // Assign unique avatars deterministically without repeats
@@ -73,6 +75,7 @@ export function Voices() {
         setVoices(list);
       } catch (e) {
         console.warn('Failed to fetch voices', e);
+        setVoices([]);
       }
     }
     loadVoices();
@@ -111,8 +114,10 @@ export function Voices() {
   const dupA = useMemo(() => [...rowA, ...rowA], [rowA]);
   const dupB = useMemo(() => [...rowB, ...rowB], [rowB]);
 
+  const isEmpty = voices.length === 0;
+
   return (
-    <section ref={sectionRef} id="voices" className="py-20 md:py-28">
+    <section ref={sectionRef} id="voices" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <div className="mx-auto text-center">
           <div className="flex justify-center mb-3">
@@ -121,7 +126,11 @@ export function Voices() {
           <h2 className="font-headline text-4xl md:text-5xl font-bold tracking-tight text-foreground">Voices</h2>
           <p className="mt-4 md:text-lg text-foreground/80">Natural, production-ready voices for different markets.</p>
         </div>
-
+        {isEmpty ? (
+          <div className="mt-10 text-center text-foreground/70">
+            Voices are loading or temporarily unavailable.
+          </div>
+        ) : (
         <div className="relative mt-10 overflow-x-hidden overflow-y-visible py-3">
           <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />
@@ -154,6 +163,7 @@ export function Voices() {
             ))}
           </div>
         </div>
+        )}
         <div className="relative mt-6 overflow-x-hidden overflow-y-visible py-3">
           <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />

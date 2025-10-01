@@ -62,7 +62,7 @@ export function WhyAICaller() {
   const marqueeItems = useMemo(() => [...groups, ...groups], []);
 
   return (
-    <section className="py-16 md:py-24">
+    <section className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <div className="mx-auto text-center">
           <div className="flex justify-center mb-3">
