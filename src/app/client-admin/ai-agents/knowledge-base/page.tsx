@@ -740,16 +740,16 @@ export default function KnowledgeBasePage() {
       <div className="flex gap-4 mb-6">
         <Dialog open={openDialog === 'url'} onOpenChange={v => setOpenDialog(v ? 'url' : null)}>
           <DialogTrigger asChild>
-            <Button className="flex flex-col items-center justify-center w-40 h-28 gap-2 border bg-white shadow-none hover:bg-gray-50" variant="outline" onClick={() => setOpenDialog('url')}>
-              <Globe className="w-7 h-7" />
-              <span className="font-medium">Add URL</span>
+            <Button className="group flex flex-col items-center justify-center w-40 h-28 gap-2 border bg-card shadow-none hover:bg-muted" variant="outline" onClick={() => setOpenDialog('url')}>
+              <Globe className="w-7 h-7 group-hover:text-green-400 transition-colors" />
+              <span className="font-medium group-hover:text-green-400 transition-colors">Add URL</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl rounded-2xl p-0 overflow-hidden">
             <DialogTitle className="sr-only">Add URL</DialogTitle>
             <div className="flex flex-col gap-6 p-8">
               <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gray-100 rounded-xl p-2"><Globe className="w-7 h-7" /></div>
+                <div className="bg-muted rounded-xl p-2"><Globe className="w-7 h-7" /></div>
                 <span className="text-2xl font-semibold">Add URL</span>
               </div>
               <div>
@@ -758,7 +758,7 @@ export default function KnowledgeBasePage() {
               </div>
               <div className="flex justify-end">
                 <Button 
-                  className="bg-black text-white px-6 py-2 rounded-lg text-base" 
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-base" 
                   onClick={handleAddUrl}
                   disabled={addDocLoading || !urlInput}
                 >
@@ -770,21 +770,21 @@ export default function KnowledgeBasePage() {
         </Dialog>
         <Dialog open={openDialog === 'files'} onOpenChange={v => setOpenDialog(v ? 'files' : null)}>
           <DialogTrigger asChild>
-            <Button className="flex flex-col items-center justify-center w-40 h-28 gap-2 border bg-white shadow-none hover:bg-gray-50" variant="outline" onClick={() => setOpenDialog('files')}>
-              <Upload className="w-7 h-7" />
-              <span className="font-medium">Add Files</span>
+            <Button className="group flex flex-col items-center justify-center w-40 h-28 gap-2 border bg-card shadow-none hover:bg-muted" variant="outline" onClick={() => setOpenDialog('files')}>
+              <Upload className="w-7 h-7 group-hover:text-green-400 transition-colors" />
+              <span className="font-medium group-hover:text-green-400 transition-colors">Add Files</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl rounded-2xl p-0 overflow-hidden">
             <DialogTitle className="sr-only">Add Files</DialogTitle>
             <div className="flex flex-col gap-6 p-8">
               <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gray-100 rounded-xl p-2"><Upload className="w-7 h-7" /></div>
+                <div className="bg-muted rounded-xl p-2"><Upload className="w-7 h-7" /></div>
                 <span className="text-2xl font-semibold">Add Files</span>
               </div>
               <div>
                 <div
-                  className="border-2 border-black border-dashed rounded-xl flex flex-col items-center justify-center py-12 mb-4 bg-white cursor-pointer"
+                  className="border-2 border-border border-dashed rounded-xl flex flex-col items-center justify-center py-12 mb-4 bg-card cursor-pointer"
                   onClick={() => document.getElementById('file-upload-input')?.click()}
                   onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
                   onDrop={e => {
@@ -801,10 +801,10 @@ export default function KnowledgeBasePage() {
                     style={{ display: 'none' }}
                     onChange={e => setFile(e.target.files?.[0] || null)}
                   />
-                  <Upload className="w-10 h-10 mb-2 text-black" />
+                  <Upload className="w-10 h-10 mb-2 text-foreground" />
                   <div className="font-medium text-lg mb-1">Click or drag files to upload</div>
-                  <div className="text-gray-500 text-sm mb-2">Up to 21 MB each.</div>
-                  {file && <div className="text-sm text-black font-semibold mb-2">{file.name}</div>}
+                  <div className="text-muted-foreground text-sm mb-2">Up to 21 MB each.</div>
+                  {file && <div className="text-sm text-foreground font-semibold mb-2">{file.name}</div>}
                   <div className="flex gap-2 flex-wrap justify-center">
                     {['epub','pdf','docx','txt','html'].map(type => (
                       <span key={type} className="bg-gray-100 rounded-full px-3 py-1 text-xs font-medium text-gray-700">{type}</span>
@@ -813,17 +813,17 @@ export default function KnowledgeBasePage() {
                 </div>
                 {fileUploading ? (
                   <div className="w-full flex flex-col items-center">
-                    <div className="w-3/4 bg-gray-200 rounded-full h-3 mb-2">
+                    <div className="w-3/4 bg-muted rounded-full h-3 mb-2">
                       <div
-                        className="bg-black h-3 rounded-full transition-all"
+                        className="bg-primary h-3 rounded-full transition-all"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
-                    <div className="text-sm text-gray-700">{uploadProgress}%</div>
+                    <div className="text-sm text-foreground">{uploadProgress}%</div>
                   </div>
                 ) : (
                   <Button
-                    className="bg-black text-white px-6 py-2 rounded-lg text-base"
+                    className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-base"
                     onClick={handleAddFile}
                     disabled={!file || addDocLoading}
                   >
@@ -836,16 +836,16 @@ export default function KnowledgeBasePage() {
         </Dialog>
         <Dialog open={openDialog === 'text'} onOpenChange={v => setOpenDialog(v ? 'text' : null)}>
           <DialogTrigger asChild>
-            <Button className="flex flex-col items-center justify-center w-40 h-28 gap-2 border bg-white shadow-none hover:bg-gray-50" variant="outline" onClick={() => setOpenDialog('text')}>
-              <FileText className="w-7 h-7" />
-              <span className="font-medium">Create Text</span>
+            <Button className="group flex flex-col items-center justify-center w-40 h-28 gap-2 border bg-card shadow-none hover:bg-muted" variant="outline" onClick={() => setOpenDialog('text')}>
+              <FileText className="w-7 h-7 group-hover:text-green-400 transition-colors" />
+              <span className="font-medium group-hover:text-green-400 transition-colors">Create Text</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl rounded-2xl p-0 overflow-hidden">
             <DialogTitle className="sr-only">Create Text</DialogTitle>
             <div className="flex flex-col gap-6 p-8">
               <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gray-100 rounded-xl p-2"><FileText className="w-7 h-7" /></div>
+                <div className="bg-muted rounded-xl p-2"><FileText className="w-7 h-7" /></div>
                 <span className="text-2xl font-semibold">Create Text</span>
               </div>
               <div>
@@ -858,7 +858,7 @@ export default function KnowledgeBasePage() {
               </div>
               <div className="flex justify-end">
                 <Button 
-                  className="bg-black text-white px-6 py-2 rounded-lg text-base" 
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-base" 
                   onClick={handleAddText}
                   disabled={addDocLoading || !textName || !textContent}
                 >
@@ -873,7 +873,7 @@ export default function KnowledgeBasePage() {
         <Input
           type="search"
           placeholder="Search Knowledge Base..."
-          className="w-[820px] bg-white border"
+          className="w-[820px] bg-background border"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -934,7 +934,7 @@ export default function KnowledgeBasePage() {
           })}
         </div>
       )}
-      <div className="overflow-x-auto bg-white rounded-xl border">
+      <div className="overflow-x-auto bg-card rounded-xl border">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b">
@@ -947,7 +947,7 @@ export default function KnowledgeBasePage() {
           <tbody>
             {paginatedArticles.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center text-gray-500 py-8">No knowledge base documents found.</td>
+                <td colSpan={5} className="text-center text-muted-foreground py-8">No knowledge base documents found.</td>
               </tr>
             ) : (
               paginatedArticles.map(article => {
@@ -958,25 +958,25 @@ export default function KnowledgeBasePage() {
                 return (
                   <tr
                     key={article.id}
-                    className="border-b hover:bg-gray-50 cursor-pointer"
+                    className="group border-b hover:bg-muted cursor-pointer"
                     onClick={() => openDetailsDrawer(article)}
                   >
                     <td className="flex items-center gap-3 px-6 py-4">
                       {/* Use the correct icon for each type */}
                       {(() => {
                         const Icon = typeIcons[article.type as keyof typeof typeIcons];
-                        return Icon ? <Icon className="w-5 h-5 text-black" /> : null;
+                        return Icon ? <Icon className="w-5 h-5 text-foreground group-hover:text-green-400 transition-colors" /> : null;
                       })()}
                       <div>
                         <div className="font-medium text-base flex items-center gap-2">
-                          {article.name}
+                          <span className="group-hover:text-green-400 transition-colors">{article.name}</span>
                           {/* Download link for files */}
                           {article.type === "file" && article.file_path && (
                             <a
                               href={`${API_BASE_URL}${article.file_path}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="ml-2 text-gray-500 hover:text-black"
+                              className="ml-2 text-muted-foreground group-hover:text-green-400 transition-colors"
                               title="Download file"
                               onClick={e => e.stopPropagation()}
                             >
@@ -984,7 +984,7 @@ export default function KnowledgeBasePage() {
                             </a>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground">{article.size}</div>
+                        <div className="text-xs text-muted-foreground group-hover:text-green-400/80 transition-colors">{article.size}</div>
                       </div>
                     </td>
                     <td>{meta.created_by || '-'}</td>
@@ -992,11 +992,11 @@ export default function KnowledgeBasePage() {
                     <td className="px-6 py-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="bg-gray-100 rounded-xl p-2 hover:bg-gray-200 focus:outline-none" onClick={e => e.stopPropagation()}>
+                          <button className="bg-muted rounded-xl p-2 hover:bg-muted/80 focus:outline-none" onClick={e => e.stopPropagation()}>
                             <MoreHorizontal className="w-5 h-5" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-48 mt-2 rounded-xl border shadow-lg">
+                        <DropdownMenuContent className="w-48 mt-2 rounded-xl border shadow-lg bg-card">
                           <DropdownMenuItem
                             className="text-base px-4 py-2 cursor-pointer"
                             onClick={e => { e.stopPropagation(); handleCopyId(article.id); }}
@@ -1020,12 +1020,12 @@ export default function KnowledgeBasePage() {
         </table>
       </div>
       {detailsOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-30">
-          <div className="bg-white shadow-lg w-full max-w-2xl h-full overflow-y-auto relative flex flex-col" style={{ borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }}>
-            <button className="absolute top-4 right-4 text-gray-500 hover:text-black" onClick={() => setDetailsOpen(false)}>&times;</button>
+        <div className="fixed inset-0 z-50 flex justify-end bg-background/70">
+          <div className="bg-card shadow-lg w-full max-w-2xl h-full overflow-y-auto relative flex flex-col" style={{ borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }}>
+            <button className="absolute top-4 right-4 text-muted-foreground hover:text-foreground" onClick={() => setDetailsOpen(false)}>&times;</button>
             <div className="p-8 flex-1 flex flex-col">
               {detailsLoading ? (
-                <div className="text-center text-gray-500 py-8">Loading...</div>
+                <div className="text-center text-muted-foreground py-8">Loading...</div>
               ) : detailsError ? (
                 <div className="text-center text-red-500 py-8">{detailsError}</div>
               ) : (
@@ -1033,19 +1033,19 @@ export default function KnowledgeBasePage() {
                   <div className="flex items-center gap-3 mb-4">
                     {detailsDoc?.type === 'url' ? <Globe className="w-7 h-7" /> : <FileText className="w-7 h-7" />}
                     <span className="text-2xl font-semibold">{detailsDoc?.name || detailsDoc?.title || detailsDoc?.id}</span>
-                    <span className="ml-auto text-xs text-gray-500">{detailsContent ? `${detailsContent.length} chars` : (detailsSize || detailsDoc?.size || '-')}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{detailsContent ? `${detailsContent.length} chars` : (detailsSize || detailsDoc?.size || '-')}</span>
                   </div>
                   <div className="mb-4 flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Document ID</span>
-                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{detailsDocId}</span>
-                    <button onClick={() => {navigator.clipboard.writeText(detailsDocId || '');}} className="ml-1 text-xs text-blue-600 hover:underline flex items-center gap-1"><ClipboardCopy className="w-4 h-4" />Copy</button>
+                    <span className="text-xs text-muted-foreground">Document ID</span>
+                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">{detailsDocId}</span>
+                    <button onClick={() => {navigator.clipboard.writeText(detailsDocId || '');}} className="ml-1 text-xs text-primary hover:underline flex items-center gap-1"><ClipboardCopy className="w-4 h-4" />Copy</button>
                   </div>
                   <div className="mb-4 flex items-center gap-4">
-                    <div className="text-xs text-gray-500">Last updated</div>
+                    <div className="text-xs text-muted-foreground">Last updated</div>
                     <div className="text-xs">{detailsLastUpdated ? new Date(detailsLastUpdated).toLocaleString() : '-'}</div>
                   </div>
                   <div className="mb-4">
-                    <div className="text-xs text-gray-500 mb-1">Dependent agents</div>
+                    <div className="text-xs text-muted-foreground mb-1">Dependent agents</div>
                     {!Array.isArray(detailsAgents) || detailsAgents.length === 0 ? (
                       <div className="text-xs">None</div>
                     ) : (
@@ -1055,13 +1055,13 @@ export default function KnowledgeBasePage() {
                     )}
                   </div>
                   <div className="mb-2 flex-1 flex flex-col">
-                    <div className="text-xs text-gray-500 mb-1">Text Content</div>
+                    <div className="text-xs text-muted-foreground mb-1">Text Content</div>
                     <div className="flex-1 min-h-0">
-                      <pre className="bg-gray-100 rounded p-3 h-full max-h-[60vh] overflow-auto text-xs whitespace-pre-wrap" style={{ minHeight: 200 }}>
+                      <pre className="bg-muted rounded p-3 h-full max-h-[60vh] overflow-auto text-xs whitespace-pre-wrap" style={{ minHeight: 200 }}>
                         {(() => {
                           const content = detailsContent || detailsDoc?.text_content || detailsDoc?.content || '';
                           if (!content || content.trim() === '') {
-                            return <span className="text-gray-400">No content available for this document.</span>;
+                            return <span className="text-muted-foreground">No content available for this document.</span>;
                           }
                           // Try to parse as JSON, if it fails, display as plain text
                           try {

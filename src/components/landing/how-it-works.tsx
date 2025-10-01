@@ -39,7 +39,7 @@ export function HowItWorks() {
 
   return (
     <section id="how-it-works" className="py-20 md:py-28">
-      <div className="container">
+      <div className="w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
         <div className="mx-auto text-center">
           <div className="flex justify-center mb-3">
             <Play className="h-10 w-10 text-[#6DD629]" />
@@ -48,18 +48,18 @@ export function HowItWorks() {
           <p className="mt-4 md:text-lg text-foreground/80">Launch your AI-powered calling campaigns in a few simple steps.</p>
         </div>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-          {/* Steps column (40%) */}
-          <div className="md:col-span-5 flex">
+          {/* Steps column (25%) */}
+          <div className="md:col-span-3 flex">
             <div className="relative flex-1 min-h-[220px] md:min-h-[280px] lg:min-h-[320px]">
-              {/* Center vertical line */}
+              {/* Center vertical line (no side padding) */}
               <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-[hsl(33,31%,18%)]" aria-hidden />
               <ul className="relative flex flex-col justify-between h-full">
                 {steps.map((s, idx) => (
-                  <li key={s.title} className={`relative flex flex-col items-center text-center px-4 transition-all duration-500 ${visible >= idx + 1 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+                  <li key={s.title} className={`relative flex flex-col items-center text-center transition-all duration-500 ${visible >= idx + 1 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
                     {/* Dot over the line */}
                     <div className="absolute -translate-x-1/2 left-1/2 -top-1.5 h-3 w-3 rounded-full bg-[#FFC012] shadow" />
-                    {/* Icon circle overlapping the line */}
-                    <div className="z-10 flex h-11 w-11 md:h-9 md:w-9 items-center justify-center rounded-full border-2 border-[#FFC012] bg-[hsl(33,31%,10%)]">
+                    {/* Icon circle overlapping the center line */}
+                    <div className="z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#FFC012] bg-[hsl(33,31%,10%)]">
                       {s.icon}
                     </div>
                     <h3 className="mt-3 text-lg md:text-xl font-bold font-headline">{s.title}</h3>
@@ -69,9 +69,9 @@ export function HowItWorks() {
               </ul>
             </div>
           </div>
-          {/* Video column (60%) */}
-          <div className="md:col-span-7 flex">
-            <div className="flex-1 aspect-video min-h-[260px] md:min-h-[320px] lg:min-h-[360px] rounded-xl border border-[hsl(33,31%,18%)] bg-[hsl(33,31%,10%)] flex items-center justify-center text-foreground/60">
+          {/* Video column (75%) */}
+          <div className="md:col-span-9 flex">
+            <div className="flex-1 aspect-video min-h-[260px] md:min-h-[320px] lg:min-h-[360px] rounded-xl border border-border bg-card flex items-center justify-center text-foreground/60">
               Video placeholder
             </div>
           </div>

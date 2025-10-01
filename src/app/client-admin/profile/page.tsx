@@ -346,11 +346,11 @@ export default function ClientAdminProfilePage() {
               name="bio"
               value={profile.bio}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full border border-border bg-background rounded p-2"
             />
           </div>
           <button
-            className="bg-black text-white px-6 py-2 rounded"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded"
             onClick={() => handleSave()}
             disabled={saving}
           >

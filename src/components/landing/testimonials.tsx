@@ -27,7 +27,7 @@ const avatarMap = new Map<string, ImagePlaceholder>(PlaceHolderImages.map(img =>
 
 export function Testimonials() {
   return (
-    <section id="testimonials" className="py-20 md:py-28">
+    <section id="testimonials" className="py-16 md:py-20">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">What Our Customers Say</h2>
@@ -35,33 +35,65 @@ export function Testimonials() {
             Real stories from businesses revolutionizing their communication with AI Caller.
           </p>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {testimonialData.map((testimonial) => {
-            const avatar = avatarMap.get(testimonial.avatarId);
-            return (
-              <Card key={testimonial.name} className="bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)] text-foreground rounded-2xl">
-                <CardContent className="p-6">
-                  <blockquote className="italic text-lg">"{testimonial.quote}"</blockquote>
-                  <div className="mt-6 flex items-center">
-                    <Avatar className="h-12 w-12">
-                      {avatar && (
-                        <AvatarImage 
-                          src={avatar.imageUrl} 
-                          alt={testimonial.name} 
-                          data-ai-hint={avatar.imageHint}
-                        />
-                      )}
-                      <AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="ml-4">
-                      <p className="font-semibold text-foreground">{testimonial.name}</p>
-                      <p className="text-sm text-foreground/70">{testimonial.title}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="mt-10 cc-marquee">
+          <div className="cc-marquee-track">
+            <div className="flex gap-6 pr-6">
+              {testimonialData.map((testimonial) => {
+                const avatar = avatarMap.get(testimonial.avatarId);
+                return (
+                  <Card key={`a-${testimonial.name}`} className="w-96 shrink-0 bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)] text-foreground rounded-2xl transition-transform duration-300 hover:-translate-y-1">
+                    <CardContent className="p-6">
+                      <blockquote className="italic text-base">"{testimonial.quote}"</blockquote>
+                      <div className="mt-5 flex items-center">
+                        <Avatar className="h-12 w-12">
+                          {avatar && (
+                            <AvatarImage 
+                              src={avatar.imageUrl} 
+                              alt={testimonial.name} 
+                              data-ai-hint={avatar.imageHint}
+                            />
+                          )}
+                          <AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="ml-4">
+                          <p className="font-semibold text-foreground">{testimonial.name}</p>
+                          <p className="text-sm text-foreground/70">{testimonial.title}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="flex gap-6 pr-6" aria-hidden>
+              {testimonialData.map((testimonial) => {
+                const avatar = avatarMap.get(testimonial.avatarId);
+                return (
+                  <Card key={`b-${testimonial.name}`} className="w-96 shrink-0 bg-[hsl(33,31%,10%)] border-[hsl(33,31%,18%)] text-foreground rounded-2xl transition-transform duration-300 hover:-translate-y-1">
+                    <CardContent className="p-6">
+                      <blockquote className="italic text-base">"{testimonial.quote}"</blockquote>
+                      <div className="mt-5 flex items-center">
+                        <Avatar className="h-12 w-12">
+                          {avatar && (
+                            <AvatarImage 
+                              src={avatar.imageUrl} 
+                              alt={testimonial.name} 
+                              data-ai-hint={avatar.imageHint}
+                            />
+                          )}
+                          <AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="ml-4">
+                          <p className="font-semibold text-foreground">{testimonial.name}</p>
+                          <p className="text-sm text-foreground/70">{testimonial.title}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -125,10 +125,10 @@ function AddVariableDropdown({ onSelect, onClose }: AddVariableDropdownProps) {
   // Slightly larger text and dropdown
   return (
     <div
-      className="absolute z-20 bg-white border rounded shadow-md mt-1 w-48 text-[12px]"
+      className="absolute z-20 bg-card border rounded shadow-md mt-1 w-48 text-[12px]"
       style={{ maxHeight: 140, overflowY: "auto", minWidth: 160 }}
     >
-      <div className="px-3 py-2 text-[11px] text-gray-500">
+      <div className="px-3 py-2 text-[11px] text-muted-foreground">
         System Variables
       </div>
       {[
@@ -144,7 +144,7 @@ function AddVariableDropdown({ onSelect, onClose }: AddVariableDropdownProps) {
       ].map((v) => (
         <div
           key={v}
-          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-[12px]"
+          className="px-3 py-2 hover:bg-muted cursor-pointer text-[12px]"
           onClick={() => {
             onSelect(v);
             onClose();
@@ -154,7 +154,7 @@ function AddVariableDropdown({ onSelect, onClose }: AddVariableDropdownProps) {
         </div>
       ))}
       <div
-        className="px-3 py-2 text-blue-600 hover:bg-gray-100 cursor-pointer text-[12px] border-t"
+        className="px-3 py-2 text-primary hover:bg-muted cursor-pointer text-[12px] border-t"
         onClick={() => {
           onSelect("new_variable");
           onClose();
@@ -220,27 +220,27 @@ function TimezoneDropdown({ onSelect, onClose }: TimezoneDropdownProps) {
   return (
     <div
       ref={dropdownRef}
-      className="absolute z-30 bg-white border rounded shadow-md mt-1 w-64 text-[12px]"
+      className="absolute z-30 bg-card border rounded shadow-md mt-1 w-64 text-[12px]"
       style={{ maxHeight: 240, overflowY: "auto", minWidth: 160 }}
     >
       <div className="px-3 pt-2 pb-1">
         <input
-          className="w-full border rounded px-3 py-2 text-[12px]"
+          className="w-full border border-border rounded px-3 py-2 text-[12px] bg-background focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="Search timezones..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <div className="px-3 pb-1 text-gray-500 text-[11px]">
+      <div className="px-3 pb-1 text-muted-foreground text-[11px]">
         Common Timezones
       </div>
       {filtered.length === 0 && (
-        <div className="px-3 py-2 text-gray-400 text-[12px]">No results</div>
+        <div className="px-3 py-2 text-muted-foreground text-[12px]">No results</div>
       )}
       {filtered.map((tz) => (
         <div
           key={tz}
-          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-[12px]"
+          className="px-3 py-2 hover:bg-muted cursor-pointer text-[12px]"
           onClick={() => {
             onSelect(tz);
             onClose();
@@ -420,14 +420,14 @@ function VariableTextarea({
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border rounded px-3 py-2 w-full text-[12px]"
+        className="border border-border rounded px-3 py-2 w-full text-[12px] bg-background focus:outline-none focus:ring-2 focus:ring-primary"
         placeholder={placeholder}
         style={{ minHeight: 40, maxHeight: 100 }}
       />
       <div className="flex gap-2 mt-2">
         <button
           type="button"
-          className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-[12px] relative"
+          className="px-3 py-2 bg-muted rounded hover:bg-muted/80 text-[12px] relative"
           style={{ minWidth: 100, height: 32 }}
           onClick={() => setShowDropdown((v) => !v)}
         >
@@ -436,7 +436,7 @@ function VariableTextarea({
         {showTimezoneButton && (
           <button
             type="button"
-            className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-[12px]"
+            className="px-3 py-2 bg-muted rounded hover:bg-muted/80 text-[12px]"
             style={{ minWidth: 100, height: 32 }}
             onClick={handleTimezone}
           >
@@ -454,7 +454,7 @@ function VariableTextarea({
             type="text"
             value={customVarName}
             onChange={(e) => setCustomVarName(e.target.value)}
-            className="border rounded px-2 py-1 text-[12px]"
+            className="border border-border rounded px-2 py-1 text-[12px] bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="Enter variable name"
             maxLength={32}
             pattern="^[_a-zA-Z][_a-zA-Z0-9]*$"
@@ -462,7 +462,7 @@ function VariableTextarea({
           />
           <button
             type="submit"
-            className="px-2 py-1 bg-black text-white rounded text-[12px]"
+            className="px-2 py-1 bg-primary text-primary-foreground rounded text-[12px]"
           >
             Add
           </button>
@@ -473,7 +473,7 @@ function VariableTextarea({
         {variables.map((v) => (
           <span
             key={v}
-            className="bg-gray-100 px-2 py-1 rounded text-sm flex items-center gap-1"
+            className="bg-muted px-2 py-1 rounded text-sm flex items-center gap-1"
           >
             {v}{" "}
             <button
@@ -1256,6 +1256,69 @@ export default function AgentDetailsPage() {
     data_collection: [] as string[],
   });
 
+  // Unified react-select styles to match codecafe theme tokens
+  const themedSelectStyles = {
+    control: (base: any, state: any) => ({
+      ...base,
+      backgroundColor: 'hsl(var(--background))',
+      borderColor: 'hsl(var(--border))',
+      boxShadow: state.isFocused ? '0 0 0 2px hsl(var(--primary))' : 'none',
+      '&:hover': { borderColor: 'hsl(var(--border))' },
+      color: 'hsl(var(--foreground))',
+    }),
+    menu: (base: any) => ({
+      ...base,
+      backgroundColor: 'hsl(var(--card))',
+      border: '1px solid hsl(var(--border))',
+      boxShadow: 'var(--shadow)',
+    }),
+    menuList: (base: any) => ({
+      ...base,
+      backgroundColor: 'hsl(var(--card))',
+    }),
+    option: (base: any, state: any) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? 'hsl(var(--primary) / 0.15)'
+        : state.isFocused
+        ? 'hsl(var(--muted))'
+        : 'hsl(var(--card))',
+      color: 'hsl(var(--foreground))',
+      ':active': {
+        ...base[':active'],
+        backgroundColor: 'hsl(var(--muted))',
+      },
+    }),
+    singleValue: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--foreground))',
+    }),
+    placeholder: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--muted-foreground))',
+    }),
+    input: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--foreground))',
+    }),
+    multiValue: (base: any) => ({
+      ...base,
+      backgroundColor: 'hsl(var(--muted))',
+    }),
+    multiValueLabel: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--foreground))',
+    }),
+    multiValueRemove: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--foreground))',
+      ':hover': {
+        backgroundColor: 'hsl(var(--muted))',
+        color: 'hsl(var(--foreground))',
+      },
+    }),
+  } as const;
+
   // 1. For each tab, track a 'dirty' state (unsaved changes) and show a Save button only if dirty
   // 2. On any field change in a tab, set the dirty state for that tab to true
   // 3. On Save, PATCH only the changed data to the correct endpoint, show status, and reset dirty state
@@ -1863,11 +1926,11 @@ export default function AgentDetailsPage() {
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
       {COLOR_FIELDS.map((f) => (
         <div key={f} className="flex items-center gap-2">
-          <label className="w-32 text-xs text-gray-600">{f}</label>
+          <label className="w-32 text-xs text-muted-foreground">{f}</label>
           <input type="color" className="w-8 h-8 border rounded" />
           <input
             type="text"
-            className="border rounded px-2 py-1 w-28"
+            className="border border-border rounded px-2 py-1 w-28 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="#ffffff"
           />
         </div>
@@ -1880,8 +1943,8 @@ export default function AgentDetailsPage() {
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
       {RADIUS_FIELDS.map((f) => (
         <div key={f.key} className="flex items-center gap-2">
-          <label className="w-32 text-xs text-gray-600">{f.label}</label>
-          <input type="number" className="border rounded px-2 py-1 w-20" />
+          <label className="w-32 text-xs text-muted-foreground">{f.label}</label>
+          <input type="number" className="border border-border rounded px-2 py-1 w-20 bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
       ))}
     </div>
@@ -1892,8 +1955,8 @@ export default function AgentDetailsPage() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
       {TEXT_CONTENTS.map((f) => (
         <div key={f} className="flex items-center gap-2">
-          <label className="w-48 text-xs text-gray-600">{f}</label>
-          <input type="text" className="border rounded px-2 py-1 flex-1" />
+          <label className="w-48 text-xs text-muted-foreground">{f}</label>
+          <input type="text" className="border border-border rounded px-2 py-1 flex-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
       ))}
     </div>
@@ -3661,28 +3724,28 @@ export default function AgentDetailsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       {/* Add Secret Sidebar */}
       {showAddSecretModal && (
         <div className="fixed inset-0 z-50 flex">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black bg-opacity-30"
+            className="fixed inset-0 bg-background/70"
             onClick={() => setShowAddSecretModal(false)}
           />
 
           {/* Sidebar */}
-          <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+          <div className="fixed right-0 top-0 h-full w-96 bg-card shadow-xl transform transition-transform duration-300 ease-in-out">
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b">
                 <div className="flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-gray-600" />
+                  <Lock className="w-5 h-5 text-muted-foreground" />
                   <h2 className="text-lg font-semibold">Add secret</h2>
                 </div>
                 <button
                   onClick={() => setShowAddSecretModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -3690,31 +3753,31 @@ export default function AgentDetailsPage() {
 
               {/* Content */}
               <div className="flex-1 p-6 overflow-y-auto">
-                <p className="text-sm text-gray-600 mb-6">
+                <p className="text-sm text-muted-foreground mb-6">
                   Securely store a value that can be used by the tools. Once
                   added the value cannot be retrieved.
                 </p>
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Name
                     </label>
                     <input
                       type="text"
                       value={secretName}
                       onChange={(e) => setSecretName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border bg-background border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="Enter secret name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Value
                     </label>
                     <textarea
                       value={secretValue}
                       onChange={(e) => setSecretValue(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-none"
+                      className="w-full px-3 py-2 border bg-background border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary min-h-[120px] resize-none"
                       placeholder="Enter secret value"
                     />
                   </div>
@@ -3722,10 +3785,10 @@ export default function AgentDetailsPage() {
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
+              <div className="flex justify-end gap-3 p-6 border-t bg-background">
                 <button
                   onClick={() => setShowAddSecretModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="px-4 py-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/30 border border-border hover:text-foreground transition-colors"
                 >
                   Cancel
                 </button>
@@ -3734,7 +3797,7 @@ export default function AgentDetailsPage() {
                   disabled={
                     !secretName.trim() || !secretValue.trim() || isAddingSecret
                   }
-                  className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:bg-primary disabled:cursor-not-allowed"
                 >
                   {isAddingSecret ? "Adding..." : "Add secret"}
                 </button>
@@ -3747,7 +3810,7 @@ export default function AgentDetailsPage() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-4">
-          <div className="text-xs text-gray-500 mb-1">
+          <div className="text-xs text-muted-foreground mb-1">
             Agents &gt; {localAgent.name || "Loading..."}
           </div>
           <div className="flex items-center gap-2 mb-1">
@@ -3758,13 +3821,13 @@ export default function AgentDetailsPage() {
                   value={newAgentName}
                   onChange={(e) => setNewAgentName(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleRename()}
-                  className="text-2xl font-bold border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="text-2xl font-bold border border-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Enter new name"
                   autoFocus
                 />
                 <button
                   onClick={handleRename}
-                  className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors"
+                  className="bg-green-500 text-primary-foreground px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors"
                 >
                   <Check className="w-4 h-4" />
                 </button>
@@ -3773,7 +3836,7 @@ export default function AgentDetailsPage() {
                     setIsRenaming(false);
                     setNewAgentName("");
                   }}
-                  className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition-colors"
+                  className="bg-muted text-primary-foreground px-3 py-1 rounded text-sm hover:muted-foreground transition-colors"
                 >
                   Cancel
                 </button>
@@ -3783,7 +3846,7 @@ export default function AgentDetailsPage() {
                 {localAgent.name || "Loading..."}
               </h1>
             )}
-            <span className="bg-gray-200 text-xs px-2 py-1 rounded">
+            <span className="bg-muted text-xs px-2 py-1 rounded">
               Public
             </span>
             {!isRenaming && (
@@ -3792,7 +3855,7 @@ export default function AgentDetailsPage() {
                   setIsRenaming(true);
                   setNewAgentName(localAgent.name || "");
                 }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
                 title="Rename agent"
               >
                 <Edit2 className="w-4 h-4" />
@@ -3801,7 +3864,7 @@ export default function AgentDetailsPage() {
             <div className="ml-auto flex items-center gap-2">
               <button
                 onClick={handleTestAgent}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                 title="Test agent in ElevenLabs"
               >
                 <Play className="w-3.5 h-3.5" />
@@ -3809,7 +3872,7 @@ export default function AgentDetailsPage() {
               </button>
               <button
                 onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                 title="Copy agent link to clipboard"
               >
                 <Link className="w-3.5 h-3.5" />
@@ -3820,13 +3883,13 @@ export default function AgentDetailsPage() {
           {/* Removed duplicate action buttons block */}
           <div className="flex items-center gap-4 mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Agent ID:</span>
-              <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+              <span className="text-sm text-muted-foreground">Agent ID:</span>
+              <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
                 {agentId as string}
               </span>
               <button
                 onClick={handleCopyId}
-                className={`text-gray-500 hover:text-gray-700 transition-colors ${
+                className={`text-muted-foreground hover:text-foreground transition-colors ${
                   copiedId ? "text-green-500" : ""
                 }`}
                 title="Copy agent ID"
@@ -3839,13 +3902,13 @@ export default function AgentDetailsPage() {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Client:</span>
+              <span className="text-sm text-muted-foreground">Client:</span>
               <div className="relative">
                 <select
                   value={selectedClientId}
                   onChange={(e) => setSelectedClientId(e.target.value)}
                   disabled={isLoadingClients || isChangingClient}
-                  className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  className="text-sm border border-border bg-background rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted"
                 >
                   <option value="">Select client...</option>
                   {clients.map((client) => (
@@ -3856,7 +3919,7 @@ export default function AgentDetailsPage() {
                 </select>
                 {isLoadingClients && (
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>
                   </div>
                 )}
               </div>
@@ -3864,7 +3927,7 @@ export default function AgentDetailsPage() {
                 <button
                   onClick={handleClientChange}
                   disabled={isChangingClient}
-                  className="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90 transition-colors disabled:bg-muted disabled:cursor-not-allowed"
                 >
                   {isChangingClient ? "Updating..." : "Update Client"}
                 </button>
@@ -3872,7 +3935,7 @@ export default function AgentDetailsPage() {
             </div>
           </div>
           {/* Replace the tab navigation block with a flex row, underline for active tab, and correct badge placement */}
-          <div className="flex items-center gap-6 border-b border-gray-200 mb-6">
+          <div className="flex items-center gap-6 border-b border-border mb-6">
             {[
               { label: "Agent" },
               { label: "Voice", badge: "New" },
@@ -3885,8 +3948,8 @@ export default function AgentDetailsPage() {
                 key={tab.label}
                 className={`relative pb-2 px-0 bg-transparent border-none outline-none text-base font-medium transition-colors duration-150 ${
                   activeTab === tab.label
-                    ? "text-black font-bold"
-                    : "text-gray-500"
+                    ? "text-foreground font-bold"
+                    : "text-muted-foreground"
                 } flex items-center`}
                 style={{ background: "none", boxShadow: "none" }}
                 onClick={() => setActiveTab(tab.label)}
@@ -3894,7 +3957,7 @@ export default function AgentDetailsPage() {
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span
-                    className="ml-2 text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-medium"
+                    className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded font-medium"
                     style={{ fontWeight: 500 }}
                   >
                     {tab.badge}
@@ -3902,7 +3965,7 @@ export default function AgentDetailsPage() {
                 )}
                 {activeTab === tab.label && (
                   <span
-                    className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-black rounded"
+                    className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-foreground rounded"
                     style={{ width: "100%" }}
                   ></span>
                 )}
@@ -3914,15 +3977,15 @@ export default function AgentDetailsPage() {
         {activeTab === "Agent" && (
           <div className="space-y-6">
             {loading ? (
-              <div className="text-center text-gray-500">
+              <div className="text-center text-muted-foreground">
                 Loading agent data...
               </div>
             ) : (
               <>
                 {/* Agent Language (single select with flag) */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Agent Language</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Choose the default language the agent will communicate in.
                   </div>
                   <Select
@@ -3939,12 +4002,13 @@ export default function AgentDetailsPage() {
                     isSearchable
                     placeholder="Select language"
                     classNamePrefix="react-select"
+                    styles={themedSelectStyles as any}
                   />
                 </div>
                 {/* Additional Languages (multi select with flags) */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Additional Languages</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Specify additional languages which callers can choose from.
                   </div>
                   <Select
@@ -3964,12 +4028,13 @@ export default function AgentDetailsPage() {
                     isSearchable
                     placeholder="Add additional languages"
                     classNamePrefix="react-select"
+                    styles={themedSelectStyles as any}
                   />
                 </div>
                 {/* First Message */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">First message</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     The first message the agent will say. If empty, the agent
                     will wait for the user to start the conversation.
                   </div>
@@ -3980,9 +4045,9 @@ export default function AgentDetailsPage() {
                   />
                 </div>
                 {/* System Prompt */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">System prompt</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     The system prompt is used to determine the persona of the
                     agent and the context of the conversation.{" "}
                     <span className="underline cursor-pointer">Learn more</span>
@@ -3996,11 +4061,11 @@ export default function AgentDetailsPage() {
                   />
                 </div>
                 {/* Dynamic Variables */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Dynamic Variables</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Variables like{" "}
-                    <span className="bg-gray-100 px-1 rounded">
+                    <span className="bg-muted px-1 rounded">
                       &#123;&#123;user_name&#125;&#125;
                     </span>{" "}
                     in your prompts and first message will be replaced with
@@ -4010,9 +4075,9 @@ export default function AgentDetailsPage() {
                   {/* Removed input and button for adding variables */}
                 </div>
                 {/* LLM */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">LLM</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Select which provider and model to use for the LLM.
                   </div>
                   <select
@@ -4023,7 +4088,7 @@ export default function AgentDetailsPage() {
                         llm: e.target.value,
                       }))
                     }
-                    className="border rounded px-3 py-2 w-64"
+                    className="border border-border rounded px-3 py-2 w-64 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {LLM_MODELS.map((m) => (
                       <option key={m.value} value={m.value}>
@@ -4032,12 +4097,12 @@ export default function AgentDetailsPage() {
                     ))}
                   </select>
                   {agentSettings.llm === "custom-llm" && (
-                    <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-4 mt-4">
+                    <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-4 mt-4">
                       <div>
                         <label className="font-semibold">Server URL</label>
                         <input
                           type="text"
-                          className="border rounded px-3 py-2 w-full mt-1"
+                          className="border border-border rounded px-3 py-2 w-full mt-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="https://api.openai.com/v1"
                           value={agentSettings.custom_llm_url || ""}
                           onChange={(e) =>
@@ -4047,7 +4112,7 @@ export default function AgentDetailsPage() {
                             }))
                           }
                         />
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           The server is expected to match the OpenAI{" "}
                           <a
                             href="https://platform.openai.com/docs/api-reference/chat/create"
@@ -4067,7 +4132,7 @@ export default function AgentDetailsPage() {
                         <label className="font-semibold">Model ID</label>
                         <input
                           type="text"
-                          className="border rounded px-3 py-2 w-full mt-1"
+                          className="border border-border rounded px-3 py-2 w-full mt-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           value={agentSettings.custom_llm_model_id || ""}
                           onChange={(e) =>
                             setAgentSettings((prev) => ({
@@ -4081,7 +4146,7 @@ export default function AgentDetailsPage() {
                         <label className="font-semibold">API Key</label>
                         <input
                           type="text"
-                          className="border rounded px-3 py-2 w-full mt-1"
+                          className="border border-border rounded px-3 py-2 w-full mt-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           value={agentSettings.custom_llm_api_key || ""}
                           onChange={(e) =>
                             setAgentSettings((prev) => ({
@@ -4091,7 +4156,7 @@ export default function AgentDetailsPage() {
                           }
                           placeholder="None"
                         />
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           We strongly suggest using an API key to authenticate
                           with your LLM server.
                         </div>
@@ -4099,7 +4164,7 @@ export default function AgentDetailsPage() {
                       <div>
                         <label className="font-semibold">Request Headers</label>
                         <button
-                          className="bg-gray-200 px-3 py-2 rounded mt-2"
+                          className="bg-muted px-3 py-2 rounded mt-2"
                           onClick={() =>
                             setAgentSettings((prev) => ({
                               ...prev,
@@ -4112,7 +4177,7 @@ export default function AgentDetailsPage() {
                         >
                           Add header
                         </button>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           Define headers that will be sent with requests to your
                           LLM.
                         </div>
@@ -4120,7 +4185,7 @@ export default function AgentDetailsPage() {
                           (header, idx) => (
                             <div
                               key={idx}
-                              className="border rounded p-3 mt-3 flex flex-col gap-2"
+                              className="border border-border rounded p-3 mt-3 flex flex-col gap-2 bg-card"
                             >
                               <div className="flex gap-2">
                                 <select
@@ -4135,7 +4200,7 @@ export default function AgentDetailsPage() {
                                       custom_llm_headers: newHeaders,
                                     }));
                                   }}
-                                  className="border rounded px-2 py-1"
+                                  className="border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                 >
                                   <option value="Text">Value</option>
                                   <option value="Secret">Secret</option>
@@ -4157,7 +4222,7 @@ export default function AgentDetailsPage() {
                                       custom_llm_headers: newHeaders,
                                     }));
                                   }}
-                                  className="border rounded px-2 py-1 flex-1"
+                                  className="border border-border rounded px-2 py-1 flex-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                               </div>
                               <div>
@@ -4183,11 +4248,11 @@ export default function AgentDetailsPage() {
                                       custom_llm_headers: newHeaders,
                                     }));
                                   }}
-                                  className="border rounded px-2 py-1 w-full"
+                                  className="border border-border rounded px-2 py-1 w-full bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                               </div>
                               <button
-                                className="bg-gray-200 px-3 py-1 rounded text-red-600 w-fit"
+                                className="bg-muted px-3 py-1 rounded text-red-600 w-fit"
                                 onClick={() => {
                                   const newHeaders =
                                     agentSettings.custom_llm_headers.filter(
@@ -4209,9 +4274,9 @@ export default function AgentDetailsPage() {
                   )}
                 </div>
                 {/* Temperature */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Temperature</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Temperature is a parameter that controls the creativity or
                     randomness of the responses generated by the LLM.
                   </div>
@@ -4228,8 +4293,8 @@ export default function AgentDetailsPage() {
                         }
                         className={`px-3 py-1 rounded ${
                           Number(agentSettings.temperature) === Number(p.value)
-                            ? "bg-black text-white"
-                            : "bg-gray-200"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
                         }`}
                       >
                         {p.label}
@@ -4250,14 +4315,14 @@ export default function AgentDetailsPage() {
                     }
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Current: {agentSettings.temperature}
                   </div>
                 </div>
                 {/* Token Limit */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Limit token usage</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Configure the maximum number of tokens that the LLM can
                     predict. A limit will be applied if the value is greater
                     than 0.
@@ -4267,19 +4332,19 @@ export default function AgentDetailsPage() {
                     min={-1}
                     value={tokenLimit}
                     onChange={(e) => setTokenLimit(Number(e.target.value))}
-                    className="border rounded px-3 py-2 w-32"
+                    className="border border-border rounded px-3 py-2 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 {/* Agent Knowledge Base */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Agent knowledge base</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Provide the LLM with domain-specific information to help it
                     answer questions more accurately.
                   </div>
                   <button
                     type="button"
-                    className="bg-gray-200 px-3 py-2 rounded w-fit"
+                    className="bg-muted px-3 py-2 rounded w-fit"
                     onClick={() => setShowDocPicker(true)}
                   >
                     Add document
@@ -4303,7 +4368,7 @@ export default function AgentDetailsPage() {
                           <span className="font-medium">
                             {doc.name || doc.title || doc.id}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {doc.id}
                           </span>
                           <button
@@ -4334,19 +4399,19 @@ export default function AgentDetailsPage() {
                   {showDocPicker && (
                     <div
                       ref={docPickerRef}
-                      className="absolute z-50 bg-white border rounded-xl shadow-lg p-3 mt-2 w-80"
+                      className="absolute z-50 bg-card border rounded-xl shadow-lg p-3 mt-2 w-80"
                       style={{ minWidth: 320 }}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <input
-                          className="border rounded px-3 py-2 w-full text-sm"
+                          className="border border-border rounded px-3 py-2 w-full text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="Search documents..."
                           // Add search logic if needed
                         />
                         {/* +Type dropdown */}
                         <div className="relative">
                           <button
-                            className="border rounded px-2 py-1 text-xs font-medium"
+                            className="border border-border rounded px-2 py-1 text-xs font-medium bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDocTypeDropdownOpen((v) => !v);
@@ -4355,7 +4420,7 @@ export default function AgentDetailsPage() {
                             + Type
                           </button>
                           {docTypeDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-10">
+                            <div className="absolute right-0 mt-2 w-32 bg-card border rounded shadow-lg z-10">
                               {["file", "url", "text"].map((type) => (
                                 <label
                                   key={type}
@@ -4385,9 +4450,9 @@ export default function AgentDetailsPage() {
                       {/* Active type filter chips */}
                       {Object.values(docTypeFilter).some(Boolean) && (
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-black text-white rounded-full px-2.5 py-0.5 text-xs font-medium">× Type</span>
+                          <span className="bg-primary text-primary-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">× Type</span>
                           {(['file','url','text'] as const).filter(t => docTypeFilter[t]).map(t => (
-                            <span key={t} className="bg-black text-white rounded-full px-2.5 py-0.5 text-xs font-medium">
+                            <span key={t} className="bg-primary text-primary-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
                               {t.toUpperCase()}
                             </span>
                           ))}
@@ -4407,7 +4472,7 @@ export default function AgentDetailsPage() {
                             .map((doc) => (
                               <div
                                 key={doc.id}
-                                className="flex items-start gap-2 px-2 py-2 hover:bg-gray-100 cursor-pointer rounded"
+                                className="flex items-start gap-2 px-2 py-2 hover:bg-muted cursor-pointer rounded"
                                 onClick={() => {
                                   setSelectedDocs((prev) => [...prev, doc]);
                                   setShowDocPicker(false);
@@ -4416,14 +4481,14 @@ export default function AgentDetailsPage() {
                                                               <span className="text-lg mt-0.5">{doc.icon || (doc.type === 'web' ? '🌐' : doc.type === 'text' ? '📝' : '📄')}</span>
                               <div className="min-w-0 flex-1">
                                 <div className="font-medium text-sm truncate">{doc.name || doc.title || (doc.elevenlabs_id || doc.id)}</div>
-                                <div className="text-xs text-gray-500 font-mono truncate">{doc.elevenlabs_id || doc.id}</div>
+                                <div className="text-xs text-muted-foreground font-mono truncate">{doc.elevenlabs_id || doc.id}</div>
                               </div>
                               </div>
                             ))}
                       </div>
                       <div className="flex gap-2 mt-3">
                         <button
-                          className="border rounded px-2 py-1 flex-1 text-xs"
+                          className="border border-border rounded px-2 py-1 flex-1 text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           onClick={() => {
                             setOpenDialog("url");
                             setShowDocPicker(false);
@@ -4432,7 +4497,7 @@ export default function AgentDetailsPage() {
                           Add URL
                         </button>
                         <button
-                          className="border rounded px-2 py-1 flex-1 text-xs"
+                          className="border border-border rounded px-2 py-1 flex-1 text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           onClick={() => {
                             setOpenDialog("files");
                             setShowDocPicker(false);
@@ -4441,7 +4506,7 @@ export default function AgentDetailsPage() {
                           Add Files
                         </button>
                         <button
-                          className="border rounded px-2 py-1 flex-1 text-xs"
+                          className="border border-border rounded px-2 py-1 flex-1 text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           onClick={() => {
                             setOpenDialog("text");
                             setShowDocPicker(false);
@@ -4454,27 +4519,27 @@ export default function AgentDetailsPage() {
                   )}
                   {/* Add document dialogs (reuse or stub) */}
                   {openDialog === "url" && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-                      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70">
+                      <div className="bg-card rounded-xl shadow-lg p-6 w-full max-w-md">
                         <div className="font-semibold text-lg mb-2">
                           Add URL
                         </div>
                         <input
-                          className="border rounded px-3 py-2 w-full mb-3"
+                          className="border border-border rounded px-3 py-2 w-full mb-3 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="https://example.com"
                           value={addUrlInput}
                           onChange={(e) => setAddUrlInput(e.target.value)}
                         />
                         <div className="flex justify-end gap-2">
                           <button
-                            className="px-4 py-2 rounded bg-gray-200"
+                            className="px-4 py-2 rounded bg-muted"
                             onClick={() => setOpenDialog(null)}
                             disabled={addDocLoading}
                           >
                             Cancel
                           </button>
                           <button
-                            className="px-4 py-2 rounded bg-black text-white"
+                            className="px-4 py-2 rounded bg-primary text-primary-foreground"
                             onClick={handleAddUrl}
                             disabled={addDocLoading || !addUrlInput}
                           >
@@ -4485,8 +4550,8 @@ export default function AgentDetailsPage() {
                     </div>
                   )}
                   {openDialog === "files" && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-                      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70">
+                      <div className="bg-card rounded-xl shadow-lg p-6 w-full max-w-md">
                         <div className="font-semibold text-lg mb-2">
                           Add Files
                         </div>
@@ -4499,14 +4564,14 @@ export default function AgentDetailsPage() {
                         />
                         <div className="flex justify-end gap-2">
                           <button
-                            className="px-4 py-2 rounded bg-gray-200"
+                            className="px-4 py-2 rounded bg-muted"
                             onClick={() => setOpenDialog(null)}
                             disabled={addDocLoading}
                           >
                             Cancel
                           </button>
                           <button
-                            className="px-4 py-2 rounded bg-black text-white"
+                            className="px-4 py-2 rounded bg-primary text-primary-foreground"
                             onClick={handleAddFile}
                             disabled={addDocLoading || !addFile}
                           >
@@ -4517,33 +4582,33 @@ export default function AgentDetailsPage() {
                     </div>
                   )}
                   {openDialog === "text" && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-                      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70">
+                      <div className="bg-card rounded-xl shadow-lg p-6 w-full max-w-md">
                         <div className="font-semibold text-lg mb-2">
                           Create Text
                         </div>
                         <input
-                          className="border rounded px-3 py-2 w-full mb-3"
+                          className="border border-border rounded px-3 py-2 w-full mb-3 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="Text Name"
                           value={addTextName}
                           onChange={(e) => setAddTextName(e.target.value)}
                         />
                         <textarea
-                          className="border rounded px-3 py-2 w-full mb-3 min-h-[100px]"
+                          className="border border-border rounded px-3 py-2 w-full mb-3 min-h-[100px] bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="Enter your text content here"
                           value={addTextContent}
                           onChange={(e) => setAddTextContent(e.target.value)}
                         />
                         <div className="flex justify-end gap-2">
                           <button
-                            className="px-4 py-2 rounded bg-gray-200"
+                            className="px-4 py-2 rounded bg-muted"
                             onClick={() => setOpenDialog(null)}
                             disabled={addDocLoading}
                           >
                             Cancel
                           </button>
                           <button
-                            className="px-4 py-2 rounded bg-black text-white"
+                            className="px-4 py-2 rounded bg-primary text-primary-foreground"
                             onClick={handleAddText}
                             disabled={
                               addDocLoading || !addTextName || !addTextContent
@@ -4557,9 +4622,9 @@ export default function AgentDetailsPage() {
                   )}
                 </div>
                 {/* Use RAG */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Use RAG</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Retrieval-Augmented Generation (RAG) increases the agent's
                     maximum Knowledge Base size. The agent will have access to
                     relevant pieces of attached Knowledge Base during answer
@@ -4575,13 +4640,13 @@ export default function AgentDetailsPage() {
                   </label>
                 </div>
                 {/* Tools (dynamic from API) */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Tools</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Let the agent perform specific actions.
                   </div>
                   {toolsLoading ? (
-                    <div className="text-gray-500">Loading tools...</div>
+                    <div className="text-muted-foreground">Loading tools...</div>
                   ) : toolsError ? (
                     <div className="text-red-500">{toolsError}</div>
                   ) : (
@@ -4601,7 +4666,7 @@ export default function AgentDetailsPage() {
                         >
                           <div>
                             <div className="font-medium">{tool.label}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                               {tool.description}
                             </div>
                           </div>
@@ -4640,12 +4705,12 @@ export default function AgentDetailsPage() {
                               className={`w-11 h-6 rounded-full transition-colors duration-200 ${
                                   isChecked
                                   ? "bg-blue-600"
-                                  : "bg-gray-200"
+                                  : "bg-muted"
                                 } ${isDisabled ? "opacity-50" : ""}`}
                               style={{ position: "relative" }}
                             >
                               <div
-                                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-card rounded-full shadow transition-transform duration-200 ${
                                     isChecked
                                     ? "translate-x-5"
                                     : ""
@@ -4669,7 +4734,7 @@ export default function AgentDetailsPage() {
                           >
                             <div>
                               <div className="font-medium">{tool.name}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-muted-foreground">
                                 {tool.description}
                               </div>
                             </div>
@@ -4698,12 +4763,12 @@ export default function AgentDetailsPage() {
                                   agentSettings.tools.includes(tool.id) ||
                                   agentSettings.tools.includes(tool.name)
                                     ? "bg-blue-600"
-                                    : "bg-gray-200"
+                                    : "bg-muted"
                                 }`}
                                 style={{ position: "relative" }}
                               >
                                 <div
-                                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-card rounded-full shadow transition-transform duration-200 ${
                                     agentSettings.tools.includes(tool.id) ||
                                     agentSettings.tools.includes(tool.name)
                                       ? "translate-x-5"
@@ -4720,14 +4785,14 @@ export default function AgentDetailsPage() {
                 {/* Built-in Tool Drawer */}
                 {showBuiltInToolDrawer.open && (
                   <div
-                    className="fixed inset-0 bg-black/30 z-40"
+                    className="fixed inset-0 bg-background/70 z-40"
                     onClick={() =>
                       setShowBuiltInToolDrawer({ open: false, tool: null })
                     }
                   />
                 )}
                 {showBuiltInToolDrawer.open && (
-                  <div className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-xl z-50 p-4 overflow-y-auto">
+                  <div className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-card shadow-xl z-50 p-4 overflow-y-auto">
                     <div className="flex items-center justify-between mb-4">
                       <div className="text-lg font-semibold">
                         Configure {showBuiltInToolDrawer.tool}
@@ -4736,18 +4801,18 @@ export default function AgentDetailsPage() {
                         onClick={() =>
                           setShowBuiltInToolDrawer({ open: false, tool: null })
                         }
-                        className="text-gray-500"
+                        className="text-muted-foreground"
                       >
                         Close
                       </button>
                     </div>
                     {showBuiltInToolDrawer.tool === "transfer_to_agent" && (
                       <div className="space-y-3">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           Add one or more agent transfer rules.
                         </div>
                         <button
-                          className="px-3 py-2 bg-gray-100 rounded"
+                          className="px-3 py-2 bg-muted rounded"
                           onClick={() =>
                             setAgentSettings((prev) => ({
                               ...prev,
@@ -4767,11 +4832,11 @@ export default function AgentDetailsPage() {
                             (rule: any, idx: number) => (
                               <div
                                 key={idx}
-                                className="border rounded p-2 space-y-2"
+                                className="border border-border rounded p-2 space-y-2 bg-card"
                               >
                                 <input
                                   placeholder="Agent ID"
-                                  className="w-full border rounded px-2 py-1"
+                                  className="w-full border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                   value={rule.agent_id}
                                   onChange={(e) =>
                                     setAgentSettings((prev) => {
@@ -4792,7 +4857,7 @@ export default function AgentDetailsPage() {
                                 />
                                 <input
                                   placeholder="Label (optional)"
-                                  className="w-full border rounded px-2 py-1"
+                                  className="w-full border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                   value={rule.label || ""}
                                   onChange={(e) =>
                                     setAgentSettings((prev) => {
@@ -4837,11 +4902,11 @@ export default function AgentDetailsPage() {
                     )}
                     {showBuiltInToolDrawer.tool === "transfer_to_number" && (
                       <div className="space-y-3">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           Add one or more human transfer rules.
                         </div>
                         <button
-                          className="px-3 py-2 bg-gray-100 rounded"
+                          className="px-3 py-2 bg-muted rounded"
                           onClick={() =>
                             setAgentSettings((prev) => ({
                               ...prev,
@@ -4861,11 +4926,11 @@ export default function AgentDetailsPage() {
                             (rule: any, idx: number) => (
                               <div
                                 key={idx}
-                                className="border rounded p-2 space-y-2"
+                                className="border border-border rounded p-2 space-y-2 bg-card"
                               >
                                 <input
                                   placeholder="Phone number (E.164)"
-                                  className="w-full border rounded px-2 py-1"
+                                  className="w-full border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                   value={rule.phone_number}
                                   onChange={(e) =>
                                     setAgentSettings((prev) => {
@@ -4886,7 +4951,7 @@ export default function AgentDetailsPage() {
                                 />
                                 <input
                                   placeholder="Label (optional)"
-                                  className="w-full border rounded px-2 py-1"
+                                  className="w-full border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                   value={rule.label || ""}
                                   onChange={(e) =>
                                     setAgentSettings((prev) => {
@@ -4931,12 +4996,12 @@ export default function AgentDetailsPage() {
                     )}
                     {showBuiltInToolDrawer.tool === "voicemail_detection" && (
                       <div className="space-y-3">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           Voicemail message to leave when voicemail is detected.
                         </div>
                         <textarea
                           rows={6}
-                          className="w-full border rounded px-2 py-1"
+                          className="w-full border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                           value={
                             (agentSettings as any).voicemail_detection_message
                           }
@@ -4962,7 +5027,7 @@ export default function AgentDetailsPage() {
                         Done
                       </button>
                       <button
-                        className="px-4 py-2 bg-gray-100 rounded"
+                        className="px-4 py-2 bg-muted rounded"
                         onClick={() =>
                           setShowBuiltInToolDrawer({ open: false, tool: null })
                         }
@@ -4973,31 +5038,31 @@ export default function AgentDetailsPage() {
                   </div>
                 )}
                 {/* Custom MCP Servers */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2 relative">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2 relative">
                   <div className="font-semibold">Custom MCP Servers</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Provide the agent with Model Context Protocol servers to
                     extend its capabilities.
                   </div>
                   <div className="relative">
                     <button
-                      className="bg-gray-200 px-3 py-2 rounded w-fit"
+                      className="bg-muted px-3 py-2 rounded w-fit"
                       onClick={() => setShowMcpDialog((v) => !v)}
                     >
                       Add Server
                     </button>
                     {showMcpDialog && (
                       <div
-                        className="absolute z-50 bg-white border rounded shadow-lg mt-2 right-0 min-w-[320px]"
+                        className="absolute z-50 bg-card border rounded shadow-lg mt-2 right-0 min-w-[320px]"
                         style={{ minWidth: 320 }}
                       >
                         {!mcpServers || mcpServers.length === 0 ? (
                           <>
-                            <div className="text-center text-gray-500 py-4">
+                            <div className="text-center text-muted-foreground py-4">
                               No MCP Servers found
                             </div>
                             <button
-                              className="w-full border rounded px-3 py-2 mb-2 font-medium flex items-center justify-center gap-2 hover:bg-gray-50"
+                              className="w-full border rounded px-3 py-2 mb-2 font-medium flex items-center justify-center gap-2 hover:bg-muted"
                               onClick={() => {
                                 setShowMcpDrawer(true);
                                 setShowMcpDialog(false);
@@ -5030,21 +5095,21 @@ export default function AgentDetailsPage() {
                                 return (
                                   <div
                                     key={id || idx}
-                                    className={`flex items-start gap-3 rounded-lg px-3 py-2 border mb-1 hover:bg-gray-50 ${
+                                    className={`flex items-start gap-3 rounded-lg px-3 py-2 border mb-1 hover:bg-muted ${
                                       selected ? "opacity-60" : ""
                                     }`}
                                     onClick={() =>
                                       !selected && handleSelectMcpServer(server)
                                     }
                                   >
-                                    <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center mt-0.5">
+                                    <div className="w-7 h-7 rounded bg-muted flex items-center justify-center mt-0.5">
                                       🔗
                                     </div>
                                     <div className="min-w-0">
-                                      <div className="font-medium text-gray-900 truncate">
+                                      <div className="font-medium text-foreground truncate">
                                         {name}
                                       </div>
-                                      <div className="text-xs text-gray-500 truncate">
+                                      <div className="text-xs text-muted-foreground truncate">
                                         {desc}
                                       </div>
                                     </div>
@@ -5053,7 +5118,7 @@ export default function AgentDetailsPage() {
                               })}
                             </div>
                             <button
-                              className="w-full border rounded-lg px-3 py-2 mb-2 font-medium flex items-center justify-center gap-2 hover:bg-gray-50"
+                              className="w-full border rounded-lg px-3 py-2 mb-2 font-medium flex items-center justify-center gap-2 hover:bg-muted"
                               onClick={() => {
                                 setShowMcpDrawer(true);
                                 setShowMcpDialog(false);
@@ -5120,26 +5185,26 @@ export default function AgentDetailsPage() {
                           return (
                             <div
                               key={id || index}
-                              className="flex items-center justify-between bg-white border rounded-xl p-4 shadow-sm mt-3"
+                              className="flex items-center justify-between bg-card border rounded-xl p-4 shadow-sm mt-3"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="relative">
-                                  <div className="w-10 h-10 rounded-lg bg-gray-50 border flex items-center justify-center">
+                                  <div className="w-10 h-10 rounded-lg bg-muted border flex items-center justify-center">
                                     🔗
                                   </div>
                                   <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
                                 </div>
                                 <div>
-                                  <div className="font-semibold text-gray-900">
+                                  <div className="font-semibold text-foreground">
                                     {name}
                                   </div>
-                                  <div className="text-sm text-gray-500">
+                                  <div className="text-sm text-muted-foreground">
                                     {desc}
                                   </div>
                                 </div>
                               </div>
                               <button
-                                className="p-2 rounded-lg border hover:bg-gray-50"
+                                className="p-2 rounded-lg border hover:bg-muted"
                                 title="Remove"
                                 onClick={() => handleRemoveMcpServer(id)}
                               >
@@ -5153,20 +5218,20 @@ export default function AgentDetailsPage() {
                   )}
                 </div>
                 {/* Workspace Secrets */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-4">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-lg">
                         Workspace Secrets
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         Create and manage authentication connections that can be
                         used by workspace tools.
                       </div>
                     </div>
                     <button
                       onClick={() => setShowAddSecretModal(true)}
-                      className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 transition-colors"
+                      className="bg-primary text-primary-foreground px-4 py-2 rounded text-sm hover:bg-primary/90 transition-colors"
                     >
                       Add Secret
                     </button>
@@ -5177,16 +5242,16 @@ export default function AgentDetailsPage() {
                       {workspaceSecrets.map((secret, index) => (
                         <div
                           key={secret.id || secret.name || index}
-                          className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
+                          className="flex items-center justify-between bg-muted rounded-lg p-3"
                         >
                           <div className="flex items-center gap-2">
-                            <Lock className="w-4 h-4 text-gray-500" />
+                            <Lock className="w-4 h-4 text-muted-foreground" />
                             <div>
                               <span className="font-medium text-sm">
                                 {secret.name || secret.id}
                               </span>
                               {secret.used_by && (
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-muted-foreground">
                                   {secret.used_by.phone_numbers &&
                                     secret.used_by.phone_numbers.length > 0 && (
                                       <div>
@@ -5229,7 +5294,7 @@ export default function AgentDetailsPage() {
                             }
                             className={`transition-colors ${
                               isSecretInUse(secret)
-                                ? "text-gray-400 cursor-not-allowed"
+                                ? "text-muted-foreground cursor-not-allowed"
                                 : "text-red-500 hover:text-red-700"
                             }`}
                             title={
@@ -5245,8 +5310,8 @@ export default function AgentDetailsPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <Lock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Lock className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
                       <p className="text-sm">No secrets added yet</p>
                       <p className="text-xs">
                         Add secrets to securely store values that can be used by
@@ -5256,17 +5321,17 @@ export default function AgentDetailsPage() {
                   )}
                 </div>
                 {/* Workspace Auth Connections */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">
                     Workspace Auth Connections
                   </div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Create and manage authentication connections that can be
                     used across your workspace tools.
                   </div>
                   <button
                     type="button"
-                    className="bg-gray-200 px-3 py-2 rounded w-fit"
+                    className="bg-muted px-3 py-2 rounded w-fit"
                   >
                     Add auth
                   </button>
@@ -5277,7 +5342,7 @@ export default function AgentDetailsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saveLoading}
-                    className="bg-black text-white px-6 py-2 rounded-lg font-medium"
+                    className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium"
                   >
                     {saveLoading ? "Saving..." : "Save"}
                   </button>
@@ -5295,15 +5360,15 @@ export default function AgentDetailsPage() {
         {activeTab === "Voice" && (
           <div className="space-y-6">
             {voiceLoading ? (
-              <div className="text-center text-gray-500">
+              <div className="text-center text-muted-foreground">
                 Loading voice settings...
               </div>
             ) : (
               <>
                 {/* Voice tab fields: voice select, multi-voice, use flash, TTS output, pronunciation dictionaries, latency, stability, speed, similarity */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Voice</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Select the ElevenLabs voice you want to use for the agent.
                   </div>
                   <Select
@@ -5361,38 +5426,25 @@ export default function AgentDetailsPage() {
                           </div>
                           <span>{v.name}</span>
                           {v.labels?.use_case && (
-                            <span className="ml-2 text-xs text-gray-500 truncate max-w-[120px]">
+                            <span className="ml-2 text-xs text-muted-foreground truncate max-w-[120px]">
                               {v.labels.use_case}
                             </span>
                           )}
                         </div>
                       );
                     }}
-                    styles={{
-                      option: (base, state) => ({
-                        ...base,
-                        color: "#222",
-                        background: state.isSelected
-                          ? "#e0e7ff"
-                          : state.isFocused
-                          ? "#f3f4f6"
-                          : "#fff",
-                        fontWeight: state.isSelected ? 600 : 400,
-                      }),
-                      singleValue: (base) => ({ ...base, color: "#222" }),
-                      menu: (base) => ({ ...base, zIndex: 9999 }),
-                    }}
+                    styles={themedSelectStyles as any}
                     classNamePrefix="voice-select"
                   />
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">
                     Multi-voice support{" "}
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded ml-2">
+                    <span className="text-xs bg-muted px-2 py-1 rounded ml-2">
                       New
                     </span>
                   </div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Specify additional ElevenLabs voices that the agent can
                     switch to on demand. Useful for multi-character/emotional
                     agents or language tutoring.
@@ -5448,42 +5500,18 @@ export default function AgentDetailsPage() {
                           </div>
                           <span>{v.name}</span>
                           {v.labels?.use_case && (
-                            <span className="ml-2 text-xs text-gray-500 truncate max-w-[120px]">
+                            <span className="ml-2 text-xs text-muted-foreground truncate max-w-[120px]">
                               {v.labels.use_case}
                             </span>
                           )}
                         </div>
                       );
                     }}
-                    styles={{
-                      option: (base, state) => ({
-                        ...base,
-                        color: "#222",
-                        background: state.isSelected
-                          ? "#e0e7ff"
-                          : state.isFocused
-                          ? "#f3f4f6"
-                          : "#fff",
-                        fontWeight: state.isSelected ? 600 : 400,
-                      }),
-                      multiValue: (base) => ({
-                        ...base,
-                        background: "#e0e7ff",
-                        color: "#222",
-                        borderRadius: 6,
-                        padding: "0 4px",
-                      }),
-                      multiValueLabel: (base) => ({
-                        ...base,
-                        color: "#222",
-                        fontWeight: 500,
-                      }),
-                      menu: (base) => ({ ...base, zIndex: 9999 }),
-                    }}
+                    styles={themedSelectStyles as any}
                     classNamePrefix="voice-select"
                   />
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -5497,7 +5525,7 @@ export default function AgentDetailsPage() {
                     />{" "}
                     Use Flash
                   </label>
-                  <div className="text-xs text-gray-500 mb-2">
+                  <div className="text-xs text-muted-foreground mb-2">
                     Flash is our new recommended model for low latency use
                     cases. For more comparison between Turbo and Flash,{" "}
                     <a
@@ -5514,9 +5542,9 @@ export default function AgentDetailsPage() {
                     Your agent will use <b>Turbo v2</b>.
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">TTS output format</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Select the output format you want to use for ElevenLabs text
                     to speech.
                   </div>
@@ -5528,7 +5556,7 @@ export default function AgentDetailsPage() {
                         tts_output_format: e.target.value,
                       }))
                     }
-                    className="border rounded px-3 py-2 w-64"
+                    className="border border-border rounded px-3 py-2 w-64 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="pcm_8000">PCM 8000 Hz</option>
                     <option value="pcm_16000">PCM 16000 Hz</option>
@@ -5539,11 +5567,11 @@ export default function AgentDetailsPage() {
                     <option value="ulaw_8000">µ-law 8000 Hz</option>
                   </select>
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">
                     Pronunciation Dictionaries
                   </div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Lexicon dictionary files will apply pronunciation
                     replacements to agent responses. Currently, the phoneme
                     function of the pronunciation dictionaries only works with
@@ -5558,7 +5586,7 @@ export default function AgentDetailsPage() {
                     onChange={handleAddDictionaryFile}
                   />
                   <button
-                    className="bg-gray-200 px-3 py-2 rounded w-fit"
+                    className="bg-muted px-3 py-2 rounded w-fit"
                     onClick={() => fileInputRef.current?.click()}
                     type="button"
                   >
@@ -5566,11 +5594,11 @@ export default function AgentDetailsPage() {
                   </button>
                 </div>
                 {/* Sliders for latency, stability, speed, similarity */}
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">
                     Optimize streaming latency <span className="ml-1">🕒</span>
                   </div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Configure latency optimizations for the speech generation.
                     Latency can be optimized at the cost of quality.
                   </div>
@@ -5592,13 +5620,13 @@ export default function AgentDetailsPage() {
                     }
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Current: {voiceConfig["latency"]}
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Stability</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Higher values will make speech more consistent, but it can
                     also make it sound monotone. Lower values will make speech
                     sound more expressive, but may lead to instabilities.
@@ -5621,13 +5649,13 @@ export default function AgentDetailsPage() {
                     }
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Current: {voiceConfig["stability"]}
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Speed</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Controls the speed of the generated speech. Values below 1.0
                     will slow down the speech, while values above 1.0 will speed
                     it up. Extreme values may affect the quality of the
@@ -5651,13 +5679,13 @@ export default function AgentDetailsPage() {
                     }
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Current: {voiceConfig["speed"]}
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+                <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                   <div className="font-semibold">Similarity</div>
-                  <div className="text-gray-500 text-sm mb-2">
+                  <div className="text-muted-foreground text-sm mb-2">
                     Higher values will boost the overall clarity and consistency
                     of the voice. Very high values may lead to artifacts.
                     Adjusting this value to find the right balance is
@@ -5681,7 +5709,7 @@ export default function AgentDetailsPage() {
                     }
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Current: {voiceConfig["similarity"]}
                   </div>
                 </div>
@@ -5690,7 +5718,7 @@ export default function AgentDetailsPage() {
                     type="button"
                     onClick={handleSaveVoice}
                     disabled={voiceSaveLoading}
-                    className="bg-black text-white px-6 py-2 rounded-lg font-medium"
+                    className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium"
                   >
                     {voiceSaveLoading ? "Saving..." : "Save Voice Settings"}
                   </button>
@@ -5713,14 +5741,14 @@ export default function AgentDetailsPage() {
         {activeTab === "Widget" && (
           <div className="space-y-6">
             {/* Embed code */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Embed code</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Add the following snippet to the pages where you want the
                 conversation widget to be.
               </div>
               <div className="flex items-center gap-2">
-                <code className="bg-gray-100 px-2 py-1 rounded text-xs flex-1 overflow-x-auto">
+                <code className="bg-muted px-2 py-1 rounded text-xs flex-1 overflow-x-auto">
                   {`<elevenlabs-convai agent-id="${
                     elevenLabsAgent?.agent_id ||
                     localAgent?.agent_id ||
@@ -5728,7 +5756,7 @@ export default function AgentDetailsPage() {
                   }"></elevenlabs-convai><script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>`}
                 </code>
                 <button
-                  className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+                  className="bg-muted px-3 py-1 rounded hover:bg-muted/80"
                   onClick={() => {
                     const codeToCopy = `<elevenlabs-convai agent-id="${
                       elevenLabsAgent?.agent_id || localAgent?.agent_id || ""
@@ -5746,9 +5774,9 @@ export default function AgentDetailsPage() {
             </div>
 
             {/* Feedback collection */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Feedback collection</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Callers will be able to provide feedback continuously during the
                 conversation and after it ends. Information about which agent
                 response caused the feedback will be collected.
@@ -5765,7 +5793,7 @@ export default function AgentDetailsPage() {
                     feedback_mode: e.target.value,
                   }));
                 }}
-                className="border rounded px-3 py-2 w-64"
+                className="border border-border rounded px-3 py-2 w-64 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="none">None</option>
                 <option value="during">During conversation</option>
@@ -5851,7 +5879,7 @@ export default function AgentDetailsPage() {
                   }
                 }}
                 disabled={saveLoading}
-                className="bg-black text-white px-6 py-2 rounded-lg font-medium"
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium"
               >
                 {saveLoading ? "Saving..." : "Save"}
               </button>
@@ -5862,13 +5890,13 @@ export default function AgentDetailsPage() {
                 <span className="text-red-600 text-sm">{saveError}</span>
               )}
             </div>
-            <div className="mt-2 text-gray-600 text-sm">
+            <div className="mt-2 text-muted-foreground text-sm">
               If you want to make more changes to the widget,{" "}
               <a
                 href="https://elevenlabs.io/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline"
+                className="text-primary underline"
               >
                 go to ElevenLabs
               </a>
@@ -5880,9 +5908,9 @@ export default function AgentDetailsPage() {
         {activeTab === "Advanced" && (
           <div className="space-y-6">
             {/* Turn timeout */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Turn timeout</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 The maximum number of seconds since the user last spoke. If
                 exceeded, the agent will respond and force a turn. A value of -1
                 means the agent will never timeout and always wait for a
@@ -5890,7 +5918,7 @@ export default function AgentDetailsPage() {
               </div>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-32"
+                className="border border-border rounded px-2 py-1 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={advancedConfig.turn_timeout}
                 onChange={(e) =>
                   setAdvancedConfig((prev) => ({
@@ -5902,16 +5930,16 @@ export default function AgentDetailsPage() {
               />
             </div>
             {/* Silence end call timeout */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Silence end call timeout</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 The maximum number of seconds since the user last spoke. If
                 exceeded, the call will terminate. A value of -1 means there is
                 no fixed cutoff.
               </div>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-32"
+                className="border border-border rounded px-2 py-1 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={advancedConfig.silence_end_call_timeout}
                 onChange={(e) =>
                   setAdvancedConfig((prev) => ({
@@ -5923,14 +5951,14 @@ export default function AgentDetailsPage() {
               />
             </div>
             {/* Max conversation duration */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Max conversation duration</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 The maximum number of seconds that a conversation can last.
               </div>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-32"
+                className="border border-border rounded px-2 py-1 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={advancedConfig.max_conversation_duration}
                 onChange={(e) =>
                   setAdvancedConfig((prev) => ({
@@ -5942,15 +5970,15 @@ export default function AgentDetailsPage() {
               />
             </div>
             {/* Keywords */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Keywords</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Define a comma-separated list of keywords that have a higher
                 likelihood of being predicted correctly.
               </div>
               <input
                 type="text"
-                className="border rounded px-2 py-1 w-full"
+                className="border border-border rounded px-2 py-1 w-full bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={keywordsInput}
                 onChange={(e) => setKeywordsInput(e.target.value)}
                 onBlur={() =>
@@ -5966,7 +5994,7 @@ export default function AgentDetailsPage() {
               />
             </div>
             {/* Text only toggle */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -5979,16 +6007,16 @@ export default function AgentDetailsPage() {
                   }
                 />{" "}
                 Text only
-                <span className="text-gray-500 text-sm">
+                <span className="text-muted-foreground text-sm">
                   If enabled audio will not be processed and only text will be
                   used.
                 </span>
               </label>
             </div>
             {/* User input audio format */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">User input audio format</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Select the input format you want to use for automatic speech
                 recognition.
               </div>
@@ -6000,7 +6028,7 @@ export default function AgentDetailsPage() {
                     user_input_audio_format: e.target.value,
                   }))
                 }
-                className="border rounded px-3 py-2 w-64"
+                className="border border-border rounded px-3 py-2 w-64 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="pcm_8000">PCM 8000 Hz</option>
                 <option value="pcm_16000">PCM 16000 Hz</option>
@@ -6012,9 +6040,9 @@ export default function AgentDetailsPage() {
               </select>
             </div>
             {/* Client Events */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Client Events</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Select the events that should be sent to the client.
               </div>
               <Select
@@ -6033,12 +6061,13 @@ export default function AgentDetailsPage() {
                 }
                 classNamePrefix="react-select"
                 placeholder="Select client events"
+                styles={themedSelectStyles as any}
               />
             </div>
             {/* Privacy Settings */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Privacy Settings</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 This section allows you to configure the privacy settings for
                 the agent.
               </div>
@@ -6081,20 +6110,20 @@ export default function AgentDetailsPage() {
                   }
                 />
                 Zero-PPI Retention Mode{" "}
-                <span className="text-xs text-gray-400">&#9432;</span>
+                <span className="text-xs text-muted-foreground">&#9432;</span>
               </label>
             </div>
             {/* Conversations Retention Period */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">
                 Conversations Retention Period
               </div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Set the number of days to keep conversations (-1 for unlimited).
               </div>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-32"
+                className="border border-border rounded px-2 py-1 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={advancedConfig.conversations_retention_period}
                 onChange={(e) =>
                   setAdvancedConfig((prev) => ({
@@ -6112,7 +6141,7 @@ export default function AgentDetailsPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saveLoading}
-                className="bg-black text-white px-6 py-2 rounded-lg font-medium"
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium"
               >
                 {saveLoading ? "Saving..." : "Save"}
               </button>
@@ -6128,7 +6157,7 @@ export default function AgentDetailsPage() {
         {activeTab === "Security" && (
           <div className="space-y-6">
             {/* Enable authentication */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -6141,21 +6170,21 @@ export default function AgentDetailsPage() {
                   }
                 />
                 <span className="font-semibold">Enable authentication</span>
-                <span className="text-gray-500 text-sm">
+                <span className="text-muted-foreground text-sm">
                   Require users to authenticate before connecting to the agent.
                 </span>
               </label>
             </div>
             {/* Allowlist */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Allowlist</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Specify the hosts that will be allowed to connect to this agent.
               </div>
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
-                  className="border rounded px-2 py-1 flex-1"
+                  className="border border-border rounded px-2 py-1 flex-1 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Add host..."
                   value={securityConfig.allowlistInput || ""}
                   onChange={(e) =>
@@ -6166,7 +6195,7 @@ export default function AgentDetailsPage() {
                   }
                 />
                 <button
-                  className="bg-gray-200 px-3 py-2 rounded"
+                  className="bg-muted px-3 py-2 rounded"
                   onClick={() => {
                     if (
                       securityConfig.allowlistInput &&
@@ -6191,7 +6220,7 @@ export default function AgentDetailsPage() {
                   .map((host, idx) => (
                     <div
                       key={host}
-                      className="flex items-center gap-2 bg-gray-100 rounded px-2 py-1"
+                      className="flex items-center gap-2 bg-muted rounded px-2 py-1"
                     >
                       <span className="flex-1">{host}</span>
                       <button
@@ -6210,15 +6239,15 @@ export default function AgentDetailsPage() {
                     </div>
                   ))}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-muted-foreground">
                 No allowlist specified. Any host will be able to connect to this
                 agent.
               </div>
             </div>
             {/* Enable overrides */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Enable overrides</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 Choose which parts of the config can be overridden by the client
                 at the start of the conversation.
               </div>
@@ -6278,7 +6307,7 @@ export default function AgentDetailsPage() {
               ))}
             </div>
             {/* Fetch initiation client data from webhook */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -6293,7 +6322,7 @@ export default function AgentDetailsPage() {
                 <span className="font-semibold">
                   Fetch initiation client data from webhook
                 </span>
-                <span className="text-gray-500 text-sm">
+                <span className="text-muted-foreground text-sm">
                   If enabled, the conversation initiation client data will be
                   fetched from the webhook defined in the settings when
                   receiving Twilio or SIP trunk calls.
@@ -6301,17 +6330,17 @@ export default function AgentDetailsPage() {
               </label>
             </div>
             {/* Post-Call Webhook */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-4">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-semibold text-lg">Post-Call Webhook</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Override the post-call webhook configured in settings for
                     this agent.
                   </div>
                 </div>
                 <button
-                  className="bg-gray-200 px-3 py-2 rounded text-sm"
+                  className="bg-muted px-3 py-2 rounded text-sm"
                   onClick={() => setWebhookModalOpen(true)}
                   disabled={webhookLoading}
                 >
@@ -6320,43 +6349,43 @@ export default function AgentDetailsPage() {
               </div>
 
               {currentWebhook ? (
-                <div className="bg-white border rounded-lg p-4">
+                <div className="bg-card border rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-gray-500 text-xs">
+                    <div className="w-6 h-6 bg-muted rounded flex items-center justify-center text-muted-foreground text-xs">
                       ⚡
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm">
                         {currentWebhook.name}
                       </div>
-                      <div className="text-gray-500 text-xs truncate">
+                      <div className="text-muted-foreground text-xs truncate">
                         {currentWebhook.url}
                       </div>
-                      <div className="text-gray-500 text-xs">
+                      <div className="text-muted-foreground text-xs">
                         Auth Method: {currentWebhook.auth_method || "None"}
                       </div>
                     </div>
                     <button
                       onClick={handleRemoveWebhook}
                       disabled={webhookLoading}
-                      className="text-gray-400 hover:text-red-500 p-1"
+                      className="text-muted-foreground hover:text-red-500 p-1"
                     >
                       🗑️
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="text-gray-500 text-sm">No webhook assigned</div>
+                <div className="text-muted-foreground text-sm">No webhook assigned</div>
               )}
             </div>
 
             {/* Send audio data - only show when webhook is assigned */}
             {currentWebhook && (
-              <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+              <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold">Send audio data</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       When enabled, a secondary streaming webhook will be sent
                       including the audio data for each conversation.
                     </div>
@@ -6369,13 +6398,13 @@ export default function AgentDetailsPage() {
                       disabled={webhookLoading}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
               </div>
             )}
             {/* Enable bursting */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -6388,7 +6417,7 @@ export default function AgentDetailsPage() {
                   }
                 />
                 <span className="font-semibold">Enable bursting</span>
-                <span className="text-gray-500 text-sm">
+                <span className="text-muted-foreground text-sm">
                   If enabled, the agent can exceed the workspace subscription
                   concurrency limit by up to 3 times, with excess calls charged
                   at double the normal rate.
@@ -6396,15 +6425,15 @@ export default function AgentDetailsPage() {
               </label>
             </div>
             {/* Concurrent Calls Limit */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Concurrent Calls Limit</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 The maximum number of concurrent calls allowed. Matching the
                 subscription concurrency limit.
               </div>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-32"
+                className="border border-border rounded px-2 py-1 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={securityConfig.concurrent_calls_limit}
                 onChange={(e) =>
                   setSecurityConfig((prev) => ({
@@ -6416,14 +6445,14 @@ export default function AgentDetailsPage() {
               />
             </div>
             {/* Daily Calls Limit */}
-            <div className="bg-white rounded-lg p-5 shadow flex flex-col gap-2">
+            <div className="bg-card rounded-lg p-5 shadow flex flex-col gap-2">
               <div className="font-semibold">Daily Calls Limit</div>
-              <div className="text-gray-500 text-sm mb-2">
+              <div className="text-muted-foreground text-sm mb-2">
                 The maximum number of calls allowed per day.
               </div>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-32"
+                className="border border-border rounded px-2 py-1 w-32 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 value={securityConfig.daily_calls_limit}
                 onChange={(e) =>
                   setSecurityConfig((prev) => ({
@@ -6440,7 +6469,7 @@ export default function AgentDetailsPage() {
                 type="button"
                 onClick={handleSaveSecurity}
                 disabled={securitySaveLoading}
-                className="bg-black text-white px-6 py-2 rounded-lg font-medium"
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium"
               >
                 {securitySaveLoading ? "Saving..." : "Save"}
               </button>
@@ -6453,7 +6482,7 @@ export default function AgentDetailsPage() {
                 </span>
               )}
               {securityLoading && (
-                <span className="text-gray-500 text-sm">
+                <span className="text-muted-foreground text-sm">
                   Loading from ElevenLabs...
                 </span>
               )}
@@ -6462,13 +6491,13 @@ export default function AgentDetailsPage() {
         )}
         {String(activeTab).trim().toLowerCase() === "analysis" && (
           <div>
-            <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-2 border border-gray-200">
+            <div className="bg-card rounded-2xl p-5 shadow flex flex-col gap-2 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="font-semibold text-lg">
                     Evaluation criteria
                   </div>
-                  <div className="text-gray-500 text-sm">
+                  <div className="text-muted-foreground text-sm">
                     Define custom criteria to evaluate conversations against.
                     You can find the evaluation results for each conversation in{" "}
                     <a href="#" className="underline">
@@ -6479,7 +6508,7 @@ export default function AgentDetailsPage() {
                 </div>
                 <div className="flex items-center">
                   <button
-                    className="border border-black rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-100"
+                    className="border border-black rounded-md px-3 py-1.5 text-sm font-medium hover:bg-muted"
                     onClick={() => setShowCriteriaOverlay(true)}
                   >
                     Add criteria
@@ -6490,7 +6519,7 @@ export default function AgentDetailsPage() {
                 {criteriaLoading ? (
                   <div>Loading...</div>
                 ) : criteriaList.length === 0 ? (
-                  <div className="text-gray-400 text-sm">
+                  <div className="text-muted-foreground text-sm">
                     No criteria yet. (Debug: criteriaList length ={" "}
                     {criteriaList.length})
                   </div>
@@ -6498,19 +6527,19 @@ export default function AgentDetailsPage() {
                   criteriaList.map((c, i) => (
                     <div
                       key={c.name}
-                      className="flex items-center bg-gray-50 rounded-xl px-4 py-3 gap-4 border border-gray-100"
+                      className="flex items-center bg-muted rounded-xl px-4 py-3 gap-4 border border-border"
                     >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
-                        <FaBrain className="text-2xl text-gray-400" />
+                      <div className="flex items-center justify-center w-10 h-10 bg-muted rounded-lg">
+                        <FaBrain className="text-2xl text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-base">{c.name}</div>
-                        <div className="text-gray-500 text-sm truncate">
+                        <div className="text-muted-foreground text-sm truncate">
                           {c.prompt}
                         </div>
                       </div>
                       <button
-                        className="ml-2 text-gray-400 hover:text-red-500"
+                        className="ml-2 text-muted-foreground hover:text-red-500"
                         onClick={() => handleDeleteCriteria(c.name)}
                       >
                         <FaTrash />
@@ -6520,18 +6549,18 @@ export default function AgentDetailsPage() {
                 )}
               </div>
             </div>
-            <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-2 border border-gray-200 mt-4">
+            <div className="bg-card rounded-2xl p-5 shadow flex flex-col gap-2 border border-border mt-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="font-semibold text-lg">Data collection</div>
-                  <div className="text-gray-500 text-sm">
+                  <div className="text-muted-foreground text-sm">
                     Define what data to extract from conversations for analytics
                     or reporting.
                   </div>
                 </div>
                 <div className="flex items-center">
                   <button
-                    className="border border-black rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-100"
+                    className="border border-black rounded-md px-3 py-1.5 text-sm font-medium hover:bg-muted"
                     onClick={() => setShowDataOverlay(true)}
                   >
                     Add item
@@ -6542,31 +6571,31 @@ export default function AgentDetailsPage() {
                 {dataItemLoading ? (
                   <div>Loading...</div>
                 ) : dataItemList.length === 0 ? (
-                  <div className="text-gray-400 text-sm">
+                  <div className="text-muted-foreground text-sm">
                     No data items yet.
                   </div>
                 ) : (
                   dataItemList.map((d, i) => (
                     <div
                       key={d.identifier}
-                      className="flex items-center bg-gray-50 rounded-xl px-4 py-3 gap-4 border border-gray-100"
+                      className="flex items-center bg-muted rounded-xl px-4 py-3 gap-4 border border-border"
                     >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
-                        <FaBrain className="text-2xl text-gray-400" />
+                      <div className="flex items-center justify-center w-10 h-10 bg-muted rounded-lg">
+                        <FaBrain className="text-2xl text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-base">
                           {d.identifier}{" "}
-                          <span className="text-xs bg-gray-100 px-2 py-0.5 rounded ml-2">
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded ml-2">
                             {d.type}
                           </span>
                         </div>
-                        <div className="text-gray-500 text-sm truncate">
+                        <div className="text-muted-foreground text-sm truncate">
                           {d.description}
                         </div>
                       </div>
                       <button
-                        className="ml-2 text-gray-400 hover:text-red-500"
+                        className="ml-2 text-muted-foreground hover:text-red-500"
                         onClick={() => handleDeleteDataItem(d.identifier)}
                       >
                         <FaTrash />
@@ -6655,7 +6684,7 @@ export default function AgentDetailsPage() {
                   }
                 }}
                 disabled={saveLoading}
-                className="bg-black text-white px-6 py-2 rounded-lg font-medium"
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium"
               >
                 {saveLoading ? "Saving..." : "Save"}
               </button>
@@ -6669,14 +6698,14 @@ export default function AgentDetailsPage() {
             {/* Overlays for Add Criteria and Add Data Item */}
             {showCriteriaOverlay && (
               <div
-                className="fixed inset-0 z-50 flex justify-end items-stretch bg-black bg-opacity-30 w-screen h-screen"
+                className="fixed inset-0 z-50 flex justify-end items-stretch bg-background/70 w-screen h-screen"
                 onClick={(e) => {
                   if (e.target === e.currentTarget)
                     setShowCriteriaOverlay(false);
                 }}
               >
                 <div
-                  className="w-full h-full max-w-md bg-white shadow-xl p-8 flex flex-col absolute right-0 top-0"
+                  className="w-full h-full max-w-md bg-card shadow-xl p-8 flex flex-col absolute right-0 top-0"
                   style={{
                     borderTopLeftRadius: 16,
                     borderBottomLeftRadius: 16,
@@ -6687,13 +6716,13 @@ export default function AgentDetailsPage() {
                   <div className="flex items-center justify-between mb-6">
                     <div className="text-lg font-semibold">Add criteria</div>
                     <button
-                      className="text-2xl text-gray-400 hover:text-gray-600"
+                      className="text-2xl text-muted-foreground hover:text-muted-foreground"
                       onClick={() => setShowCriteriaOverlay(false)}
                     >
                       &times;
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 mb-4">
+                  <div className="text-xs text-muted-foreground mb-4">
                     Goal prompt criteria
                     <br />
                     Passes the conversation transcript together with a custom
@@ -6704,27 +6733,27 @@ export default function AgentDetailsPage() {
                   </div>
                   <label className="font-medium text-sm mb-1">Name</label>
                   <input
-                    className="border rounded px-3 py-2 w-full mb-4"
+                    className="border border-border rounded px-3 py-2 w-full mb-4 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Enter the name to generate an ID."
                     value={criteriaName}
                     onChange={(e) => setCriteriaName(e.target.value)}
                   />
                   <label className="font-medium text-sm mb-1">Prompt</label>
                   <textarea
-                    className="border rounded px-3 py-2 w-full mb-6 min-h-[80px]"
+                    className="border border-border rounded px-3 py-2 w-full mb-6 min-h-[80px] bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Enter prompt..."
                     value={criteriaPrompt}
                     onChange={(e) => setCriteriaPrompt(e.target.value)}
                   />
                   <div className="flex justify-end gap-2 mt-auto">
                     <button
-                      className="px-4 py-2 rounded bg-gray-200"
+                      className="px-4 py-2 rounded bg-muted"
                       onClick={() => setShowCriteriaOverlay(false)}
                     >
                       Cancel
                     </button>
                     <button
-                      className="px-4 py-2 rounded bg-black text-white"
+                      className="px-4 py-2 rounded bg-primary text-primary-foreground"
                       onClick={handleAddCriteriaSubmit}
                     >
                       Add criteria
@@ -6735,13 +6764,13 @@ export default function AgentDetailsPage() {
             )}
             {showDataOverlay && (
               <div
-                className="fixed inset-0 z-50 flex justify-end items-stretch bg-black bg-opacity-30 w-screen h-screen"
+                className="fixed inset-0 z-50 flex justify-end items-stretch bg-background/70 w-screen h-screen"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) setShowDataOverlay(false);
                 }}
               >
                 <div
-                  className="w-full h-full max-w-md bg-white shadow-xl p-8 flex flex-col absolute right-0 top-0"
+                  className="w-full h-full max-w-md bg-card shadow-xl p-8 flex flex-col absolute right-0 top-0"
                   style={{
                     borderTopLeftRadius: 16,
                     borderBottomLeftRadius: 16,
@@ -6754,7 +6783,7 @@ export default function AgentDetailsPage() {
                       Add data collection item
                     </div>
                     <button
-                      className="text-2xl text-gray-400 hover:text-gray-600"
+                      className="text-2xl text-muted-foreground hover:text-muted-foreground"
                       onClick={() => setShowDataOverlay(false)}
                     >
                       &times;
@@ -6765,7 +6794,7 @@ export default function AgentDetailsPage() {
                       Data type
                     </label>
                     <select
-                      className="border rounded px-3 py-2 w-full"
+                      className="border border-border rounded px-3 py-2 w-full bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                       value={dataType}
                       onChange={(e) => setDataType(e.target.value)}
                     >
@@ -6777,7 +6806,7 @@ export default function AgentDetailsPage() {
                   </div>
                   <label className="font-medium text-sm mb-1">Identifier</label>
                   <input
-                    className="border rounded px-3 py-2 w-full mb-4"
+                    className="border border-border rounded px-3 py-2 w-full mb-4 bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Enter identifier..."
                     value={dataIdentifier}
                     onChange={(e) => setDataIdentifier(e.target.value)}
@@ -6786,24 +6815,24 @@ export default function AgentDetailsPage() {
                     Description
                   </label>
                   <textarea
-                    className="border rounded px-3 py-2 w-full mb-6 min-h-[80px]"
+                    className="border border-border rounded px-3 py-2 w-full mb-6 min-h-[80px] bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Describe how to extract the data from the transcript..."
                     value={dataDescription}
                     onChange={(e) => setDataDescription(e.target.value)}
                   />
-                  <div className="text-xs text-gray-500 mb-4">
+                  <div className="text-xs text-muted-foreground mb-4">
                     This field will be passed to the LLM and should describe in
                     detail how to extract the data from the transcript.
                   </div>
                   <div className="flex justify-end gap-2 mt-auto">
                     <button
-                      className="px-4 py-2 rounded bg-gray-200"
+                      className="px-4 py-2 rounded bg-muted"
                       onClick={() => setShowDataOverlay(false)}
                     >
                       Cancel
                     </button>
                     <button
-                      className="px-4 py-2 rounded bg-black text-white"
+                      className="px-4 py-2 rounded bg-primary text-primary-foreground"
                       onClick={handleAddDataItemSubmit}
                     >
                       Add item

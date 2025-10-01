@@ -865,15 +865,15 @@ export default function DashboardPage() {
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              stroke="#f0f0f0"
+              stroke="hsl(var(--border))"
               strokeOpacity={0.6}
             />
             <XAxis
               dataKey="dateLabel"
               tick={{
                 fontSize: 12,
-                fill: "#64748b",
-                fontFamily: "Inter, system-ui, sans-serif",
+                fill: 'hsl(var(--muted-foreground))',
+                fontFamily: 'Inter, system-ui, sans-serif',
               }}
               tickLine={false}
               axisLine={false}
@@ -883,8 +883,8 @@ export default function DashboardPage() {
             <YAxis
               tick={{
                 fontSize: 11,
-                fill: "#64748b",
-                fontFamily: "Inter, system-ui, sans-serif",
+                fill: 'hsl(var(--muted-foreground))',
+                fontFamily: 'Inter, system-ui, sans-serif',
               }}
               tickLine={false}
               axisLine={false}
@@ -899,8 +899,8 @@ export default function DashboardPage() {
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-                      <p className="font-medium text-sm text-gray-900 mb-2">
+                    <div className="bg-card text-card-foreground p-3 rounded-lg shadow-lg border border-border">
+                      <p className="font-medium text-sm mb-2">
                         {label}
                       </p>
                       <div className="space-y-1">
@@ -913,9 +913,9 @@ export default function DashboardPage() {
                               className="w-2 h-2 rounded-full mr-2"
                               style={{ backgroundColor: entry.color }}
                             />
-                            <span className="text-xs text-gray-600">
-                              {entry.name}:{" "}
-                              <span className="font-medium text-gray-900">
+                            <span className="text-xs text-muted-foreground">
+                              {entry.name}:{' '}
+                              <span className="font-medium text-foreground">
                                 {entry.value}
                               </span>
                             </span>
@@ -927,7 +927,7 @@ export default function DashboardPage() {
                 }
                 return null;
               }}
-              cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}
+              cursor={{ fill: 'hsl(var(--muted) / 0.5)' }}
             />
             <Legend
               verticalAlign="top"
@@ -938,7 +938,7 @@ export default function DashboardPage() {
                 paddingBottom: "10px",
               }}
               formatter={(value) => (
-                <span className="text-xs text-gray-600">{value}</span>
+                <span className="text-xs text-muted-foreground">{value}</span>
               )}
             />
             <Bar
@@ -996,7 +996,7 @@ export default function DashboardPage() {
               Error Loading Dashboard
             </h3>
             <p className="text-muted-foreground mb-4">{dashboardData.error}</p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Check browser console for detailed error information
             </p>
             <button
@@ -1084,14 +1084,14 @@ export default function DashboardPage() {
                           className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                             getStatusColor(call.status).includes("bg-")
                               ? getStatusColor(call.status).split(" ")[1]
-                              : "bg-gray-400"
+                              : "bg-muted-foreground"
                           }`}
                         ></span>
                         <span
                           className={`relative inline-flex rounded-full h-2 w-2 ${
                             getStatusColor(call.status).includes("bg-")
                               ? getStatusColor(call.status).split(" ")[1]
-                              : "bg-gray-500"
+                              : "bg-muted-foreground"
                           }`}
                         ></span>
                       </span>

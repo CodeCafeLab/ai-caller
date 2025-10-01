@@ -13,37 +13,37 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    icon: <Bot className="h-8 w-8 text-primary" />,
+    icon: <Bot className="h-4 w-4 text-primary" />,
     title: 'Smart AI Voice Calling',
     description: 'Engage customers with GPT-4 powered, lifelike voice interactions for a superior experience.',
   },
   {
-    icon: <Phone className="h-8 w-8 text-primary" />,
+    icon: <Phone className="h-4 w-4 text-primary" />,
     title: 'SIP/VoIP Integration',
     description: 'Seamlessly connect with your existing telephony systems for efficient and scalable call management.',
   },
   {
-    icon: <Users className="h-8 w-8 text-primary" />,
+    icon: <Users className="h-4 w-4 text-primary" />,
     title: 'CRM & WhatsApp Integration',
     description: 'Sync your customer data and communications across platforms for a unified workflow.',
   },
   {
-    icon: <Globe className="h-8 w-8 text-primary" />,
+    icon: <Globe className="h-4 w-4 text-primary" />,
     title: 'Multi-language Support',
     description: 'Broaden your audience reach by enabling the AI to interact fluently in multiple languages.',
   },
   {
-    icon: <BarChart3 className="h-8 w-8 text-primary" />,
+    icon: <BarChart3 className="h-4 w-4 text-primary" />,
     title: 'Real-time Call Analytics',
     description: 'Gain actionable insights from live call data to optimize performance and track KPIs.',
   },
   {
-    icon: <Text className="h-8 w-8 text-primary" />,
+    icon: <Text className="h-4 w-4 text-primary" />,
     title: 'Text-to-Speech + Speech-to-Text',
     description: 'Advanced transcription and voice synthesis for accurate communication and record-keeping.',
   },
   {
-    icon: <Move className="h-8 w-8 text-primary" />,
+    icon: <Move className="h-4 w-4 text-primary" />,
     title: 'Drag & Drop Flow Builder',
     description: 'Create complex call workflows with ease using our intuitive, no-code visual editor.',
   },
@@ -89,10 +89,10 @@ export function Features() {
     ],
   };
   return (
-    <section id="features" className="py-20 md:py-28">
+    <section id="features" className="py-16 md:py-20">
       <div className="container">
         <SectionHeader
-          icon={<Sparkles className="h-6 w-6 text-[#FFC012]" />}
+          icon={<Sparkles className="h-4 w-4 text-[#FFC012]" />}
           title="Key Features"
           description="Everything you need to automate and scale your voice communications."
         />
@@ -109,12 +109,12 @@ export function Features() {
             ‹
           </button>
           <div className="features-menu overflow-x-auto no-scrollbar">
-            <div className="inline-flex gap-2 rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-2">
+            <div className="inline-flex gap-2 rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-1">
               {features.map((f, i) => (
                 <button
                   key={f.title}
                   onClick={() => setActive(i)}
-                  className={`px-4 py-2 rounded-full flex items-center gap-2 whitespace-nowrap transition ${
+                  className={`px-3 py-1 rounded-full flex items-center gap-2 whitespace-nowrap text-sm transition ${
                     active === i ? 'text-[#6DD629]' : 'text-foreground hover:text-[#FFC012]'
                   }`}
                 >
