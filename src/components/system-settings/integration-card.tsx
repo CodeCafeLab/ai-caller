@@ -15,7 +15,7 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ name, status, onConfi
   const isConnected = status === 'Connected';
 
   return (
-    <div className="bg-card rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700"> {/* Material-style card */}
+    <div className="bg-card rounded-lg shadow-md p-4 border border-border"> {/* Material-style card */}
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-semibold">{name}</h3>
         <div className="flex items-center gap-2">

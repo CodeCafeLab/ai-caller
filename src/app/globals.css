@@ -154,7 +154,7 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
   }
 }
 
@@ -216,4 +216,22 @@ body {
 .bubble-wave {
   animation: bubble-wave 5.5s ease-in-out infinite;
   will-change: transform;
+}
+
+/* Reusable continuous marquee (duplicate groups to loop seamlessly) */
+@keyframes cc-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.cc-marquee {
+  position: relative;
+  overflow: hidden;
+}
+.cc-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: cc-marquee 30s linear infinite;
+}
+.cc-marquee:hover .cc-marquee-track {
+  animation-play-state: paused;
 }

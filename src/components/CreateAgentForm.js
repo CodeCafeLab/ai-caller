@@ -77,18 +77,18 @@ export default function CreateAgentForm({ onSuccess }) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-3xl mx-auto p-6 bg-card text-card-foreground border border-border rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6">Create New Agent</h2>
       
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-destructive/10 border border-destructive text-destructive rounded">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
             Agent Name *
           </label>
           <input
@@ -98,13 +98,13 @@ export default function CreateAgentForm({ onSuccess }) {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             placeholder="e.g., Customer Support Bot"
           />
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
             Description
           </label>
           <textarea
@@ -113,13 +113,13 @@ export default function CreateAgentForm({ onSuccess }) {
             value={formData.description}
             onChange={handleChange}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             placeholder="A brief description of what this agent does"
           />
         </div>
 
         <div>
-          <label htmlFor="system_prompt" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="system_prompt" className="block text-sm font-medium text-foreground mb-1">
             System Prompt *
           </label>
           <textarea
@@ -129,13 +129,13 @@ export default function CreateAgentForm({ onSuccess }) {
             onChange={handleChange}
             required
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm"
             placeholder="You are a helpful assistant that..."
           />
         </div>
 
         <div>
-          <label htmlFor="first_message" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="first_message" className="block text-sm font-medium text-foreground mb-1">
             First Message *
           </label>
           <input
@@ -145,14 +145,14 @@ export default function CreateAgentForm({ onSuccess }) {
             value={formData.first_message}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             placeholder="Hello! How can I help you today?"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="language_code" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="language_code" className="block text-sm font-medium text-foreground mb-1">
               Language
             </label>
             <select
@@ -160,7 +160,7 @@ export default function CreateAgentForm({ onSuccess }) {
               name="language_code"
               value={formData.language_code}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="en">English</option>
               <option value="es">Spanish</option>
@@ -176,7 +176,7 @@ export default function CreateAgentForm({ onSuccess }) {
           </div>
 
           <div>
-            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="model" className="block text-sm font-medium text-foreground mb-1">
               Model
             </label>
             <select
@@ -184,7 +184,7 @@ export default function CreateAgentForm({ onSuccess }) {
               name="model"
               value={formData.model}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="eleven_turbo_v2">Eleven Turbo v2</option>
               <option value="eleven_monolingual_v2">Eleven Monolingual v2</option>
@@ -197,7 +197,7 @@ export default function CreateAgentForm({ onSuccess }) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             disabled={loading}
           >
             Cancel
@@ -205,7 +205,7 @@ export default function CreateAgentForm({ onSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating...' : 'Create Agent'}
           </button>

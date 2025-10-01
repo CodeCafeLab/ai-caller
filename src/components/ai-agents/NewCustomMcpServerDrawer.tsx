@@ -180,29 +180,29 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-30 z-40"
+        className="fixed inset-0 bg-background/70 z-40"
         onClick={onClose}
       />
       
       {/* Right-side Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-xl z-50 transform transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-full max-w-xl bg-card shadow-xl z-50 transform transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
+          <div className="flex items-center justify-between p-6 border-b border-border">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <span className="text-gray-600 text-lg">🔗</span>
+              <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
+                <span className="text-muted-foreground text-lg">🔗</span>
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">New Custom MCP Server</h2>
-                <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">Alpha</span>
+                <h2 className="text-xl font-semibold text-foreground">New Custom MCP Server</h2>
+                <span className="inline-block bg-muted text-muted-foreground text-xs px-2 py-1 rounded-full">Alpha</span>
               </div>
             </div>
             <button 
               onClick={onClose} 
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              className="text-muted-foreground hover:text-foreground text-2xl leading-none"
             >
               ×
             </button>
@@ -211,29 +211,29 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
           {/* Content */}
           <div className="p-6 space-y-6 overflow-y-auto">
             {/* Basic Information */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Basic Information</h3>
-              <p className="text-sm text-gray-600 mb-4">Identify your MCP server with a clear name and description.</p>
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-2">Basic Information</h3>
+              <p className="text-sm text-muted-foreground mb-4">Identify your MCP server with a clear name and description.</p>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Name</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Enter server name"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Description</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Enter server description"
                   />
                 </div>
@@ -241,13 +241,13 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
             </div>
 
             {/* Server Configuration */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Server Configuration</h3>
-              <p className="text-sm text-gray-600 mb-4">Specify how to connect to your MCP server.</p>
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-2">Server Configuration</h3>
+              <p className="text-sm text-muted-foreground mb-4">Specify how to connect to your MCP server.</p>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Server type</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Server type</label>
                   <div className="flex gap-2">
                     {SERVER_TYPES.map(type => (
                       <button
@@ -256,8 +256,8 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
                         onClick={() => setServerType(type.value)}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                           serverType === type.value
-                            ? "bg-gray-900 text-white ring-2 ring-gray-900 ring-offset-2"
-                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                            ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
+                            : "bg-card text-foreground border border-border hover:bg-muted"
                         }`}
                       >
                         {type.label}
@@ -267,12 +267,12 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Server URL</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Server URL</label>
                   <div className="flex gap-3">
                     <select
                       value={urlType}
                       onChange={(e) => setUrlType(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       {URL_TYPES.map(type => (
                         <option key={type.value} value={type.value}>{type.label}</option>
@@ -282,7 +282,7 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
                       type="text"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder={urlPlaceholder}
                     />
                   </div>
@@ -291,16 +291,16 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
             </div>
 
             {/* Secret Token */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Secret Token</h3>
-              <p className="text-sm text-gray-600 mb-4">Configure a secret token for secure server access.</p>
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-2">Secret Token</h3>
+              <p className="text-sm text-muted-foreground mb-4">Configure a secret token for secure server access.</p>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Secret</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Secret</label>
                 <select
                   value={secret}
                   onChange={(e) => setSecret(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   {secretOptions.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -310,47 +310,47 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
             </div>
 
             {/* HTTP Headers */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-muted rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-semibold text-gray-900">HTTP Headers</h3>
-                  <p className="text-sm text-gray-600">Add custom headers for additional configuration or authentication.</p>
+                  <h3 className="font-semibold text-foreground">HTTP Headers</h3>
+                  <p className="text-sm text-muted-foreground">Add custom headers for additional configuration or authentication.</p>
                 </div>
                 <button
                   type="button"
                   onClick={addHeader}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="px-3 py-2 text-sm border border-border rounded-md hover:bg-muted transition-colors"
                 >
                   Add header
                 </button>
               </div>
               
               {headers.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   No headers added yet
                 </div>
               ) : (
                 <div className="space-y-3">
                   {headers.map((header, index) => (
-                    <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div key={index} className="bg-card rounded-lg p-4 border border-border">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                          <label className="block text-sm font-medium text-foreground mb-1">Name</label>
                           <input
                             type="text"
                             value={header.name}
                             onChange={(e) => updateHeader(index, 'name', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                             placeholder="Enter header name"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Value</label>
+                          <label className="block text-sm font-medium text-foreground mb-1">Value</label>
                           <input
                             type="text"
                             value={header.value}
                             onChange={(e) => updateHeader(index, 'value', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                             placeholder="Enter header value"
                           />
                         </div>
@@ -359,7 +359,7 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
                         <button
                           type="button"
                           onClick={() => removeHeader(index)}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                          className="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted transition-colors"
                         >
                           Delete
                         </button>
@@ -371,9 +371,9 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
             </div>
 
             {/* Tool Approval Mode */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Tool Approval Mode</h3>
-              <p className="text-sm text-gray-600 mb-4">Control how the agent requests permission to use tools from this MCP server.</p>
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-2">Tool Approval Mode</h3>
+              <p className="text-sm text-muted-foreground mb-4">Control how the agent requests permission to use tools from this MCP server.</p>
               
               <div className="space-y-3">
                 {TOOL_APPROVAL_MODES.map(mode => (
@@ -389,14 +389,14 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{mode.icon}</span>
-                        <span className="font-medium text-gray-900">{mode.label}</span>
+                        <span className="font-medium text-foreground">{mode.label}</span>
                         {mode.recommended && (
-                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                          <span className="inline-block bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
                             Recommended
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">{mode.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{mode.description}</p>
                     </div>
                   </label>
                 ))}
@@ -404,9 +404,9 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
             </div>
 
             {/* Confirmation */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Confirmation</h3>
-              <p className="text-sm text-gray-600 mb-3">Custom MCP servers are not verified by ElevenLabs</p>
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-2">Confirmation</h3>
+              <p className="text-sm text-muted-foreground mb-3">Custom MCP servers are not verified by ElevenLabs</p>
               
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -415,7 +415,7 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
                   onChange={(e) => setTrusted(e.target.checked)}
                   className="rounded"
                 />
-                <span className="text-sm text-gray-700">I trust this server</span>
+                <span className="text-sm text-muted-foreground">I trust this server</span>
               </label>
             </div>
 
@@ -428,27 +428,27 @@ export default function NewCustomMcpServerDrawer({ open = true, onClose, onCreat
 
             {/* Loading State */}
             {saving && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <p className="text-blue-800 text-sm">Creating MCP server...</p>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <p className="text-primary text-sm">Creating MCP server...</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
+          <div className="flex justify-end gap-3 p-6 border-t border-border bg-muted">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm border border-border rounded-md hover:bg-muted/80 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleAddServer}
               disabled={!name || !url || !trusted || saving}
-              className="px-4 py-2 text-sm bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? "Adding..." : "Add Server"}
             </button>
