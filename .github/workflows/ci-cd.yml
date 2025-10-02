@@ -141,7 +141,7 @@ jobs:
             
             # Install dependencies
             echo "📦 Installing dependencies..."
-            npm ci --production --silent
+            npm i --production --silent
             
             # Health check before restart
             echo "🏥 Performing pre-deployment health check..."
@@ -197,7 +197,7 @@ jobs:
             
             # Install dependencies
             echo "📦 Installing dependencies..."
-            npm ci --silent
+            npm i --silent
             
             # Build application
             echo "🔨 Building application..."
