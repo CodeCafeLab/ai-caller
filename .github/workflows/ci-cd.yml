@@ -4,16 +4,117 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '18'
+  DEPLOYMENT_TIMEOUT: 600
 
 jobs:
-  deploy:
+  # Build and Test Job
+  build-and-test:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # ---------- Frontend Build & Test ----------
+      - name: Install Frontend Dependencies
+        run: |
+          npm ci
+          echo "✅ Frontend dependencies installed"
+
+      - name: Run Frontend Linting
+        run: |
+          npm run lint
+          echo "✅ Frontend linting passed"
+
+      - name: Run TypeScript Check
+        run: |
+          npm run typecheck
+          echo "✅ TypeScript check passed"
+
+      - name: Build Frontend
+        run: |
+          npm run build
+          echo "✅ Frontend build successful"
+
+      # ---------- Backend Build & Test ----------
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: |
+          npm ci
+          echo "✅ Backend dependencies installed"
+
+      - name: Validate Backend Configuration
+        working-directory: ./backend
+        run: |
+          if [ ! -f "server.js" ]; then
+            echo "❌ Backend server.js not found"
+            exit 1
+          fi
+          echo "✅ Backend configuration validated"
+
+  # Security Audit Job
+  security-audit:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ---------- Backend ----------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Run Frontend Security Audit
+        run: |
+          npm audit --audit-level=high
+          echo "✅ Frontend security audit passed"
+        continue-on-error: true
+
+      - name: Run Backend Security Audit
+        working-directory: ./backend
+        run: |
+          npm audit --audit-level=high
+          echo "✅ Backend security audit passed"
+        continue-on-error: true
+
+  # Deploy Job (only runs on main branch push after successful build)
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build-and-test, security-audit]
+    environment: production
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Environment Variables
+        run: |
+          if [ -z "${{ secrets.SERVER_PASSWORD }}" ]; then
+            echo "❌ SERVER_PASSWORD secret is not set"
+            exit 1
+          fi
+          echo "✅ Environment variables validated"
+
+      # ---------- Backend Deployment ----------
       - name: Deploy Backend
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -21,16 +122,53 @@ jobs:
           username: root
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
+          timeout: ${{ env.DEPLOYMENT_TIMEOUT }}s
           script: |
             set -e
-            echo "🚀 Deploying AI Caller Backend..."
+            echo "🚀 Starting AI Caller Backend Deployment..."
+            
+            # Navigate to backend directory
             cd /var/www/ai-caller/backend
-            git pull origin main
-            npm install --production
-            pm2 restart ai-caller-backend
-            echo "✅ Backend deployed successfully!"
+            
+            # Create backup of current version
+            echo "📦 Creating backup..."
+            cp -r . ../backend-backup-$(date +%Y%m%d_%H%M%S) || echo "⚠️ Backup creation failed, continuing..."
+            
+            # Pull latest changes
+            echo "📥 Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Install dependencies
+            echo "📦 Installing dependencies..."
+            npm ci --production --silent
+            
+            # Health check before restart
+            echo "🏥 Performing pre-deployment health check..."
+            if pm2 describe ai-caller-backend > /dev/null 2>&1; then
+              echo "✅ Backend process found"
+            else
+              echo "⚠️ Backend process not found, will start fresh"
+            fi
+            
+            # Restart backend service
+            echo "🔄 Restarting backend service..."
+            pm2 restart ai-caller-backend || pm2 start server.js --name ai-caller-backend
+            
+            # Wait for service to start
+            sleep 5
+            
+            # Post-deployment health check
+            echo "🏥 Performing post-deployment health check..."
+            if pm2 describe ai-caller-backend | grep -q "online"; then
+              echo "✅ Backend deployed and running successfully!"
+            else
+              echo "❌ Backend deployment health check failed"
+              pm2 logs ai-caller-backend --lines 10
+              exit 1
+            fi
 
-      # ---------- Frontend ----------
+      # ---------- Frontend Deployment ----------
       - name: Deploy Frontend
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -38,12 +176,91 @@ jobs:
           username: root
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
+          timeout: ${{ env.DEPLOYMENT_TIMEOUT }}s
           script: |
             set -e
-            echo "🚀 Deploying AI Caller Frontend..."
+            echo "🚀 Starting AI Caller Frontend Deployment..."
+            
+            # Navigate to frontend directory
             cd /var/www/ai-caller
-            git pull origin main
-            npm install
-            npm run build || { echo "❌ Frontend build failed"; exit 1; }
-            pm2 restart ai-caller-frontend
-            echo "✅ Frontend deployed successfully!"
+            
+            # Create backup of current build
+            echo "📦 Creating backup..."
+            if [ -d ".next" ]; then
+              cp -r .next .next-backup-$(date +%Y%m%d_%H%M%S) || echo "⚠️ Backup creation failed, continuing..."
+            fi
+            
+            # Pull latest changes
+            echo "📥 Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Install dependencies
+            echo "📦 Installing dependencies..."
+            npm ci --silent
+            
+            # Build application
+            echo "🔨 Building application..."
+            npm run build || {
+              echo "❌ Frontend build failed"
+              if [ -d ".next-backup-$(date +%Y%m%d_%H%M%S)" ]; then
+                echo "🔄 Restoring backup..."
+                rm -rf .next
+                mv .next-backup-$(date +%Y%m%d_%H%M%S) .next
+              fi
+              exit 1
+            }
+            
+            # Health check before restart
+            echo "🏥 Performing pre-deployment health check..."
+            if pm2 describe ai-caller-frontend > /dev/null 2>&1; then
+              echo "✅ Frontend process found"
+            else
+              echo "⚠️ Frontend process not found, will start fresh"
+            fi
+            
+            # Restart frontend service
+            echo "🔄 Restarting frontend service..."
+            pm2 restart ai-caller-frontend || pm2 start npm --name ai-caller-frontend -- start
+            
+            # Wait for service to start
+            sleep 10
+            
+            # Post-deployment health check
+            echo "🏥 Performing post-deployment health check..."
+            if pm2 describe ai-caller-frontend | grep -q "online"; then
+              echo "✅ Frontend deployed and running successfully!"
+            else
+              echo "❌ Frontend deployment health check failed"
+              pm2 logs ai-caller-frontend --lines 10
+              exit 1
+            fi
+            
+            # Cleanup old backups (keep last 3)
+            echo "🧹 Cleaning up old backups..."
+            find . -name ".next-backup-*" -type d | sort -r | tail -n +4 | xargs rm -rf || echo "⚠️ Backup cleanup completed"
+            
+            echo "🎉 Frontend deployment completed successfully!"
+
+      # ---------- Deployment Notification ----------
+      - name: Deployment Success Notification
+        if: success()
+        run: |
+          echo "🎉 AI Caller deployment completed successfully!"
+          echo "📊 Deployment Summary:"
+          echo "  - Backend: ✅ Deployed and running"
+          echo "  - Frontend: ✅ Deployed and running"
+          echo "  - Commit: ${{ github.sha }}"
+          echo "  - Branch: ${{ github.ref_name }}"
+          echo "  - Triggered by: ${{ github.actor }}"
+
+      - name: Deployment Failure Notification
+        if: failure()
+        run: |
+          echo "❌ AI Caller deployment failed!"
+          echo "🔍 Check the logs above for details"
+          echo "📊 Failure Details:"
+          echo "  - Commit: ${{ github.sha }}"
+          echo "  - Branch: ${{ github.ref_name }}"
+          echo "  - Triggered by: ${{ github.actor }}"
+          exit 1
