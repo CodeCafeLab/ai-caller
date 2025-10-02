@@ -3,7 +3,7 @@ import { BookDemoDialog } from './book-demo-dialog';
 
 export function CTA() {
   return (
-    <section id="cta" className="py-20 md:py-28">
+    <section id="cta" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">

@@ -38,7 +38,7 @@ export function HowItWorks() {
   }, []);
 
   return (
-    <section id="how-it-works" className="py-20 md:py-28">
+    <section id="how-it-works" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
         <div className="mx-auto text-center">
           <div className="flex justify-center mb-3">

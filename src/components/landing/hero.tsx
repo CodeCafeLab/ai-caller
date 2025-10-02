@@ -9,7 +9,7 @@ import { CalendarDays } from 'lucide-react';
 export function Hero() {
 
   return (
-    <section id="home" className="pt-10 md:pt-20 pb-12 md:pb-20">
+    <section id="home" className="pt-8 md:pt-20 pb-6 md:pb-20">
       <div className="container text-center">
         <div className="mx-auto">
           <div className="flex justify-center mb-5">

@@ -49,12 +49,12 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full bg-[hsl(33,31%,10%)]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(33,31%,10%)]/60">
       <div className="container grid grid-cols-3 items-center h-16 md:h-20">
         <div className="flex items-center justify-start">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center ml-4 space-x-2">
             <Image
               src="/logo.png"
               alt="Code Cafe Lab Logo"
-              width={140}
-              height={48}
+              width={160}
+              height={52}
               priority
               className="object-contain"
             />
@@ -62,7 +62,7 @@ export function Header() {
           </Link>
         </div>
         <div className="flex items-center justify-center">
-          <nav className="hidden md:flex items-center gap-4 rounded-xl bg-[#0F0B06]/60 border border-[#FFC012]/20 px-2 py-0.5 shadow-sm backdrop-blur whitespace-nowrap text-sm">
+          <nav className="hidden md:flex items-center gap-7 rounded-xl bg-[#0F0B06]/60 border border-[#FFC012]/20 px-5 py-2 shadow-sm backdrop-blur whitespace-nowrap text-sm">
             <Link href="#home" className={`${active==='home' ? 'text-[#FFC012]' : 'text-white/90 hover:text-[#FFC012]'} px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap`}>Home</Link>
             <Link href="#features" className={`${active==='features' ? 'text-[#FFC012]' : 'text-white/90 hover:text-[#FFC012]'} px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap`}>Features</Link>
             <Link href="#languages" className={`${active==='languages' ? 'text-[#FFC012]' : 'text-white/90 hover:text-[#FFC012]'} px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap`}>Languages</Link>
@@ -70,13 +70,13 @@ export function Header() {
             <Link href="#use-cases" className={`${active==='use-cases' ? 'text-[#FFC012]' : 'text-white/90 hover:text-[#FFC012]'} px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap`}>Use Cases</Link>
           </nav>
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-4">
           <BookDemoDialog>
-            <Button className="rounded-full bg-[#FFC012] text-black hover:bg-[#FFC012]/90">
+            <Button className="rounded-full px-5 py-2 bg-[#FFC012] text-black hover:bg-[#FFC012]/90">
               Book a Demo
             </Button>
           </BookDemoDialog>
-          <Button asChild className="rounded-full bg-[#6DD629] text-black hover:opacity-80">
+          <Button asChild className="rounded-full px-5 py-2 mr-4 bg-[#6DD629] text-black hover:opacity-80">
             <Link href="/signin">Sign In</Link>
           </Button>
         </div>

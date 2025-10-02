@@ -89,7 +89,7 @@ export function Features() {
     ],
   };
   return (
-    <section id="features" className="py-16 md:py-20">
+    <section id="features" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <SectionHeader
           icon={<Sparkles className="h-4 w-4 text-[#FFC012]" />}
@@ -108,14 +108,16 @@ export function Features() {
           >
             ‹
           </button>
-          <div className="features-menu overflow-x-auto no-scrollbar">
-            <div className="inline-flex gap-2 rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-1">
+          <div className="features-menu overflow-x-auto no-scrollbar mr-9 ml-9 py-2">
+            <div className="inline-flex gap-4">
               {features.map((f, i) => (
                 <button
                   key={f.title}
                   onClick={() => setActive(i)}
-                  className={`px-3 py-1 rounded-full flex items-center gap-2 whitespace-nowrap text-sm transition ${
-                    active === i ? 'text-[#6DD629]' : 'text-foreground hover:text-[#FFC012]'
+                  className={`rounded-xl px-4 py-3 flex items-center gap-2 whitespace-nowrap text-sm transition shadow-sm border ${
+                    active === i
+                      ? 'text-[#6DD629] border-[#6DD629] bg-[hsl(33,31%,12%)]'
+                      : 'text-foreground/90 hover:text-[#FFC012] border-[hsl(33,31%,18%)] hover:border-[#FFC012]/40 bg-[hsl(33,31%,10%)]'
                   }`}
                 >
                   <span className="shrink-0">{f.icon}</span>

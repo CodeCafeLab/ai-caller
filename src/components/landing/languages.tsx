@@ -17,7 +17,7 @@ export function Languages() {
   const dupB = [...rowB, ...rowB];
 
   return (
-    <section id="languages" className="py-20 md:py-28">
+    <section id="languages" className="pt-6 md:pt-12 pb-6 md:pb-12 py-16 md:py-24">
       <div className="container">
         <SectionHeader
           icon={<LanguagesIcon className="h-6 w-6 text-[#6DD629]" />}
