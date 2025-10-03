@@ -27,7 +27,7 @@ const avatarMap = new Map<string, ImagePlaceholder>(PlaceHolderImages.map(img =>
 
 export function Testimonials() {
   return (
-    <section id="testimonials" className="py-16 md:py-20">
+    <section id="testimonials" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl text-foreground">What Our Customers Say</h2>

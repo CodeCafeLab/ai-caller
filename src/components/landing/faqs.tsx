@@ -20,7 +20,7 @@ const items = [
 export function FAQs() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section id="faqs" className="py-20 md:py-28">
+    <section id="faqs" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <SectionHeader icon={<HelpCircle className="h-6 w-6 text-[#6DD629]" />} title="FAQs" description="Everything you need to know to get started with AI Caller." />
 

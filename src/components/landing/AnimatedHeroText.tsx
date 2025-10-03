@@ -52,7 +52,7 @@ export default function AnimatedHeroText({
   }, [isMounted, charIndex, currentText, isDeleting, textIndex, texts, typingSpeed, deletingSpeed, delayBetweenTexts]);
 
   if (!isMounted) {
-    return <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary">\u00A0</span>;
+    return <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary">Redefining Business Conversations with AI Voice Integration</span>;
   }
 
   return (

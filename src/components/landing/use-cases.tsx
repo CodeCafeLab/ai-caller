@@ -15,17 +15,21 @@ const useCases = [
 export function UseCases() {
   const [active, setActive] = useState<string>(useCases[0].name);
   return (
-    <section id="use-cases" className="py-16 md:py-20">
+    <section id="use-cases" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <SectionHeader icon={<Briefcase className="h-5 w-5 text-[#6DD629]" />} title="Use Cases" description="Discover how teams use AI Caller to grow revenue and reduce costs." />
-        {/* Horizontal menu like Features, active = green text */}
+        {/* Horizontal menu with rounded item boxes */}
         <div className="mt-8 relative">
-          <div className="inline-flex gap-2 rounded-xl bg-[hsl(33,31%,10%)] border border-[hsl(33,31%,18%)] p-1.5 w-full justify-center flex-wrap text-sm">
+          <div className="inline-flex gap-4 w-full justify-center flex-wrap text-sm py-2">
             {useCases.map((uc) => (
               <button
                 key={uc.name}
                 onClick={() => setActive(uc.name)}
-                className={`px-3 py-1.5 rounded-full flex items-center gap-2 whitespace-nowrap transition ${active === uc.name ? 'text-[#6DD629]' : 'text-foreground hover:text-[#FFC012]'}`}
+                className={`rounded-xl px-4 py-3 flex items-center gap-2 whitespace-nowrap transition shadow-sm border ${
+                  active === uc.name
+                    ? 'text-[#6DD629] border-[#6DD629] bg-[hsl(33,31%,12%)]'
+                    : 'text-foreground/90 hover:text-[#FFC012] border-[hsl(33,31%,18%)] hover:border-[#FFC012]/40 bg-[hsl(33,31%,10%)]'
+                }`}
               >
                 {uc.icon}
                 <span className="font-medium">{uc.name}</span>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Logo } from "@/components/logo";
+import Image from "next/image";
 import { Mail, Phone } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -17,10 +17,16 @@ export default function AuthLayout({
       {/* Left side - Welcome Section */}
       <div className="lg:flex-1 bg-gradient-to-br from-primary/10 to-background flex items-center justify-center p-8">
         <div className="max-w-md w-full text-center lg:text-left">
-          <div className="lg:hidden mb-6">
-            <Logo className="mx-auto" />
+          <div className="mb-6 flex items-center justify-center lg:justify-center mr-20">
+            <Image
+              src="/logo.png"
+              alt="AI Caller Logo"
+              width={170}
+              height={60}
+              priority
+            />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-foreground">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4 mt-10 text-foreground">
             Welcome to <span className="text-primary">AI Caller</span>
           </h1>
           <p className="text-lg text-muted-foreground">

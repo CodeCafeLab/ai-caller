@@ -12,7 +12,7 @@ const posts = [
 
 export function Blog() {
   return (
-    <section id="blog" className="py-16 md:py-20">
+    <section id="blog" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
       <div className="container">
         <SectionHeader icon={<Newspaper className="h-5 w-5 text-[#FFC012]" />} title="Blog" description="Latest insights and updates from the team." />
         <div className="mt-8 cc-marquee">

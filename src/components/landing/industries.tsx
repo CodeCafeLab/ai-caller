@@ -23,7 +23,7 @@ const cardColors = [
 export function Industries() {
 	const dup = [...industries, ...industries];
 	return (
-		<section id="industries" className="py-20 md:py-28">
+		<section id="industries" className="pt-6 md:pt-20 pb-6 md:pb-20 py-16 md:py-24">
 			<div className="container">
 				<div className="mx-auto text-center">
 					<div className="flex justify-center mb-3">
