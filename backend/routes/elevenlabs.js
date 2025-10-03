@@ -8,6 +8,118 @@ const axios = require('axios');
 const multer = require('multer');
 const FormData = require('form-data');
 
+// --- ElevenLabs Tools Proxy (ConvAI Tools) ---
+// These endpoints proxy ElevenLabs ConvAI Tools API using server-side API key
+router.get('/tools', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const response = await fetch('https://api.elevenlabs.io/v1/convai/tools', {
+      method: 'GET',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch tools from ElevenLabs', details: data });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('[GET /api/elevenlabs/tools] Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/tools/:toolId', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { toolId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/tools/${encodeURIComponent(toolId)}`, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch tool from ElevenLabs', details: data });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('[GET /api/elevenlabs/tools/:toolId] Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/tools', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const response = await fetch('https://api.elevenlabs.io/v1/convai/tools', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to create tool in ElevenLabs', details: data });
+    }
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[POST /api/elevenlabs/tools] Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.patch('/tools/:toolId', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { toolId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/tools/${encodeURIComponent(toolId)}`, {
+      method: 'PATCH',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to update tool in ElevenLabs', details: data });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('[PATCH /api/elevenlabs/tools/:toolId] Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.delete('/tools/:toolId', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { toolId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/tools/${encodeURIComponent(toolId)}`, {
+      method: 'DELETE',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ error: 'Failed to delete tool in ElevenLabs', details: text });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DELETE /api/elevenlabs/tools/:toolId] Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ElevenLabs Voices Proxy Endpoint
 router.get('/voices', async (req, res) => {
   try {

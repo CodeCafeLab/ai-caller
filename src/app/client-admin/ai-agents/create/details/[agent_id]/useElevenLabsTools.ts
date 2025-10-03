@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
+import { config } from '@/lib/config/urls';
 
-const API_BASE = 'https://api.elevenlabs.io/v1/convai/tools';
+// Use backend proxy to avoid exposing API key and to work in production
+const API_BASE = `${config.backend.api}/elevenlabs/tools`;
 
 export default function useElevenLabsTools(apiKey: string) {
   const [tools, setTools] = useState<any[]>([]);
@@ -10,7 +12,8 @@ export default function useElevenLabsTools(apiKey: string) {
   // Helper for headers
   const headers = {
     'Content-Type': 'application/json',
-    'xi-api-key': apiKey,
+    // API key is handled server-side; keep header for compatibility if backend checks it
+    'x-client-elevenlabs-key': apiKey || '',
   };
 
   // Fetch all tools
