@@ -955,4 +955,96 @@ router.get('/knowledge-base', async (req, res) => {
   }
 });
 
+// GET a single document
+router.get('/knowledge-base/:docId', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { docId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/knowledge-base/${encodeURIComponent(docId)}`, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch knowledge base doc from ElevenLabs', details: data });
+    }
+    res.json(data);
+  } catch (error) {
+    console.error('[GET /api/elevenlabs/knowledge-base/:docId] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch knowledge base doc', details: error.message });
+  }
+});
+
+// GET document content
+router.get('/knowledge-base/:docId/content', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { docId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/knowledge-base/${encodeURIComponent(docId)}/content`, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch knowledge base content from ElevenLabs', details: data });
+    }
+    res.json(data);
+  } catch (error) {
+    console.error('[GET /api/elevenlabs/knowledge-base/:docId/content] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch knowledge base content', details: error.message });
+  }
+});
+
+// GET dependent agents
+router.get('/knowledge-base/:docId/dependent-agents', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { docId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/knowledge-base/${encodeURIComponent(docId)}/dependent-agents`, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch dependent agents from ElevenLabs', details: data });
+    }
+    res.json(data);
+  } catch (error) {
+    console.error('[GET /api/elevenlabs/knowledge-base/:docId/dependent-agents] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch dependent agents', details: error.message });
+  }
+});
+
+// DELETE a document
+router.delete('/knowledge-base/:docId', async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const { docId } = req.params;
+    const response = await fetch(`https://api.elevenlabs.io/v1/convai/knowledge-base/${encodeURIComponent(docId)}`, {
+      method: 'DELETE',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ error: 'Failed to delete knowledge base doc in ElevenLabs', details: text });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[DELETE /api/elevenlabs/knowledge-base/:docId] Error:', error);
+    res.status(500).json({ error: 'Failed to delete knowledge base doc', details: error.message });
+  }
+});
+
 module.exports = router;
