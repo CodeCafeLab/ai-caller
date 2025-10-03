@@ -69,15 +69,28 @@ export default function KnowledgeBasePage() {
   const [detailsSize, setDetailsSize] = useState<string | null>(null);
 
   // ElevenLabs API helpers
-  const ELEVENLABS_API = '/api/elevenlabs/knowledge-base';
+  const ELEVENLABS_API = 'https://api.elevenlabs.io/v1/convai/knowledge-base';
   const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
 
   async function fetchElevenLabsKnowledgeBase() {
-    const res = await fetch(ELEVENLABS_API, { headers: { 'Content-Type': 'application/json' } });
+    if (!ELEVENLABS_API_KEY) {
+      toast({
+        title: "Missing API Key",
+        description: "Please set your ElevenLabs API key in the environment variables.",
+        variant: "destructive",
+      });
+      return [];
+    }
+    const res = await fetch(ELEVENLABS_API, {
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json',
+      } as HeadersInit,
+    });
     if (res.status === 401) {
       toast({
         title: "Unauthorized",
-        description: "Server could not access ElevenLabs. Please check backend API key.",
+        description: "Your ElevenLabs API key is missing or invalid.",
         variant: "destructive",
       });
       return [];
@@ -94,11 +107,24 @@ export default function KnowledgeBasePage() {
   }
 
   async function fetchElevenLabsDocument(id: string) {
-    const res = await fetch(`${ELEVENLABS_API}/${id}`, { headers: { 'Content-Type': 'application/json' } });
+    if (!ELEVENLABS_API_KEY) {
+      toast({
+        title: "Missing API Key",
+        description: "Please set your ElevenLabs API key in the environment variables.",
+        variant: "destructive",
+      });
+      return null;
+    }
+    const res = await fetch(`${ELEVENLABS_API}/${id}`, {
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json',
+      } as HeadersInit,
+    });
     if (res.status === 401) {
       toast({
         title: "Unauthorized",
-        description: "Server could not access ElevenLabs. Please check backend API key.",
+        description: "Your ElevenLabs API key is missing or invalid.",
         variant: "destructive",
       });
       return null;
@@ -107,11 +133,26 @@ export default function KnowledgeBasePage() {
   }
 
   async function updateElevenLabsDocument(id: string, updatePayload: any) {
-    const res = await fetch(`${ELEVENLABS_API}/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatePayload) });
+    if (!ELEVENLABS_API_KEY) {
+      toast({
+        title: "Missing API Key",
+        description: "Please set your ElevenLabs API key in the environment variables.",
+        variant: "destructive",
+      });
+      return null;
+    }
+    const res = await fetch(`${ELEVENLABS_API}/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json',
+      } as HeadersInit,
+      body: JSON.stringify(updatePayload),
+    });
     if (res.status === 401) {
       toast({
         title: "Unauthorized",
-        description: "Server could not access ElevenLabs. Please check backend API key.",
+        description: "Your ElevenLabs API key is missing or invalid.",
         variant: "destructive",
       });
       return null;
@@ -120,11 +161,25 @@ export default function KnowledgeBasePage() {
   }
 
   async function deleteElevenLabsDocument(id: string) {
-    const res = await fetch(`${ELEVENLABS_API}/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+    if (!ELEVENLABS_API_KEY) {
+      toast({
+        title: "Missing API Key",
+        description: "Please set your ElevenLabs API key in the environment variables.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const res = await fetch(`${ELEVENLABS_API}/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json',
+      } as HeadersInit,
+    });
     if (res.status === 401) {
       toast({
         title: "Unauthorized",
-        description: "Server could not access ElevenLabs. Please check backend API key.",
+        description: "Your ElevenLabs API key is missing or invalid.",
         variant: "destructive",
       });
     }
@@ -132,10 +187,18 @@ export default function KnowledgeBasePage() {
 
   // Helper to add a knowledge base item to ElevenLabs and local DB
   async function addKnowledgeBaseItem(type: 'url' | 'text' | 'file', payload: any, apiKey: string, localDbPayload: any) {
+    if (!apiKey) {
+      toast({
+        title: "Missing API Key",
+        description: "Please set your ElevenLabs API key in the environment variables.",
+        variant: "destructive",
+      });
+      return null;
+    }
     let endpoint = '';
-    if (type === 'url') endpoint = '/api/elevenlabs/knowledge-base/url';
-    if (type === 'text') endpoint = '/api/elevenlabs/knowledge-base/text';
-    if (type === 'file') endpoint = '/api/elevenlabs/knowledge-base/file';
+    if (type === 'url') endpoint = 'https://api.elevenlabs.io/v1/convai/knowledge-base/url';
+    if (type === 'text') endpoint = 'https://api.elevenlabs.io/v1/convai/knowledge-base/text';
+    if (type === 'file') endpoint = 'https://api.elevenlabs.io/v1/convai/knowledge-base/file';
 
     // Only send required fields to ElevenLabs
     let elevenLabsPayload = {};
@@ -146,13 +209,16 @@ export default function KnowledgeBasePage() {
     // 1. Post to ElevenLabs
     const elevenRes = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' } as HeadersInit,
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      } as HeadersInit,
       body: JSON.stringify(elevenLabsPayload),
     });
     if (elevenRes.status === 401) {
       toast({
         title: "Unauthorized",
-        description: "Server could not access ElevenLabs. Please check backend API key.",
+        description: "Your ElevenLabs API key is missing or invalid.",
         variant: "destructive",
       });
       return null;
