@@ -117,6 +117,34 @@ app.use("/api/demos", demosRoutes);
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Public: ElevenLabs Voices Proxy Endpoint (must be BEFORE auth middleware)
+app.get("/api/voices", async (req, res) => {
+  try {
+    console.log("ELEVENLABS_API_KEY:", process.env.ELEVENLABS_API_KEY);
+    const response = await fetch("https://api.elevenlabs.io/v1/voices", {
+      headers: {
+        "xi-api-key":
+          process.env.ELEVENLABS_API_KEY ||
+          "sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317",
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("ElevenLabs API error:", response.status, errorText);
+      return res.status(response.status).json({
+        error: "Failed to fetch voices from ElevenLabs",
+        details: errorText,
+      });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching voices:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Apply authentication middleware to all routes except public ones
 app.use(authenticateJWT);
 
@@ -173,33 +201,7 @@ app.get("/api/campaigns/agents", (req, res) => {
   }
 });
 
-// ElevenLabs Voices Proxy Endpoint (already protected by global middleware)
-app.get("/api/voices", async (req, res) => {
-  try {
-    console.log("ELEVENLABS_API_KEY:", process.env.ELEVENLABS_API_KEY);
-    const response = await fetch("https://api.elevenlabs.io/v1/voices", {
-      headers: {
-        "xi-api-key":
-          process.env.ELEVENLABS_API_KEY ||
-          "sk_ab0b50095e39acea120f1e10a18f98439d9891f51fa5d317",
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElevenLabs API error:", response.status, errorText);
-      return res.status(response.status).json({
-        error: "Failed to fetch voices from ElevenLabs",
-        details: errorText,
-      });
-    }
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    console.error("Error fetching voices:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+// (moved) Voices endpoint is public above
 
 // Serve uploads folder statically
 app.use("/uploads", express.static("uploads"));
